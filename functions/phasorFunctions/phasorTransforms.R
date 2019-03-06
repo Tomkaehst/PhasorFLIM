@@ -38,7 +38,7 @@
 
 
 
-gsTransform = function(array, timeaxis = timeSim, angFrequency = (2*pi*40e06)) {
+gsTransform = function(array, timeaxis = length(array[1, 1, ])*4, angFrequency = (2*pi*40e06)) {
   output = data.frame(
     G = vector(mode = "double", length = (length(array[, 1, 1]) * length(array[1, , 1]))),
     S = vector(mode = "double", length = (length(array[, 1, 1]) * length(array[1, , 1])))

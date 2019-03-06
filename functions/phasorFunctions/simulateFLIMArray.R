@@ -19,3 +19,21 @@ generateFLIMarray = function(dimX = 20, dimY = 20, dimT = 1000, timeMax = 25000,
     }
   }
 }
+
+
+# Generate FLIM array using a numerically integrated model (see modelFunctions folder)
+generateFLIMarraynumerical = function(dimX = 20, dimY = 20, dimT = 1000, timeMax = 25000, tau = 2000, noise = 200) {
+  source("modelFunctions/monoDecayODE.R")
+  
+  # Preallocating memory for 3D FLIM array
+  FLIMarr = array(0, dim = c(dimX, dimY, dimT))
+  time = seq(0, timeMax, length.out = dimT)
+  
+  for(i in 1:length(decayArray[, 1, 1])) {
+    for (j in 1:length(decayArray[1, , 1])) {
+      FLIMarr[i, j, ] = monoDecayArr(timeMax, timeSteps = dimT, tau = tau, noise)
+    }
+  }
+}
+
+

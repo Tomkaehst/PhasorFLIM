@@ -38,7 +38,11 @@
 
 
 
-gsTransform = function(array, timeaxis = length(array[1, 1, ])*4, angFrequency = (2*pi*40e06)) {
+gsTransform = function(inputList, angFrequency = (2*pi*40e06)) {
+  # input is list: first element is time axis; second element is 3D FLIM array
+  timeaxis = inputList[[1]]
+  array = inputList[[2]]
+  
   output = data.frame(
     G = vector(mode = "double", length = (length(array[, 1, 1]) * length(array[1, , 1]))),
     S = vector(mode = "double", length = (length(array[, 1, 1]) * length(array[1, , 1])))

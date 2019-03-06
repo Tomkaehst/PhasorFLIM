@@ -6,8 +6,7 @@
 #########################################
 
 
-generateFLIMarray = function(dimX = 20, dimY = 20, dimT = 1000, timeMax = 25000, tau = 2000, noise = 0.02) 
-  {
+generateFLIMarray = function(dimX = 20, dimY = 20, dimT = 1000, timeMax = 25000, tau = 2000, noise = 0.02) {
   
   # Preallocating memory for 3D FLIM array
   FLIMarr = array(0, dim = c(dimX, dimY, dimT))
@@ -18,13 +17,13 @@ generateFLIMarray = function(dimX = 20, dimY = 20, dimT = 1000, timeMax = 25000,
       FLIMarr[i, j, ] = exp(-time/(tau + rnorm(1)*(100*noise))) + rnorm(length(FLIMarr[1, 1, ]))*noise
     }
   }
-  return(FLIMarr)
+  # gsTransform() requires knowledge about the time axis; therefore, the output is a list: first element is time axis used for array generation; second element is array itself
+  return(list(time, FLIMarr))
 }
 
 
 # Generate FLIM array using a numerically integrated model (see modelFunctions folder)
-generateFLIMarraynumerical = function(dimX = 5, dimY = 5, dimT = 1000, timeMax = 25000, tau = 2000, noise = 500) {
-  source("modelFunctions/monoDecayODE.R")
+generateFLIMarraynumerical = function(dimX = 5, dimY = 5, dimT = 1000, timeMax = 25000, tau = 2000, noise = 300) {
   
   # Preallocating memory for 3D FLIM array
   FLIMarr = array(0, dim = c(dimX, dimY, dimT))
@@ -35,7 +34,8 @@ generateFLIMarraynumerical = function(dimX = 5, dimY = 5, dimT = 1000, timeMax =
       FLIMarr[i, j, ] = monoDecayArr(timeMax, timeSteps = dimT, tau = tau, noise)
     }
   }
-  return(FLIMarr)
+  
+  return(list(time, FLIMarr))
 }
 
 

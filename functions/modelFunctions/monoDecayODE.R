@@ -4,7 +4,7 @@
 
 
 library(deSolve)
-source("modelFunctions/laserFunctions.R")
+source("functions/modelFunctions/laserFunctions.R")
 
 # Generates monoexponential fluorescence decay from ODE model (via numerical integration); trivial, but I use it to expand it to more complex decay models
 monoDecayArr = function(timeMax, timeSteps, tau, noise) {
@@ -18,8 +18,8 @@ monoDecayArr = function(timeMax, timeSteps, tau, noise) {
     with(as.list(c(yIni, par)), {
       laser = laser.gauss(
         time,
-        amp = 0.01,
-        dplace = 2500,
+        amp = 50,
+        dplace = 0,
         grsm = 100
       )
       

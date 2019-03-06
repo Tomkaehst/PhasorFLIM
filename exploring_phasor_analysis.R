@@ -1,3 +1,13 @@
+###############################
+# Only for testing purposes!  #
+# Tom Kache,                  #
+# Jena, 2019                  #
+###############################
+
+
+# For function implementations of the script below, see functions folder!
+
+
 # Exploring phasor anlysis of FLIM data using simulated decays
 # Implementation follows Digman et al., 2008
 

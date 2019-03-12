@@ -67,9 +67,11 @@ gsTransform = function(inputList, angFrequency = (2*pi*40e06)) {
 # circle using R's plot()   #
 #############################
 
-plotUniCircle = function() {
+plotUniCircle = function(limX = c(0, 1), limY = c(0, 0.5)) {
   curve(sqrt(0.25 - (x - 0.5)^2), from = 0, to = 1,
         xlab = "S",
-        ylab = "G")
+        ylab = "G",
+        xlim = limX,
+        ylim = limY)
 }
 

@@ -38,6 +38,11 @@ generateFLIMarraynumerical = function(dimX = 5, dimY = 5, dimT = 1000, timeMax =
   return(list(time, FLIMarr))
 }
 
+
+
+
+
+# Simulates an array of FLIM data with donor and acceptor decay (numerically -> deSolve)
 generateFLIMarraynumericalAcceptor = function(whichCol, dimX = 5, dimY = 5, dimT = 1000, timeMax = 25000, tau1 = 2500, tau2 = 1400, tauFRET = 3000, noise = 300) {
   
   # Preallocating memory for 3D FLIM array
@@ -46,7 +51,7 @@ generateFLIMarraynumericalAcceptor = function(whichCol, dimX = 5, dimY = 5, dimT
   
   for(i in 1:length(FLIMarr[, 1, 1])) {
     for (j in 1:length(FLIMarr[1, , 1])) {
-      FLIMarr[i, j, ] = doubleDecayArr(whichCol, timeMax, timeSteps = dimT, tau1 = tau1, tau2 = tau2, tauFRET = tauFRET, noise) + rnorm(length(FLIMarr[1, 1, ]))*noise
+      FLIMarr[i, j, ] = doubleDecayArr(whichCol, timeMax, timeSteps = dimT, tau1 = tau1, tau2 = tau2, tauFRET = tauFRET, noise =  0) + rpois(length(FLIMarr[i, j, ]), lambda = noise)
     }
   }
   
@@ -69,6 +74,34 @@ generateFLIMarraynumericalTriple = function(whichCol, dimX = 5, dimY = 5, dimT =
   return(list(time, FLIMarr))
 }
 
+
+# Generates FLIM data array with donor and acceptor decay, varying FRET rate (max. in center of rectangular array)
+
+genFLIMarray_da_varFRET = function(whichCol, dimX = 50, dimY = 50, dimT = 1000, timeMax = 25000, tau1 = 2500, tau2 = 1400, FRET_Start = 10000, FRET_Stop = 2000, noise = 10) {
+  
+  # Preallocating memory for 3D FLIM array
+  FLIMarr = array(0, dim = c(dimX, dimY, dimT))
+  
+  # Array holding the FRET rate for each pixel in FLIMarr
+  FRETarr = array(0, dim = c(dimX, dimY))
+  # Values needed for calculating Gauss-distributed FRET rate over the array (should follow Gauss dist; max. FRET rate in middle of FLIMarr)
+  
+  for(i in 1:dimX) {
+    for (j in 1:dimY) {
+      FRETarr[j, i] = ((-(FRET_Start - FRET_Stop)*exp(-(i - dimX/2)^2 / (2*(dimX/12))^2) + FRET_Start) * (-(FRET_Start - FRET_Stop)*exp(-(i - dimX/2)^2 / (2*(dimY/12))^2) + FRET_Start)) / (FRET_Start - FRET_Stop)
+    }
+  }
+  
+  time = seq(0, timeMax, length.out = dimT)
+  
+  for(i in 1:length(FLIMarr[, 1, 1])) {
+    for (j in 1:length(FLIMarr[1, , 1])) {
+      FLIMarr[i, j, ] = doubleDecayArr(whichCol, timeMax, timeSteps = dimT, tau1 = tau1, tau2 = tau2, tauFRET = FRETarr[i, j], noise = 0)
+    }
+  }
+  
+  return(list(time, FLIMarr))
+}
 
 
 

@@ -18,7 +18,7 @@ monoDecayArr = function(timeMax, timeSteps, tau, noise) {
     with(as.list(c(yIni, par)), {
       laser = laser.gauss(
         time,
-        amp = 50,
+        amp = 100,
         dplace = 0,
         grsm = 100
       )

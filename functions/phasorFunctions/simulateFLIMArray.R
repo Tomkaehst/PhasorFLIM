@@ -122,10 +122,7 @@ generateFLIMCPPtriple = function(whichCol, dimX = 5, dimY = 5, dimT = 1000, time
   
   for(i in 1:dimX) {
     for (j in 1:dimY) {
-      FLIMarr[i, j, ] = ode(Y, time, func = "derivs", parms = parms, dllname = "monoDecay", initfunc = "initmod", nout = 2, outnames = "Sum")[,whichCol]
-      parms["k1"] = tau1 + rnorm(1)*noise
-      parms["k2"] = tau2 + rnorm(1)*noise
-      parms["k3"] = tau3 + rnorm(1)*noise
+      FLIMarr[i, j, ] = ode(Y, time, func = "derivs", parms = parms, dllname = "monoDecay", initfunc = "initmod", nout = 2, outnames = "Sum")[,whichCol] + rpois(length(FLIMarr[i, j, ]), lambda = noise)
     }
   }
   

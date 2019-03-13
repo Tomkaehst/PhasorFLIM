@@ -10,7 +10,7 @@ source("functions/modelFunctions/tripleDecay.R")
 
 
 # Mono Decay - Analytically
-testArrNum = generateFLIMarray(dimX = 3, dimY = 3, dimT = 1024, timeMax = 2.5E, tau = 0.000015, noise = 0)
+testArrNum = generateFLIMarray(dimX = 3, dimY = 3, dimT = 1024, timeMax = 25000E-12, tau = 2500E-12, noise = 10)
 plot(testArrNum[[2]][3, 3, ], type = "l")
 
 test_eval = gsTransform(testArrNum, angFrequency = 2*pi*20e06)
@@ -71,10 +71,10 @@ points(evalAcc2, pch = 4, col = "green")
 
 
 # Mono Decay, C implementation (see simulateFLIMArray.R -> generateFLIMCPPmono -> monoDecay.c)
-testArrNum = generateFLIMCPPtriple(whichCol = 4, dimX = 40, dimY = 40, dimT = 1000, timeMax = 25000, tau1 = 2000, tau2 = 1400, tau3 = 1500, noise = 500)
+testArrNum = generateFLIMCPPtriple(whichCol = 4, dimX = 40, dimY = 40, dimT = 1024, timeMax = 25000E-12, tau1 = 2000E-12, tau2 = 1400E-12, tau3 = 1500E-12, noise = 500)
 plot(testArrNum[[2]][4, 1, ], type = "l")
 
-test_eval = gsTransform(testArrNum, angFrequency = 2*pi*40e06)
+test_eval = gsTransform(testArrNum, angFrequency = 2*pi*20e06)
 plotUniCircle(limX = c(0, 1), limY = c(0, 1))
 points(test_eval, pch = 1,
        col = grey(0.2, 0.5))

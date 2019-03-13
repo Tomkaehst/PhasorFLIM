@@ -10,10 +10,10 @@ source("functions/modelFunctions/tripleDecay.R")
 
 
 # Mono Decay - Analytically
-testArrNum = generateFLIMarray(dimX = 3, dimY = 3, dimT = 1000, timeMax = 25000, tau = 2500, noise = 10)
+testArrNum = generateFLIMarray(dimX = 3, dimY = 3, dimT = 1000, timeMax = 25000, tau = 2500, noise = 50)
 plot(testArrNum[[2]][3, 3, ], type = "l")
 
-test_eval = gsTransform(testArrNum, angFrequency = 2*pi*40e06)
+test_eval = gsTransform(testArrNum, angFrequency = 2*pi*80e06)
 plotUniCircle()
 points(test_eval, pch = 4)
 
@@ -27,8 +27,7 @@ points(test_eval, pch = 4)
 
 
 # Double Decay
-
-testArrNum = generateFLIMarraynumericalAcceptor(whichCol = 2, dimX = 10, dimY = 10, dimT = 1000, timeMax = 25000, tau1 = 2500, tau2 = 1400, tauFRET = 2000, noise = 300)
+testArrNum = generateFLIMarraynumericalAcceptor(whichCol = 2, dimX = 3, dimY = 3, dimT = 1000, timeMax = 25000, tau1 = 2500, tau2 = 1400, tauFRET = 2000, noise = 10)
 plot(testArrNum[[2]][1, 1, ], type = "l")
 
 test_eval = gsTransform(testArrNum, angFrequency = 2*pi*40e06)
@@ -80,5 +79,15 @@ plotUniCircle(limX = c(0, 1), limY = c(0, 1))
 points(test_eval, pch = 1,
        col = grey(0.2, 0.5))
 
+
+
+# FLIM data simulation with varying FRET rates in the "image"
+testArrNum = genFLIMarray_da_varFRET(whichCol = 4, dimX = 30, dimY = 30, dimT = 1000, timeMax = 25000, tau1 = 2500, tau2 = 1400, FRET_Start = 15000, FRET_Stop = 5000, noise = 0)
+plot(testArrNum[[2]][5, 8, ], type = "l")
+
+test_eval = gsTransform(testArrNum, angFrequency = 2*pi*40e06)
+plotUniCircle(limX = c(0, 1), limY = c(0, 1))
+points(test_eval, pch = 4,
+       col = "red")
 
 

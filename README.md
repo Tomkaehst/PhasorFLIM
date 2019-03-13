@@ -8,4 +8,4 @@ I'm exploring phasor analysis of FLIM data using R and numerical models.
   - [ ] Implement heavy functions in C++
 - [ ] Tidy up code
 - [ ] Try to read FLIM data from files
-- [ ] Add array of FRET rates for simulated FLIM data array
+- [x] Add array of FRET rates for simulated FLIM data array

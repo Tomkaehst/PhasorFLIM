@@ -1,0 +1,11 @@
+{
+  "name": "phasor-flim",
+  "version": "0.0.0",
+  "description": "Transform PicoQuant .ptu files into the phasor representation and determine FRET in your sample fitting-free.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "Tom Kache",
+  "license": "MIT"
+}

@@ -39,7 +39,7 @@ doubleDecayArr = function(whichCol, timeMax, timeSteps, tau1, tau2, tauFRET, noi
                times = time,
                y = yIni,
                parms = par,
-               method = "lsoda")
+               method = "lsodes")
   
   return(output[, whichCol])
 }

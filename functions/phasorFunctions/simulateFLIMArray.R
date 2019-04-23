@@ -6,92 +6,25 @@
 #########################################
 
 
-generateFLIMarray = function(dimX = 20, dimY = 20, dimT = 1000, timeMax = 25000, tau = 2000, noise = 0.02) {
-  
-  # Preallocating memory for 3D FLIM array
-  FLIMarr = array(0, dim = c(dimX, dimY, dimT))
-  time = seq(0, timeMax, length.out = dimT)
-  
-  for(i in 1:length(FLIMarr[, 1, 1])) {
-    for (j in 1:length(FLIMarr[1, , 1])) {
-      FLIMarr[i, j, ] = 1000*exp(-time/(tau)) + rpois(length(FLIMarr[1, 1, ]), lambda = noise)
-    }
-  }
-  # gsTransform() requires knowledge about the time axis; therefore, the output is a list: first element is time axis used for array generation; second element is array itself
-  return(list(time, FLIMarr))
-}
-
-
-# Generate FLIM array using a numerically integrated model (see modelFunctions folder)
-generateFLIMarraynumerical = function(dimX = 5, dimY = 5, dimT = 1000, timeMax = 25000, tau = 2000, noise = 300) {
-  
-  # Preallocating memory for 3D FLIM array
-  FLIMarr = array(0, dim = c(dimX, dimY, dimT))
-  time = seq(0, timeMax, length.out = dimT)
-  
-  for(i in 1:length(FLIMarr[, 1, 1])) {
-    for (j in 1:length(FLIMarr[1, , 1])) {
-      FLIMarr[i, j, ] = monoDecayArr(timeMax, timeSteps = dimT, tau = tau, noise = 0) + rpois(length(FLIMarr[1, 1, ]), lambda = noise)
-    }
-  }
-  
-  return(list(time, FLIMarr))
-}
-
-
-
-
-
-# Simulates an array of FLIM data with donor and acceptor decay (numerically -> deSolve)
-generateFLIMarraynumericalAcceptor = function(whichCol, dimX = 5, dimY = 5, dimT = 1000, timeMax = 25000, tau1 = 2500, tau2 = 1400, tauFRET = 3000, noise = 300) {
-  
-  # Preallocating memory for 3D FLIM array
-  FLIMarr = array(0, dim = c(dimX, dimY, dimT))
-  time = seq(0, timeMax, length.out = dimT)
-  
-  for(i in 1:length(FLIMarr[, 1, 1])) {
-    for (j in 1:length(FLIMarr[1, , 1])) {
-      FLIMarr[i, j, ] = doubleDecayArr(whichCol, timeMax, timeSteps = dimT, tau1 = tau1, tau2 = tau2, tauFRET = tauFRET, noise =  0) + rpois(length(FLIMarr[i, j, ]), lambda = noise)
-    }
-  }
-  
-  return(list(time, FLIMarr))
-}
-
-
-generateFLIMarraynumericalTriple = function(whichCol, dimX = 5, dimY = 5, dimT = 1000, timeMax = 25000, tau1 = 2500, tau2 = 1400, tau3 = 3000, tauFRET1 = 3000, tauFRET2 = 2000, noise = 300) {
-  
-  # Preallocating memory for 3D FLIM array
-  FLIMarr = array(0, dim = c(dimX, dimY, dimT))
-  time = seq(0, timeMax, length.out = dimT)
-  
-  for(i in 1:length(FLIMarr[, 1, 1])) {
-    for (j in 1:length(FLIMarr[1, , 1])) {
-      FLIMarr[i, j, ] = tripleDecayArr(whichCol, timeMax, timeSteps = dimT, tau1 = tau1, tau2 = tau2, tau3 = tau3, tauFRET1 = tauFRET1, tauFRET2 = tauFRET2, noise) + rnorm(length(FLIMarr[1, 1, ]))*noise
-    }
-  }
-  
-  return(list(time, FLIMarr))
-}
-
-
+source("")
 # Generates FLIM data array with donor and acceptor decay, varying FRET rate (max. in center of rectangular array)
 
-genFLIMarray_da_varFRET = function(whichCol, dimX = 50, dimY = 50, dimT = 1000, timeMax = 25000, tau1 = 2500, tau2 = 1400, FRET_Start = 10000, FRET_Stop = 2000, noise = 10) {
+genFLIMarr = function(whichCol = c(2, 4), dimX = 10, dimY = 10, dimT = 1024, timeMax = 25000, tau1 = 2500, tau2 = 1400, FRET_low = 10000, FRET_high = 2000, noise = 10) {
   
   # Preallocating memory for 3D FLIM array
   FLIMarr = array(0, dim = c(dimX, dimY, dimT))
   
   # Array holding the FRET rate for each pixel in FLIMarr
   FRETarr = array(0, dim = c(dimX, dimY))
-  # Values needed for calculating Gauss-distributed FRET rate over the array (should follow Gauss dist; max. FRET rate in middle of FLIMarr)
   
+  # Populating dimX x dimY array with varying k_FRET rates
   for(i in 1:dimX) {
     for (j in 1:dimY) {
-      FRETarr[j, i] = ((-(FRET_Start - FRET_Stop)*exp(-(i - dimX/2)^2 / (2*(dimX/12))^2) + FRET_Start) * (-(FRET_Start - FRET_Stop)*exp(-(i - dimX/2)^2 / (2*(dimY/12))^2) + FRET_Start)) / (FRET_Start - FRET_Stop)
+      FRETarr[j, i] = ((FRET_high - FRET_low)*exp(-(i - dimX/2)^2 / (2*(dimX/12))^2)) + FRET_low
     }
   }
   
+  # Generate time axis for simulation
   time = seq(0, timeMax, length.out = dimT)
   
   for(i in 1:length(FLIMarr[, 1, 1])) {
@@ -107,7 +40,7 @@ genFLIMarray_da_varFRET = function(whichCol, dimX = 50, dimY = 50, dimT = 1000, 
 
 
 
-generateFLIMCPPtriple = function(whichCol, dimX = 5, dimY = 5, dimT = 1000, timeMax = 25000, tau1 = 2500, tau2 = 1400, tau3 = 3000, noise = 0) {
+simFLIMarr_CPP = function(whichCol = c(2, 4), dimX = 5, dimY = 5, dimT = 1000, timeMax = 25000, tau1 = 2500, tau2 = 1400, tau3 = 3000, noise = 0) {
   
   # Preallocating memory for 3D FLIM array
   FLIMarr = array(0, dim = c(dimX, dimY, dimT))

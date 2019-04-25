@@ -7,5 +7,11 @@
     "start": "node index.js"
   },
   "author": "Tom Kache",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@tensorflow/tfjs": "^1.1.0",
+    "@tensorflow/tfjs-node": "^1.1.0",
+    "bitwise": "^2.0.3",
+    "rollup": "^1.10.1"
+  }
 }

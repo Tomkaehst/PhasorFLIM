@@ -1,6 +1,5 @@
 
 const fs = require("fs")
-const path = require("path")
 const bitwise = require("bitwise");
 
 // Adapted from https://github.com/PicoQuant/PicoQuant-Time-Tagged-File-Format-Demos
@@ -29,8 +28,8 @@ var recordTypes = {
 
 
 // Loading the .ptu file in ./data into the buffer
-//filePath = "./data/lol.txt"
-filePath = "./data/Convalaria_for_CC_6_1.ptu"
+//var filePath = './data/20180907_EGFP_RAD51_Cherry_RAD52_1_3.ptu' // Large test file (15 Mb!)
+var filePath = "./data/Convalaria_for_CC_6_1.ptu" // Small test file
 
 let data = fs.readFileSync(filePath); // Need to switch to asynchronous reading for larger files!
 
@@ -53,6 +52,7 @@ if (magic != "PQTTTR") {
 const tag_HeaderEnd = "Header_End"; // Last Entry of the Header; terminates reading loop
 var offset_Header_End = data.indexOf("Header_End") + 48; // Used later to check whether the number of bytes without the header divived by 4 (because one record has 4 bytes) is equal to the numRec in the file header
 let reachedHeaderEnd = false;
+let entry = NaN; // empty variable to assign the tag entry to 
 
 var HeaderContents = [ // add header info to this array via .push({[tagname]: content})
       { FileMagic: magic },
@@ -71,17 +71,15 @@ while (reachedHeaderEnd == false) {
       var typeCode = tag_data.slice(36, 40).readUInt32LE();
       var tagVal = tag_data.slice(40, 48);
 
-
       if (typeCode == tagTypes.Empty8) {
             if (tagId == tag_HeaderEnd) {
                   reachedHeaderEnd = true;
-                  offset -= 16; // Byte offset needs to be right at the end of the Header_End tag! (I think...)
             } else {
                   HeaderContents.push({ [tagId]: tagVal.readUInt8() });
             }
       }
       else if (typeCode == tagTypes.Bool8) {
-            var entry = tagVal.readInt8 > 0 ? true : false;
+            entry = tagVal.readInt8 > 0 ? true : false;
             HeaderContents.push({ [tagId]: entry });
       }
       else if (typeCode == tagTypes.Int8) {
@@ -91,7 +89,7 @@ while (reachedHeaderEnd == false) {
             HeaderContents.push({ [tagId]: tagVal.readInt8() });
       }
       else if (typeCode == tagTypes.Float8) {
-            var entry = tagVal
+            entry = tagVal
             HeaderContents.push({ [tagId]: tagVal.readDoubleLE() });
       }
       else if (typeCode == tagTypes.DateTime) {
@@ -99,7 +97,7 @@ while (reachedHeaderEnd == false) {
       }
       else if (typeCode == tagTypes.Float8Array) {
             if (tagVal.readUInt32LE() % 8 == 0) {
-                  var entry = data.slice(offset, offset + tagVal.readUInt32LE());
+                  entry = data.slice(offset, offset + tagVal.readUInt32LE());
                   offset += tagVal.readUInt32LE();
             } else {
                   throw "Error in Float8Array decoding in .ptu header."
@@ -108,7 +106,7 @@ while (reachedHeaderEnd == false) {
       }
       else if (typeCode == tagTypes.AnsiString) {
             if (tagVal.readUInt32LE() % 8 == 0) {
-                  var entry = data.slice(offset, offset + tagVal.readUInt32LE()).toString('latin1').replace(/\0/g, "");
+                  entry = data.slice(offset, offset + tagVal.readUInt32LE()).toString('latin1').replace(/\0/g, "");
                   offset += tagVal.readUInt32LE();
             } else {
                   throw "Error in AnsiString decoding in .ptu header."
@@ -117,7 +115,7 @@ while (reachedHeaderEnd == false) {
       }
       else if (typeCode == tagTypes.WideString) {
             if (tagVal.readUInt32LE() % 8 == 0) {
-                  var entry = data.slice(offset, offset + tagVal.readUInt32LE()).toString('latin1').replace(/\0/g, "");
+                  entry = data.slice(offset, offset + tagVal.readUInt32LE()).toString('latin1').replace(/\0/g, "");
                   offset += tagVal.readUInt32LE();
             } else {
                   throw "Error in WideString decoding in .ptu header."
@@ -166,16 +164,68 @@ if (FLIMInfo.recType != recordTypes.HydraHarp2T3) {
 
 if (FLIMInfo.numRec != (data.byteLength - offset_Header_End) / 4) {
       throw "Number of records specified in header does not match number of remaining bytes in currently accessed file. Check file validity."
+} else {
+      console.log("Processing " + FLIMInfo.numRec + " records from " + filePath);
 }
 
 // Reading the records from the file into three arrays! (for now)
 let macrotime = new Array(FLIMInfo.numRec);
+let nanotime = new Array(FLIMInfo.numRec);
+let markers = new Array(FLIMInfo.numRec);
 
-let temp = data.slice(offset + 20, offset + 24);
+const overflow_period = 1024;
+let overflowCorr = 0;
+let truensync = NaN;
 
-var special = temp.slice(0, 1);
-var channel = temp.slice(1, 7);
-var dtime = temp.slice(7, 22);
-var nsync = temp.slice(22, 32);
+const bytesToFileEnd = data.byteLength;
+let i = 0; // Counts
 
-var test = bitwise.buffer.read(temp);
+// need to add 3 for some reason; bytes and bits seem to be out of order after the header; not much valuable photon data at the beginning of the file anyway; I hope this is not different for other files
+offset += 3;
+
+while (offset <= bytesToFileEnd) {
+      let recordBytes = data.slice(offset, offset + 4);
+      let recordBits = bitwise.buffer.read(recordBytes);
+
+      var special = recordBits.slice(0, 1)[0];
+      var channel = parseInt(recordBits.slice(1, 7).toString().replace(/\,/g, ""), 2);
+      var dtime = parseInt(recordBits.slice(7, 22).toString().replace(/\,/g, ""), 2)
+      var nsync = parseInt(recordBits.slice(22, 33).toString().replace(/\,/g, ""), 2)
+
+      if (special == 1) {
+            if (channel == 63) {
+                  overflowCorr += overflow_period * nsync;
+            }
+            if (channel >= 1 & channel <= 15) {
+                  truensync = overflowCorr + nsync;
+            }
+      } else {
+            truensync = overflowCorr + nsync;
+      }
+
+      macrotime[i] = truensync;
+      markers[i] = channel;
+      nanotime[i] = dtime;
+
+      offset += 4; // Incrementing offset counter to move on
+      i += 1;
+
+      if (i % 50000 == 0) {
+            var prog = (offset / bytesToFileEnd) * 100;
+            console.log(prog + " % ...")
+      }
+}
+
+
+
+
+// Writing to file
+// fs.writeFile(
+//       './output/macro.txt',
+//       JSON.stringify(macrotime),
+//       function (err) {
+//             console.error("Bad stuff happened");
+//       }
+// );
+
+console.log(markers.slice(markers.length - 20, markers.length));

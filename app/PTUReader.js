@@ -29,6 +29,7 @@ module.exports = {
             // Check if file is a valid .ptu -> MAGIC = 'PQTTTR' and file version
             var offset = 0;
             var magic = data.slice(offset, offset + 6).toString("utf8");
+            var testBuff = bitwise.buffer.read(data, 0, 48);
             offset += 8;
             var version = data.slice(offset, offset + 6).toString();
             offset += 8;
@@ -145,7 +146,7 @@ module.exports = {
 
 
 
-
+            console.log(FLIMInfo);
 
 
             // Decoding the TTTR records in the file
@@ -184,35 +185,32 @@ module.exports = {
             const overflow_period = 1024;
             let overflowCorr = 0;
             let truensync = NaN;
+            let macroMultFactor = FLIMInfo.globRes // Multiply with truensync to get real experiment time in seconds
             const bytesToFileEnd = data.byteLength;
             let i = 0; // Counts
 
             // need to add 3 for some reason; bytes and bits seem to be out of order after the header; not much valuable photon data at the beginning of the file anyway; I hope this is not different for other files
-            offset -= 1;
-
-
+            offset += 0;
 
             while (offset <= bytesToFileEnd) {
-                  let recordBytes = data.slice(offset, offset + 4);
+                  let recordBytes = data.slice(offset, offset + 4).reverse(); // Endianess change here; buffer has to be reversed! Took me 5 hours to find out!!!
                   let recordBits = bitwise.buffer.read(recordBytes);
 
-                  let special = recordBits.slice(0, 1)[0];
+                  let special = parseInt(recordBits.slice(0, 1), 2);
                   let channel = parseInt(recordBits.slice(1, 7).join(""), 2);
                   let dtime = parseInt(recordBits.slice(7, 22).join(""), 2);
-                  let nsync = parseInt(recordBits.slice(22, 32).join(""), 2);
-                  //var channel = parseInt(recordBits.slice(1, 7).toString().replace(/\,/g, ""), 2);
-                  //var dtime = parseInt(recordBits.slice(7, 22).toString().replace(/\,/g, ""), 2);
-                  //var nsync = parseInt(recordBits.slice(22, 32).toString().replace(/\, /g, ""), 2)
-
+                  let nsync = parseInt(recordBits.slice(22, 33).join(""), 2);
+                  //let channel = parseInt(recordBits.slice(1, 7).toString().replace(/\,/g, ""), 2);
 
                   if (special == 1) {
                         if (channel == 63) {
                               if (nsync == 0) {
                                     overflowCorr += overflow_period;
                               } else {
-                                    overflowCorr += overflow_period * nsync;
+                                    overflowCorr += (overflow_period * nsync);
                               }
-                        } else if (channel >= 1 & channel <= 15) {
+                        }
+                        if (channel >= 1 & channel <= 15) {
                               truensync = overflowCorr + nsync;
                               // line start = 1 (from channel) + 5 -> 6; line stop = 2 (from channel) + 5 = 7; otherwise photon events could not be distinguished from marker events (in this code setup)
                               channel += 5;
@@ -222,11 +220,13 @@ module.exports = {
                         truensync = overflowCorr + nsync;
                   }
 
-                  macrotime[i] = truensync;
+                  macrotime[i] = truensync * macroMultFactor;
                   markers[i] = channel;
                   nanotime[i] = dtime;
+
                   offset += 4; // Incrementing offset counter to move on
                   i += 1;
+
                   if (i % 50000 == 0) {
                         var prog = (offset / bytesToFileEnd) * 100;
                         console.log(prog + " % ...");
@@ -247,6 +247,7 @@ module.exports = {
             nanotime = null;
             markers = null;
 
+            console.log("Finished decoding " + filePath + "\n");
 
             return (recordData);
             // Writing to file

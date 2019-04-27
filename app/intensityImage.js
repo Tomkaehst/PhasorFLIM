@@ -10,7 +10,7 @@
 
 var PTUReader = require("./PTUReader.js");
 
-var testFile = PTUReader.decodePTU("./data/Convalaria_for_CC_6_1.ptu");
+let testFile = PTUReader.decodePTU("./data/Convalaria_for_CC_6_1.ptu");
 
 
 
@@ -37,6 +37,39 @@ function checkLineMarkers(FLIMarr) {
 checkLineMarkers(testFile);
 
 
+function averageLineTime(arr) {
+      var startTimes = [];
+      var stopTimes = [];
+      var recordLength = arr.macrotime.length - 1;
+
+      for (var i = 0; i <= recordLength; i++) {
+            if (arr.markers[i] == 6) {
+                  startTimes.push(arr.macrotime[i]);
+            } else if (arr.markers[i] == 7) {
+                  stopTimes.push(arr.macrotime[i])
+            }
+      }
+
+      var lines = startTimes.length - 1;
+      var sum = 0;
+
+      for (var i = 0; i <= lines; i++) {
+            var diff = (stopTimes[i] - startTimes[i]);
+            sum += diff;
+      };
+
+      sum /= lines;
+
+      return (sum);
+};
+
+testFile.shortinfo["avgLineTime"] = averageLineTime(testFile);
+console.log(testFile.shortinfo.avgLineTime);
+
+
+
+
+
 
 
 // Initializing 2D array for image reconstruction
@@ -50,6 +83,4 @@ for (var i = 0; i < arr.length; i++) {
       arr[i] = new Array(testFile.shortinfo.pixelY);
 }
 
-console.log(testFile.macrotime.slice(testFile.macrotime.length - 10, testFile.macrotime.length));
 
-console.log(testFile.macrotime.slice(0, 10));

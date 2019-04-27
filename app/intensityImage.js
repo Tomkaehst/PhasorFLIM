@@ -122,9 +122,9 @@ while (lastLine == false) {
 
       // assign the photons from a lineActive period to the corresponding pixels of arr[lineCounter][pixel]
 
-      for (var element = 0; element <= tmpEvents.length - 1 ) {
-            
-      }
+      // for (var element = 0; element <= tmpEvents.length - 1; element++) {
+
+      // }
 
 
       // Check if all lines in one frame have been evaluated

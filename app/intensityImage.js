@@ -12,16 +12,7 @@ var PTUReader = require("./PTUReader.js");
 
 var testFile = PTUReader.decodePTU("./data/Convalaria_for_CC_6_1.ptu");
 
-// Initializing 2D array for image reconstruction
-/*
-      Creating a matrix consisting of an array(pixel X), each in turn containing an array (pixel Y)
-*/
 
-var arr = new Array(testFile.shortinfo.pixelX);
-
-for (var i = 0; i < arr.length; i++) {
-      arr[i] = new Array(testFile.shortinfo.pixelY);
-}
 
 // Counting line start / stop markers and check if it matches info in shortinfo object
 
@@ -38,8 +29,27 @@ function checkLineMarkers(FLIMarr) {
       }
 
       console.log(counterStart + " line start and " + counterStop + " line stop markers found.");
-      console.log("Image dimensions: X = " + FLIMarr.shortinfo.pixelX + ", Y = " + FLIMarr.shortinfo.pixelY);
-      console.log("FLIM Image with " + (counterStart / FLIMarr.shortinfo.pixelX) + "/" + (counterStop / FLIMarr.shortinfo.pixelX) + " scan repetitions");
+      console.log("Image dimensions: X = " + FLIMarr.shortinfo.pixelX + ", Y = " + FLIMarr.shortinfo.pixelY + "\n");
+      console.log("FLIM Image with " + (counterStart / FLIMarr.shortinfo.pixelX) + "/" + (counterStop / FLIMarr.shortinfo.pixelX) + " scan repetitions.\n");
+      console.log(FLIMarr.shortinfo.numRec + " events in decoded .ptu file.\n")
 };
 
 checkLineMarkers(testFile);
+
+
+
+
+// Initializing 2D array for image reconstruction
+/*
+      Creating a matrix consisting of an array(pixel X), each in turn containing an array (pixel Y)
+*/
+
+var arr = new Array(testFile.shortinfo.pixelX);
+
+for (var i = 0; i < arr.length; i++) {
+      arr[i] = new Array(testFile.shortinfo.pixelY);
+}
+
+console.log(testFile.macrotime.slice(testFile.macrotime.length - 10, testFile.macrotime.length));
+
+console.log(testFile.macrotime.slice(0, 10));

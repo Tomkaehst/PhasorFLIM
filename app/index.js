@@ -1,7 +1,7 @@
 
 var PTUreader = require("./PTUReader.js");
 
-var fp = "./data/Convalaria_for_CC_6_1.ptu";
+var fp = "./data/EGFP-Cherry-Control_4_1.ptu";
 
 var out = PTUreader.decodePTU(fp);
 

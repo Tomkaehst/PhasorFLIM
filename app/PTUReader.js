@@ -184,9 +184,10 @@ module.exports = {
             let markers = new Array(FLIMInfo.numRec);
             const overflow_period = 1024;
             let overflowCorr = 0;
-            let truensync = NaN;
+            let truensync = 0;
             let macroMultFactor = FLIMInfo.globRes // Multiply with truensync to get real experiment time in seconds
-            const bytesToFileEnd = data.byteLength;
+            let nanoMultFactor = FLIMInfo.measRes * 1e9;
+            const bytesToFileEnd = data.byteLength - 4;
             let i = 0; // Counts
 
             // need to add 3 for some reason; bytes and bits seem to be out of order after the header; not much valuable photon data at the beginning of the file anyway; I hope this is not different for other files
@@ -222,7 +223,7 @@ module.exports = {
 
                   macrotime[i] = truensync * macroMultFactor;
                   markers[i] = channel;
-                  nanotime[i] = dtime;
+                  nanotime[i] = dtime * nanoMultFactor;
 
                   offset += 4; // Incrementing offset counter to move on
                   i += 1;
@@ -235,8 +236,8 @@ module.exports = {
 
 
             var recordData = {
-                  macrotime: macrotime,
-                  nanotime: nanotime,
+                  macrotime: macrotime, // in seconds
+                  nanotime: nanotime, // in nanoseconds
                   markers: markers,
                   shortinfo: FLIMInfo,
                   fullinfo: HeaderContents
@@ -250,13 +251,5 @@ module.exports = {
             console.log("Finished decoding " + filePath + "\n");
 
             return (recordData);
-            // Writing to file
-            // fs.writeFile(
-            //       './output/macro.txt',
-            //       JSON.stringify(macrotime),
-            //       function (err) {
-            //             console.error("Bad stuff happened");
-            //       }
-            // );
       }
 };

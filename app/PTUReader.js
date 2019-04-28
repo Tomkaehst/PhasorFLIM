@@ -229,7 +229,7 @@ module.exports = {
                   i += 1;
 
                   if (i % 50000 == 0) {
-                        var prog = (offset / bytesToFileEnd) * 100;
+                        var prog = Math.round((offset / bytesToFileEnd) * 100);
                         console.log(prog + " % ...");
                   }
             };

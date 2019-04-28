@@ -18,7 +18,8 @@ module.exports = {
                   var stopTimes = [];
                   var recordLength = arr.macrotime.length - 1;
 
-                  for (var i = 0; i <= recordLength; i++) {
+                  var i;
+                  for (i = 0; i <= recordLength; i++) {
                         if (arr.markers[i] == 6) {
                               startTimes.push(arr.macrotime[i]);
                         } else if (arr.markers[i] == 7) {
@@ -29,7 +30,7 @@ module.exports = {
                   var lines = startTimes.length - 1;
                   var sum = 0;
 
-                  for (var i = 0; i <= lines; i++) {
+                  for (i = 0; i <= lines; i++) {
                         var diff = (stopTimes[i] - startTimes[i]);
                         sum += diff;
                   };
@@ -78,7 +79,8 @@ module.exports = {
             // Initializing 2D array for image reconstruction
             var arr = new Array(testFile.shortinfo.pixelX).fill(0);
 
-            for (var i = 0; i < arr.length; i++) {
+            var i;
+            for (i = 0; i < arr.length; i++) {
                   arr[i] = new Array(testFile.shortinfo.pixelY).fill(0);
             }
 
@@ -130,8 +132,8 @@ module.exports = {
                                     pixelID = Math.round(diff / pixelTime);
 
                                     if (pixelID < 0 || pixelID > testFile.shortinfo.pixelX) {
-                                          throw "Pixel out of range!";
-                                          break;
+                                          console.log("Pixel out of range!")
+                                          //throw "Pixel out of range!";
                                     } else {
                                           arr[lineCounter][pixelID]++;
                                     }

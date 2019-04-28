@@ -12,7 +12,7 @@
       <div>
             <h1>Phasor FLIM</h1>
       </div>
-      <div>
+      <div id="intro">
             <p>
                   A JavaScript programm running on Node.js to decode PicoQuant .ptu files and calculate the phasor
                   transformation of the recorded FLIM images. The final goal is a simulation-based analysis tool for
@@ -20,7 +20,14 @@
             </p>
       </div>
 
-      <script src="./renderer.js"></script>
+
+      <canvas id="outputImg" style="background-color:black" width="512" height="512"></canvas>
+
+      <div id="controls">
+            <button id="ptuSubmit">Choose File</button>
+            <button id="processPtu">Process .ptu</button>
+      </div>
 </body>
+<script src=" ./renderer.js"> </script>
 
 </html>

@@ -1,13 +1,19 @@
 // Modules to control application life and create native browser window
 const { app, BrowserWindow } = require('electron')
 
+const ipc = require("electron").ipcMain;
+const dialog = require("electron").dialog;
+const fs = require("fs");
+
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow
 
 function createWindow() {
   // Create the browser window.
-  mainWindow = new BrowserWindow({ width: 800, height: 600 })
+  mainWindow = new BrowserWindow({
+    width: 1280, height: 1280
+  });
 
   // and load the index.html of the app.
   mainWindow.loadFile('index.html')
@@ -46,5 +52,22 @@ app.on('activate', function () {
   }
 })
 
+
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
+
+
+// IPC receivers for processing fs tasks
+
+ipc.on("ptu-filepath", function (event) {
+  dialog.showOpenDialog(mainWindow, {
+    title: "Select your .ptu file",
+    defaultPath: "/Users/<username>/Documents/",
+    buttonLabel: "Choose file",
+    properties: ["openFile"]
+  }, function (file) {
+    if (file) {
+      event.sender.send("selectedptu", file);
+    };
+  })
+});

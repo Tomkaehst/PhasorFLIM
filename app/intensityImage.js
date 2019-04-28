@@ -9,57 +9,61 @@
 
 
 module.exports = {
-      checkLineMarkers: function (FLIMarr) {
-            let counterStart = 0;
-            let counterStop = 0;
-            FLIMarr.markers.forEach(function (marker) {
-                  if (marker == 6) { counterStart++; }
-                  if (marker == 7) { counterStop++; }
-            });
+      calculateIntensityImage: function (filePath) {
 
-            if (counterStart != counterStop) {
-                  console.error("Number of line start and line stop markers do not match. Corrupted file?")
-            }
 
-            console.log(counterStart + " line start and " + counterStop + " line stop markers found.");
-            console.log("Image dimensions: X = " + FLIMarr.shortinfo.pixelX + ", Y = " + FLIMarr.shortinfo.pixelY + "\n");
-            console.log("FLIM Image with " + (counterStart / FLIMarr.shortinfo.pixelX) + "/" + (counterStop / FLIMarr.shortinfo.pixelX) + " scan repetitions.\n");
-            console.log(FLIMarr.shortinfo.numRec + " events in decoded .ptu file.\n")
+            // Not optimal, but for now I put two helper functions inside the def of calculateIntensityImage because of "legacy" reasons.
+            function averageLineTime(arr) {
+                  var startTimes = [];
+                  var stopTimes = [];
+                  var recordLength = arr.macrotime.length - 1;
 
-            return (counterStart);
-      },
+                  for (var i = 0; i <= recordLength; i++) {
+                        if (arr.markers[i] == 6) {
+                              startTimes.push(arr.macrotime[i]);
+                        } else if (arr.markers[i] == 7) {
+                              stopTimes.push(arr.macrotime[i])
+                        }
+                  };
 
-      averageLineTime: function (arr) {
-            var startTimes = [];
-            var stopTimes = [];
-            var recordLength = arr.macrotime.length - 1;
+                  var lines = startTimes.length - 1;
+                  var sum = 0;
 
-            for (var i = 0; i <= recordLength; i++) {
-                  if (arr.markers[i] == 6) {
-                        startTimes.push(arr.macrotime[i]);
-                  } else if (arr.markers[i] == 7) {
-                        stopTimes.push(arr.macrotime[i])
-                  }
-            }
+                  for (var i = 0; i <= lines; i++) {
+                        var diff = (stopTimes[i] - startTimes[i]);
+                        sum += diff;
+                  };
 
-            var lines = startTimes.length - 1;
-            var sum = 0;
+                  sum /= lines;
 
-            for (var i = 0; i <= lines; i++) {
-                  var diff = (stopTimes[i] - startTimes[i]);
-                  sum += diff;
+                  return (sum);
             };
 
-            sum /= lines;
+            function checkLineMarkers(FLIMarr) {
+                  let counterStart = 0;
+                  let counterStop = 0;
+                  FLIMarr.markers.forEach(function (marker) {
+                        if (marker == 6) { counterStart++; }
+                        if (marker == 7) { counterStop++; }
+                  });
 
-            return (sum);
-      },
+                  if (counterStart != counterStop) {
+                        console.error("Number of line start and line stop markers do not match. Corrupted file?")
+                  };
 
-      calculateIntensityImage: function () {
+                  console.log(counterStart + " line start and " + counterStop + " line stop markers found.");
+                  console.log("Image dimensions: X = " + FLIMarr.shortinfo.pixelX + ", Y = " + FLIMarr.shortinfo.pixelY + "\n");
+                  console.log("FLIM Image with " + (counterStart / FLIMarr.shortinfo.pixelX) + "/" + (counterStop / FLIMarr.shortinfo.pixelX) + " scan repetitions.\n");
+                  console.log(FLIMarr.shortinfo.numRec + " events in decoded .ptu file.\n")
 
-            var PTUReader = require("./PTUReader.js");
+                  return (counterStart);
+            };
 
-            var filePath = "./data/20180907_EGFP_RAD51_Cherry_RAD52_1_3.ptu";
+
+
+            const PTUReader = require("./PTUReader");
+
+            //var filePath = "./data/20180907_EGFP_RAD51_Cherry_RAD52_1_3.ptu";
             let testFile = PTUReader.decodePTU(filePath);
 
 

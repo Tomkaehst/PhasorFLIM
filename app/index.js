@@ -1,11 +1,9 @@
 
-var PTUreader = require("./PTUReader.js");
 
-var fp = "./data/EGFP-Cherry-Control_4_1.ptu";
+var fp = "./data/Convalaria_for_CC_6_1.ptu";
 
-var out = PTUreader.decodePTU(fp);
+const imgCalc = require("./intensityImage.js");
 
-console.log(out.markers.slice(2500, 2900));
+let testArr = imgCalc.calculateIntensityImage(fp);
 
-
-
+console.log(testArr);

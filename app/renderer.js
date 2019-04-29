@@ -5,59 +5,60 @@
 const ipc = require("electron").ipcRenderer;
 
 // Loading script for calculation of intensity image; requires PTUReader.js; --> provide filepath to imgCalc.calculateIntensityImage()
-const imgCalc = require("./intensityImage.js");
+const imgCalc = require("./filedecoding/intensityImage.js");
+const PTUReader = require("./filedecoding/PTUReader.js");
+const intImg = require("./render/showintensityimage.js");
+const nanoToPixel = require("./filedecoding/nanotimeToPixels");
+const phasorCalc = require("./phasortransform/phasortransform.js");
 
 // Select elements from GUI
 const ptuFileBtn = document.getElementById("ptuSubmit");
-const processPtu = document.getElementById("processPtu");
-const imageCanvas = document.getElementById("outputImg").getContext("2d");
+const processPtuBtn = document.getElementById("processPtu");
+const imageCanvas = document.getElementById("outputImg");
+const phasorBtn = document.getElementById("makePhasor");
+
+
+// Initializing variables
+let fileDecoded; // JavaScript object; holds decoded ptu events and is appended with intensity image and phasor coordinates
 
 
 // Listening for button clicks on the .ptu file button and sending request to main process via IPC to get the filepath, via channel "ptu-filepath"
 ptuFileBtn.addEventListener("click", function (event) {
       ipc.send("ptu-filepath");
-      console.log("Send request for .ptu filepath");
 });
 
 
 
 // Listening for filepath on "selectedptu" channel
 let fp = "";
-
 ipc.on("selectedptu", function (event, path) {
       fp = path[0];
+      ipc.send("showProgressbar"); // Show progressbar as long as we "synchronously" process the file
+      fileDecoded = PTUReader.decodePTU(fp);
+      ipc.send("setProgressbarCompleted");
 });
 
 
-// Checking if user wants to process the file
-processPtu.addEventListener("click", function (event) {
-      if (fp == "") {
-            alert("Select a .ptu file!");
+// Chose PTU file, decode it, calculate intensity image -> decoded ptu saved as "fileDecoded" in RAM
+processPtuBtn.addEventListener("click", function (event) {
+      let intImageArr = imgCalc.calculateIntensityImage(fileDecoded);
+      intImg.showImage(intImageArr, imageCanvas);
+      var notif_finishedDecoding = new window.Notification("Finished Decoding PTU", {
+            body: "Phasor FLIM has finished decoding your .ptu file."
+      });
+
+      fileDecoded.intImage = intImageArr; // Adding the intensity image data to fileDecoded
+});
+
+
+// Calculate phasor transform 
+phasorBtn.addEventListener("click", function () {
+
+      if (fileDecoded == undefined) {
+            alert("You need to load a .PTU first!")
       } else {
-            let imgArr = imgCalc.calculateIntensityImage(fp);
-            showImage(imgArr, imageCanvas);
+            fileDecoded.nanoPixelArr = nanoToPixel.attachNanotimes(fileDecoded);
+            fileDecoded.phasors = phasorCalc.phasorTransform(fileDecoded, 1);
       }
+
 });
-
-function showImage(arr, canv) {
-      var imgX = arr.length - 1;
-      var imgY = arr[0].length - 1;
-
-      var imgData = canv.createImageData(imgX, imgY);
-
-      var i, x, y;
-      i = 0;
-
-      for (x = 0; x <= imgX; x++) {
-            for (y = 0; y <= imgY; y++) {
-                  imgData.data[i + 0] = 255;
-                  imgData.data[i + 1] = 255;
-                  imgData.data[i + 2] = 255;
-                  imgData.data[i + 3] = arr[x][y] * 20;
-                  i += 4;
-            };
-      };
-
-      canv.putImageData(imgData, 10, 10);
-
-};

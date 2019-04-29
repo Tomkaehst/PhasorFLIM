@@ -9,10 +9,13 @@
   "author": "Tom Kache",
   "license": "MIT",
   "dependencies": {
-    "electron": "^4.1.4",
     "bitwise": "^2.0.3",
     "buffer-reverse": "^1.0.1",
+    "cluster": "^0.7.7",
+    "electron": "^4.1.4",
+    "electron-progressbar": "^1.2.0",
     "nectarjs": "^0.1.8",
+    "os": "^0.1.1",
     "rollup": "^1.10.1"
   },
   "devDependencies": {}

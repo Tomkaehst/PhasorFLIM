@@ -14,19 +14,26 @@
       </div>
       <div id="intro">
             <p>
-                  A JavaScript programm running on Node.js to decode PicoQuant .ptu files and calculate the phasor
-                  transformation of the recorded FLIM images. The final goal is a simulation-based analysis tool for
-                  FRET-FLIM microscopy with the help of theoretical FRET trajectories in the phasor representation.
+                  Phasor transformation of PicoQuant .ptu TTTR data. Final goal: FRET-FLIM analysis in the phasor space
+                  guided by theoretical FRET trajectories.
             </p>
       </div>
 
-
-      <canvas id="outputImg" style="background-color:black" width="512" height="512"></canvas>
-
       <div id="controls">
             <button id="ptuSubmit">Choose File</button>
-            <button id="processPtu">Process .ptu</button>
+            <button id="processPtu">Show Intensity Image</button>
+            <a></a>
       </div>
+
+      </br>
+
+      <div id="phasor">
+            <button id="makePhasor">Calculate Phasor Transform</button>
+      </div>
+
+      </br>
+
+      <canvas id="outputImg" style="background-color:black" width="256" height="256"></canvas>
 </body>
 <script src=" ./renderer.js"> </script>
 

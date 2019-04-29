@@ -9,7 +9,7 @@
 
 
 module.exports = {
-      calculateIntensityImage: function (filePath) {
+      calculateIntensityImage: function (decodedArr) {
 
 
             // Not optimal, but for now I put two helper functions inside the def of calculateIntensityImage because of "legacy" reasons.
@@ -61,40 +61,31 @@ module.exports = {
             };
 
 
-
-            const PTUReader = require("./PTUReader");
-
-            //var filePath = "./data/20180907_EGFP_RAD51_Cherry_RAD52_1_3.ptu";
-            let testFile = PTUReader.decodePTU(filePath);
-
-
+            let arr = decodedArr;
 
             // Counting line start / stop markers and check if it matches info in shortinfo object
-            testFile.shortinfo.lines = checkLineMarkers(testFile);
+            arr.shortinfo.lines = checkLineMarkers(arr);
 
-            testFile.shortinfo["avgLineTime"] = averageLineTime(testFile);
+            arr.shortinfo["avgLineTime"] = averageLineTime(arr);
 
             /* Calculating the intensity image */
 
             // Initializing 2D array for image reconstruction
-            var arr = new Array(testFile.shortinfo.pixelX).fill(0);
+            var imgArr = new Array(arr.shortinfo.pixelX).fill(0);
 
             var i;
-            for (i = 0; i < arr.length; i++) {
-                  arr[i] = new Array(testFile.shortinfo.pixelY).fill(0);
+            for (i = 0; i < imgArr.length; i++) {
+                  imgArr[i] = new Array(arr.shortinfo.pixelY).fill(0);
             }
 
-
-
             // Initializing counter and neccessary variables
-            let eventCounter = 260;
+            let eventCounter = 0;
             let lineCounter = 0; // Tracks current line 
             let frameCounter = 0; // counts frames, incremented when lineCounter > pixelX
-            let framesInFile = testFile.shortinfo.lines / testFile.shortinfo.pixelX; // number of frames: lines / pixels in dimension; assumes square image
-            let totalLines = testFile.shortinfo.lines // number of lines in the file
-            let pixelTime = testFile.shortinfo.avgLineTime / testFile.shortinfo.pixelX; // assuming that the image is a square
-            let lineTime = testFile.shortinfo.avgLineTime; // Average time duration of one scanning line
+            let framesInFile = arr.shortinfo.lines / arr.shortinfo.pixelX; // number of frames: lines / pixels in dimension; assumes square image
+            let pixelTime = 0 // assuming that the image is a square; will be calculated when lineStart and lineStop were detected
             let lineStart = 0; // absolute experiment time of the line start marker
+            let lineStop = 0;
             let lastLine = false; // set to true, when lineCounter >= totalLines, i.e. no more data
             let lineActive = false; // true when a line start marker (6) was detected; false if line stop marker (7) was detected;
 
@@ -107,10 +98,10 @@ module.exports = {
 
             while (lastLine == false) {
 
-                  tmpMarker = testFile.markers[eventCounter];
+                  tmpMarker = arr.markers[eventCounter];
                   if (tmpMarker == 6) { // event is line start ?
                         lineActive = true;
-                        lineStart = testFile.macrotime[eventCounter]; // Saving the time when the line start occured
+                        lineStart = arr.macrotime[eventCounter]; // Saving the time when the line start occured
                         eventCounter++;
                         continue; // skip the rest, because the event was a line marker
                   };
@@ -118,37 +109,40 @@ module.exports = {
 
                   // saving photon events during lineActive in tmpEvents (only macrotimes!)
                   while (lineActive == true) {
-                        tmpMarker = testFile.markers[eventCounter];
-                        tmpMacro = testFile.macrotime[eventCounter];
-                        if (tmpMarker == 1) { // only channel 1 for now
+                        tmpMarker = arr.markers[eventCounter];
+                        tmpMacro = arr.macrotime[eventCounter];
+                        if (tmpMarker == 0 || tmpMarker == 1) { // We do not distinguish between channel event FOR NOW!
                               tmpEvents.push(tmpMacro);
                         } else if (tmpMarker == 7) {
                               lineActive = false;
-                              lineCounter++;
+                              lineStop = tmpMacro;
+                              pixelTime = (lineStop - lineStart) / arr.shortinfo.pixelX;
 
                               // assign the photons from a lineActive period to the corresponding pixels of arr[lineCounter][pixel]
                               for (var i = 0; i <= tmpEvents.length - 1; i++) {
                                     diff = tmpEvents[i] - lineStart;
-                                    pixelID = Math.round(diff / pixelTime);
+                                    pixelID = Math.floor(diff / pixelTime);
 
-                                    if (pixelID < 0 || pixelID > testFile.shortinfo.pixelX) {
-                                          console.log("Pixel out of range!")
-                                          //throw "Pixel out of range!";
-                                    } else {
-                                          arr[lineCounter][pixelID]++;
+                                    if (pixelID < 0 || pixelID > arr.shortinfo.pixelX) {
+                                          console.error("Pixel out of range! Line: " + lineCounter + ", Pixel: " + pixelID + ", Frame: " + frameCounter + "\n Assigned out-of-range pixel to nearest edge.");
+                                          if (pixelID < 0) pixelID = 0;
+                                          if (pixelID > arr.shortinfo.pixelX) pixelID = 512;
                                     }
+                                    imgArr[lineCounter][pixelID]++;
                               };
-
+                              lineCounter++;
                               tmpEvents = [];
+                              continue;
                         };
 
                         eventCounter++;
+
                   };
 
 
 
                   // Check if all lines in one frame have been evaluated
-                  if (lineCounter >= (testFile.shortinfo.pixelX - 1)) {
+                  if (lineCounter > (arr.shortinfo.pixelX - 1)) {
                         frameCounter++;
                         lineCounter = 0;
                   };
@@ -156,8 +150,7 @@ module.exports = {
                   // terminate while loop when last frame is detected
                   if (frameCounter >= framesInFile) {
                         lastLine = true;
-                        console.log("Finished calculating intensity image from " + filePath + "\n");
-                        console.log("Processed " + testFile.shortinfo.numRec + " events from " + frameCounter + " frame scannings.\n")
+                        console.log("Processed " + arr.shortinfo.numRec + " events from " + frameCounter + " frame scannings.\n")
                         break;
                   };
 
@@ -165,7 +158,7 @@ module.exports = {
                   eventCounter++;
             };
 
-            return (arr);
+            return (imgArr);
 
       }
 };

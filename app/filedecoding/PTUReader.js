@@ -1,8 +1,10 @@
 
 module.exports = {
       decodePTU: function (filePath) {
+
             const fs = require("fs");
             const bitwise = require("bitwise");
+
             var tagTypes = {
                   Empty8: 4294901768,
                   Bool8: 8,
@@ -23,6 +25,7 @@ module.exports = {
 
             // Loading the .ptu file in ./data into the buffer
             //var filePath = "./data/Convalaria_for_CC_6_1.ptu" // Small test file
+            console.info("Decoding " + filePath + "\n");
             let data = fs.readFileSync(filePath); // Need to switch to asynchronous reading for larger files!
 
 
@@ -146,7 +149,11 @@ module.exports = {
 
 
 
-            console.log(FLIMInfo);
+            // Checking if image is square, otherwise the rest of the code won't work
+
+            if (FLIMInfo.pixelX != FLIMInfo.pixelY) {
+                  throw "Image not square. Abort."
+            }
 
 
             // Decoding the TTTR records in the file
@@ -227,11 +234,6 @@ module.exports = {
 
                   offset += 4; // Incrementing offset counter to move on
                   i += 1;
-
-                  if (i % 50000 == 0) {
-                        var prog = Math.round((offset / bytesToFileEnd) * 100);
-                        console.log(prog + " % ...");
-                  }
             };
 
 
@@ -247,8 +249,6 @@ module.exports = {
             macrotime = null;
             nanotime = null;
             markers = null;
-
-            console.log("Finished decoding " + filePath + "\n");
 
             return (recordData);
       }

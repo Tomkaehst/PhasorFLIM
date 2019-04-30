@@ -6,7 +6,7 @@
 #########################################
 
 
-source("")
+
 # Generates FLIM data array with donor and acceptor decay, varying FRET rate (max. in center of rectangular array)
 
 genFLIMarr = function(whichCol = c(2, 4), dimX = 10, dimY = 10, dimT = 1024, timeMax = 25000, tau1 = 2500, tau2 = 1400, FRET_low = 10000, FRET_high = 2000, noise = 10) {

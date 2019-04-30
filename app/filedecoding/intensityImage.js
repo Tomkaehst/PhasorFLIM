@@ -9,7 +9,7 @@
 
 
 module.exports = {
-      calculateIntensityImage: function (decodedArr) {
+      calculateIntensityImage: function (decodedArr, channel) {
 
 
             // Not optimal, but for now I put two helper functions inside the def of calculateIntensityImage because of "legacy" reasons.
@@ -111,7 +111,7 @@ module.exports = {
                   while (lineActive == true) {
                         tmpMarker = arr.markers[eventCounter];
                         tmpMacro = arr.macrotime[eventCounter];
-                        if (tmpMarker == 0 || tmpMarker == 1) { // We do not distinguish between channel event FOR NOW!
+                        if (tmpMarker == channel) { // We do not distinguish between channel event FOR NOW!
                               tmpEvents.push(tmpMacro);
                         } else if (tmpMarker == 7) {
                               lineActive = false;
@@ -126,7 +126,7 @@ module.exports = {
                                     if (pixelID < 0 || pixelID > arr.shortinfo.pixelX) {
                                           console.error("Pixel out of range! Line: " + lineCounter + ", Pixel: " + pixelID + ", Frame: " + frameCounter + "\n Assigned out-of-range pixel to nearest edge.");
                                           if (pixelID < 0) pixelID = 0;
-                                          if (pixelID > arr.shortinfo.pixelX) pixelID = 512;
+                                          if (pixelID > arr.shortinfo.pixelX) pixelID = arr.shortinfo.pixelX[0];
                                     }
                                     imgArr[lineCounter][pixelID]++;
                               };

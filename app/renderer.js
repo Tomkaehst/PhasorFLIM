@@ -33,19 +33,19 @@ ptuFileBtn.addEventListener("click", function (event) {
 let fp = "";
 ipc.on("selectedptu", function (event, path) {
       fp = path[0];
-      ipc.send("showProgressbar"); // Show progressbar as long as we "synchronously" process the file
       fileDecoded = PTUReader.decodePTU(fp);
-      ipc.send("setProgressbarCompleted");
 });
 
 
 // Chose PTU file, decode it, calculate intensity image -> decoded ptu saved as "fileDecoded" in RAM
 processPtuBtn.addEventListener("click", function (event) {
-      let intImageArr = imgCalc.calculateIntensityImage(fileDecoded);
-      intImg.showImage(intImageArr, imageCanvas);
-      var notif_finishedDecoding = new window.Notification("Finished Decoding PTU", {
-            body: "Phasor FLIM has finished decoding your .ptu file."
-      });
+      var channelSelected = document.getElementById("channelSelector").value;
+      var intensityMultiplicator = document.getElementById("intensityMultiplicator").value;
+      let intImageArr = imgCalc.calculateIntensityImage(fileDecoded, channelSelected);
+      intImg.showImage(intImageArr, imageCanvas, intensityMultiplicator);
+      // var notif_finishedDecoding = new window.Notification("Finished Decoding PTU", {
+      //       body: "Phasor FLIM has finished decoding your .ptu file."
+      // });
 
       fileDecoded.intImage = intImageArr; // Adding the intensity image data to fileDecoded
 });

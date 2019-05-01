@@ -129,9 +129,6 @@ module.exports = {
             }
 
 
-
-
-
             // Grabbing relevant infos out of header for record reading
             var FLIMInfo = {
                   globRes: HeaderContents[88].MeasDesc_GlobalResolution,
@@ -144,7 +141,8 @@ module.exports = {
                   numRec: HeaderContents[89].TTResult_NumberOfRecords,
                   filename: HeaderContents[19].$Filename,
                   bitsPerRecord: HeaderContents[93].TTResultFormat_BitsPerRecord,
-                  recType: HeaderContents[92].TTResultFormat_TTTRRecType
+                  recType: HeaderContents[92].TTResultFormat_TTTRRecType,
+                  syncRate: HeaderContents[83].TTResult_SyncRate
             };
 
 

@@ -51,7 +51,7 @@ gsTransform = function(inputList, angFrequency = (2*pi*40e06)) {
   c = 1 # c keeps track of the index used to save the result in "output"
   for(i in 1:length(array[, 1, 1])) {
     for(j in 1:length(array[1, , 1])) {
-      output[[1]][c] = sum(array[i, j, ] * cos(angFrequency * timeaxis)) / sum(array[i, j, ])
+      output[[1]][c] = sum(array[i, j, ] * cos(angFrequency * sum(timeaxis))) / sum(array[i, j, ])
       output[[2]][c] = sum(array[i, j, ] * sin(angFrequency * timeaxis)) / sum(array[i, j, ])
       c = c + 1
     }

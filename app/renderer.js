@@ -39,15 +39,17 @@ ipc.on("selectedptu", function (event, path) {
 
 // Chose PTU file, decode it, calculate intensity image -> decoded ptu saved as "fileDecoded" in RAM
 processPtuBtn.addEventListener("click", function (event) {
-      var channelSelected = document.getElementById("channelSelector").value;
-      var intensityMultiplicator = document.getElementById("intensityMultiplicator").value;
-      let intImageArr = imgCalc.calculateIntensityImage(fileDecoded, channelSelected);
-      intImg.showImage(intImageArr, imageCanvas, intensityMultiplicator);
-      // var notif_finishedDecoding = new window.Notification("Finished Decoding PTU", {
-      //       body: "Phasor FLIM has finished decoding your .ptu file."
-      // });
+      if (fileDecoded) {
+            var channelSelected = document.getElementById("channelSelector").value;
+            var intensityMultiplicator = document.getElementById("intensityMultiplicator").value;
+            var binningFactor = document.getElementById("binningFactor").value;
+            let intImageArr = imgCalc.calculateIntensityImage(fileDecoded, channelSelected, binningFactor);
+            intImg.showImage(intImageArr, imageCanvas, intensityMultiplicator);
+            fileDecoded.intImage = intImageArr; // Adding the intensity image data to fileDecoded
+      } else {
+            alert("A .ptu file has to be loaded first.");
+      };
 
-      fileDecoded.intImage = intImageArr; // Adding the intensity image data to fileDecoded
 });
 
 
@@ -58,7 +60,7 @@ phasorBtn.addEventListener("click", function () {
             alert("You need to load a .PTU first!")
       } else {
             fileDecoded.nanoPixelArr = nanoToPixel.attachNanotimes(fileDecoded);
-            fileDecoded.phasors = phasorCalc.phasorTransform(fileDecoded, 1);
+            fileDecoded.phasors = phasorCalc.phasorTransform(fileDecoded, 10);
       }
 
 });

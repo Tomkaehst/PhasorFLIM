@@ -15,6 +15,8 @@
     "compute-histogram": "^0.9.7",
     "electron": "^4.1.4",
     "electron-progressbar": "^1.2.0",
+    "math": "0.0.3",
+    "mathjs": "^5.9.0",
     "nectarjs": "^0.1.8",
     "os": "^0.1.1",
     "rollup": "^1.10.1"

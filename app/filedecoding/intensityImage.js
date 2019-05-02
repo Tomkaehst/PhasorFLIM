@@ -67,11 +67,11 @@ module.exports = {
 
             /* Calculating the intensity image */
 
-            var pixelX = arr.shortinfo.pixelX / binningFactor;
-            var pixelY = arr.shortinfo.pixelY / binningFactor;
+            let pixelX = arr.shortinfo.pixelX / binningFactor;
+            let pixelY = arr.shortinfo.pixelY / binningFactor;
 
             // Initializing 2D array for image reconstruction
-            var imgArr = new Array(pixelX).fill(0);
+            let imgArr = new Array(pixelX).fill(0);
 
             var i;
             for (i = 0; i < imgArr.length; i++) {
@@ -132,8 +132,6 @@ module.exports = {
                                     imgArr[Math.floor(pixelID_X)][pixelID_Y]++;
                               };
 
-                              //if (lineCounter % binningFactor == 0) pixelID_X++;
-                              console.log(pixelID_X);
                               pixelID_X += 1 / binningFactor;
                               lineCounter++;
                               tmpEvents = [];

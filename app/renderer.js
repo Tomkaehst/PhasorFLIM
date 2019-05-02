@@ -59,7 +59,9 @@ phasorBtn.addEventListener("click", function () {
       if (fileDecoded == undefined) {
             alert("You need to load a .PTU first!")
       } else {
-            fileDecoded.nanoPixelArr = nanoToPixel.attachNanotimes(fileDecoded);
+            var channelSelected = document.getElementById("channelSelector").value;
+            var binningFactor = document.getElementById("binningFactor").value;
+            fileDecoded.nanoPixelArr = nanoToPixel.attachNanotimes(fileDecoded, channelSelected, binningFactor);
             fileDecoded.phasors = phasorCalc.phasorTransform(fileDecoded, 10);
       }
 

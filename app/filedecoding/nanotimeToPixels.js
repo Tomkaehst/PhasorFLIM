@@ -1,17 +1,20 @@
 module.exports = {
-      attachNanotimes: function (decodedFile) {
+      attachNanotimes: function (decodedFile, channel, binningFactor) {
 
             // Passing JavaScript OBJECT as function argument passes reference to that object!
             let arr = decodedFile;
+
+            let pixelX = arr.shortinfo.pixelX / binningFactor;
+            let pixelY = arr.shortinfo.pixelY / binningFactor;
 
             // Initializing 3D array ([x][y][n]) to attach n nanotimes to each pixel by appending (histogram will be calculated from that "on the fly" to save RAM)
             var j;
             var i;
 
-            let imgArr = new Array(arr.shortinfo.pixelX); // Assuming a square image!
+            let imgArr = new Array(pixelX); // Assuming a square image!
 
             for (i = 0; i < imgArr.length; i++) {
-                  imgArr[i] = new Array(arr.shortinfo.pixelY);
+                  imgArr[i] = new Array(pixelY);
                   for (j = 0; j < imgArr[i].length; j++) {
                         imgArr[i][j] = new Array();
                   };
@@ -35,7 +38,8 @@ module.exports = {
             let tmpMacro = 0;
             let tmpNanotime = 0;
             let diff = 0; // temp storage for difference of macrotime(n) and the lineStart time for pixel assignment in a line
-            let pixelID = 0;
+            let pixelID_X = 0; // counter used to populate image array and accounting for binning factor
+            let pixelID_Y = 0;
 
             while (lastLine == false) {
 
@@ -56,26 +60,28 @@ module.exports = {
                         tmpMacro = arr.macrotime[eventCounter];
                         tmpNanotime = arr.nanotime[eventCounter];
 
-                        if (tmpMarker == 0 || tmpMarker == 1) { // We do not distinguish between channel event FOR NOW!
+                        if (tmpMarker == channel) {
                               tmpEvents.push(tmpMacro);
                               tmpNano.push(tmpNanotime);
                         } else if (tmpMarker == 7) {
                               lineActive = false;
                               lineStop = tmpMacro;
-                              pixelTime = (lineStop - lineStart) / arr.shortinfo.pixelX;
+                              pixelTime = (lineStop - lineStart) / pixelY;
 
                               // assign the photons from a lineActive period to the corresponding pixels of arr[lineCounter][pixel]
                               for (var i = 0; i <= tmpEvents.length - 1; i++) {
                                     diff = tmpEvents[i] - lineStart;
-                                    pixelID = Math.floor(diff / pixelTime);
+                                    pixelID_Y = Math.floor(diff / pixelTime);
 
-                                    if (pixelID < 0 || pixelID > arr.shortinfo.pixelX - 1) {
-                                          console.error("Pixel out of range! Line: " + lineCounter + ", Pixel: " + pixelID + ", Frame: " + frameCounter + "\n Assigned out-of-range pixel to nearest edge.");
-                                          if (pixelID < 0) pixelID = 0;
-                                          if (pixelID > arr.shortinfo.pixelX - 1) pixelID = arr.shortinfo.pixelX - 1;
+                                    if (pixelID_Y < 0 || pixelID_Y > pixelY - 1) {
+                                          console.error("Pixel out of range! Line: " + lineCounter + ", Pixel: " + pixelID_Y + ", Frame: " + frameCounter + "\n Assigned out-of-range pixel to nearest edge.");
+                                          if (pixelID_Y < 0) pixelID_Y = 0;
+                                          if (pixelID_Y > pixelX - 1) pixelID_Y = pixelX - 1;
                                     }
-                                    imgArr[lineCounter][pixelID].push(tmpNano[i]);
+                                    imgArr[Math.floor(pixelID_X)][pixelID_Y].push(tmpNano[i]);
                               };
+
+                              pixelID_X += 1 / binningFactor;
                               lineCounter++;
                               tmpEvents = [];
                               tmpNano = [];
@@ -91,6 +97,7 @@ module.exports = {
                   // Check if all lines in one frame have been evaluated
                   if (lineCounter > (arr.shortinfo.pixelX - 1)) {
                         frameCounter++;
+                        pixelID_X = 0;
                         lineCounter = 0;
                   };
 

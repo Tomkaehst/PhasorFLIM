@@ -34,7 +34,7 @@ module.exports = {
 
             // Calculating histogram for each pixel
 
-            var hist = this.calcHist(decodedFile.nanoPixelArr[512][512], bins);
+            var hist = this.calcHist(decodedFile.nanoPixelArr[64][64], bins);
 
 
             console.log(hist);

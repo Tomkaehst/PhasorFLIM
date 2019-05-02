@@ -1,57 +1,48 @@
+const mathjs = require("mathjs");
 
-function makeSequence(start, stop, step) {
-      var steps = Math.ceil((stop - start) / step);
-      var arr = new Array(steps);
-      var i = 0, value = start;
-      for (i; i <= steps; i++) {
-            arr[i] = (value + step * i);
-      };
-      return (arr);
+// Can be replaced by mathjs.range(start, stop, step);
+// function makeSequence(start, stop, step) {
+//       var steps = Math.ceil((stop - start) / step);
+//       var arr = new Array(steps);
+//       var i = 0, value = start;
+//       for (i; i <= steps; i++) {
+//             arr[i] = (value + step * i);
+//       };
+//       return (arr);
 
-};
+// };
 
 function calcExponentialDecay(time, a, tau) {
-      var length = time.length;
+      var length = time.size()[0];
       var arr = new Array(length);
       var i;
       for (i = 0; i < length; i++) {
-            arr[i] = a * Math.exp(-time[i] / tau);
+            arr[i] = a * Math.exp(-time.data[i] / tau);
       };
 
       return (arr);
 };
 
 
-var test = makeSequence(0, 50000, 50);
-var exp = calcExponentialDecay(test, 1000, 2500);
+let time = mathjs.range(0, 5E-8, 1.6E-11);
 
-calcPhasor(exp, test, 80e06);
+let exp = time.map(function (value, index, matrix) {
+      return (mathjs.multiply(1000, mathjs.exp(-value / 2.5E-9)));
+});
 
 
-function calcPhasor(decay, timeaxis, repFrequency) {
-      let length = decay.length;
-      let time = timeaxis;
-      let angFrequency = 2 * Math.PI * repFrequency;
-      let i, j;
 
-      let sumDenominator = 0;
-      let sumNumeratorG = 0;
-      let sumNumeratorS = 0;
-      let tmp = 0;
+let harmonic = 1;
+let freq0 = 80e6;
+let freq = harmonic * freq0;
+let angFreq = 2 * Math.PI * freq;
+//let deltaT = 16E-12;
+//let timebins = mathjs.round(1 / (freq0 * deltaT) * harmonic);
 
-      for (i = 0; i < length - 1; i++) {
-            sumDenominator += decay[i];
-      };
+let g_innerMult = mathjs.multiply(time, angFreq);
+let g_cos = mathjs.cos(g_innerMult);
+let g_outerMult = mathjs.dotMultiply(g_cos, exp);
+let g_sum = mathjs.sum(g_outerMult);
+let exp_sum = mathjs.sum(exp);
 
-      for (i = 0; i < length; i++) {
-            //for (j = 0; j < length; j++) {
-            tmp += decay[i] * Math.cos(time[i] * angFrequency);
-            //};
-            //sumNumeratorG += tmp;
-            //tmp = 0;
-      };
-
-      // var g = sumNumeratorG / sumDenominator;
-      // var s = sumNumeratorS / sumDenominator;
-      console.log(sumNumeratorG / sumDenominator);
-};
+console.log("Unnormalized: " + g_sum + " , Sum: " + exp_sum + "\n Divided: " + g_sum / exp_sum);

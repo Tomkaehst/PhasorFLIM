@@ -9,11 +9,9 @@
 
 
 module.exports = {
-      calculateIntensityImage: function (decodedArr, channel) {
-
-
-            // Not optimal, but for now I put two helper functions inside the def of calculateIntensityImage because of "legacy" reasons.
-            function averageLineTime(arr) {
+      calculateIntensityImage: function (decodedArr, channel, binningFactor) {
+            // Not optimal, but for now I put two helper functions inside the def of calculateIntensityImage because of "legacy"/laziness reasons.
+            function averageLineTime(arr) { // OBSOLETE!!
                   var startTimes = [];
                   var stopTimes = [];
                   var recordLength = arr.macrotime.length - 1;
@@ -60,32 +58,34 @@ module.exports = {
                   return (counterStart);
             };
 
-
             let arr = decodedArr;
 
             // Counting line start / stop markers and check if it matches info in shortinfo object
             arr.shortinfo.lines = checkLineMarkers(arr);
 
-            arr.shortinfo["avgLineTime"] = averageLineTime(arr);
+            arr.shortinfo["avgLineTime"] = averageLineTime(arr); // OBSOLETE!
 
             /* Calculating the intensity image */
 
+            var pixelX = arr.shortinfo.pixelX / binningFactor;
+            var pixelY = arr.shortinfo.pixelY / binningFactor;
+
             // Initializing 2D array for image reconstruction
-            var imgArr = new Array(arr.shortinfo.pixelX).fill(0);
+            var imgArr = new Array(pixelX).fill(0);
 
             var i;
             for (i = 0; i < imgArr.length; i++) {
-                  imgArr[i] = new Array(arr.shortinfo.pixelY).fill(0);
+                  imgArr[i] = new Array(pixelY).fill(0);
             }
 
             // Initializing counter and neccessary variables
-            let eventCounter = 0;
+            let eventCounter = 0; // Tracks events
             let lineCounter = 0; // Tracks current line 
             let frameCounter = 0; // counts frames, incremented when lineCounter > pixelX
             let framesInFile = arr.shortinfo.lines / arr.shortinfo.pixelX; // number of frames: lines / pixels in dimension; assumes square image
             let pixelTime = 0 // assuming that the image is a square; will be calculated when lineStart and lineStop were detected
-            let lineStart = 0; // absolute experiment time of the line start marker
-            let lineStop = 0;
+            let lineStart = 0; // line macro start time
+            let lineStop = 0; // line macro stop time -> (lineStop - lineStart)/ pixels used to assign photons to pixels in a line
             let lastLine = false; // set to true, when lineCounter >= totalLines, i.e. no more data
             let lineActive = false; // true when a line start marker (6) was detected; false if line stop marker (7) was detected;
 
@@ -94,7 +94,8 @@ module.exports = {
             let tmpMarker = 0;
             let tmpMacro = 0;
             let diff = 0; // temp storage for difference of macrotime(n) and the lineStart time for pixel assignment in a line
-            let pixelID = 0;
+            let pixelID_X = 0; // counters used for filling the 2D array
+            let pixelID_Y = 0;
 
             while (lastLine == false) {
 
@@ -116,20 +117,24 @@ module.exports = {
                         } else if (tmpMarker == 7) {
                               lineActive = false;
                               lineStop = tmpMacro;
-                              pixelTime = (lineStop - lineStart) / arr.shortinfo.pixelX;
+                              pixelTime = (lineStop - lineStart) / pixelY;
 
                               // assign the photons from a lineActive period to the corresponding pixels of arr[lineCounter][pixel]
                               for (var i = 0; i <= tmpEvents.length - 1; i++) {
                                     diff = tmpEvents[i] - lineStart;
-                                    pixelID = Math.floor(diff / pixelTime);
+                                    pixelID_Y = Math.floor(diff / pixelTime);
 
-                                    if (pixelID < 0 || pixelID > arr.shortinfo.pixelX) {
-                                          console.error("Pixel out of range! Line: " + lineCounter + ", Pixel: " + pixelID + ", Frame: " + frameCounter + "\n Assigned out-of-range pixel to nearest edge.");
-                                          if (pixelID < 0) pixelID = 0;
-                                          if (pixelID > arr.shortinfo.pixelX) pixelID = arr.shortinfo.pixelX[0];
-                                    }
-                                    imgArr[lineCounter][pixelID]++;
+                                    if (pixelID_Y < 0 || pixelID_Y > pixelY) {
+                                          console.error("Pixel out of range! Line: " + lineCounter + ", Pixel: " + pixelID_Y + ", Frame: " + frameCounter + "\n Assigned out-of-range pixel to nearest edge.");
+                                          if (pixelID_Y < 0) pixelID_Y = 0;
+                                          if (pixelID_Y > pixelX) pixelID_Y = pixelX - 1;
+                                    };
+                                    imgArr[Math.floor(pixelID_X)][pixelID_Y]++;
                               };
+
+                              //if (lineCounter % binningFactor == 0) pixelID_X++;
+                              console.log(pixelID_X);
+                              pixelID_X += 1 / binningFactor;
                               lineCounter++;
                               tmpEvents = [];
                               continue;
@@ -140,10 +145,10 @@ module.exports = {
                   };
 
 
-
                   // Check if all lines in one frame have been evaluated
-                  if (lineCounter > (arr.shortinfo.pixelX - 1)) {
+                  if (lineCounter > arr.shortinfo.pixelX - 1) {
                         frameCounter++;
+                        pixelID_X = 0;
                         lineCounter = 0;
                   };
 

@@ -1,8 +1,9 @@
 module.exports = {
-      attachNanotimes: function (decodedFile, channel, binningFactor) {
+      attachNanotimes: function (decodedFile, channel, binning) {
 
             // Passing JavaScript OBJECT as function argument passes reference to that object!
             let arr = decodedFile;
+            let binningFactor = 2 ** binning;
 
             let pixelX = arr.shortinfo.pixelX / binningFactor;
             let pixelY = arr.shortinfo.pixelY / binningFactor;
@@ -113,5 +114,9 @@ module.exports = {
             };
 
             return (imgArr);
+      },
+
+      overallDecay: function (nanotimes, binningFactor) {
+
       }
 };

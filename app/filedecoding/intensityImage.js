@@ -9,7 +9,7 @@
 
 
 module.exports = {
-      calculateIntensityImage: function (decodedArr, channel, binningFactor) {
+      calculateIntensityImage: function (decodedArr, channel, binning) {
             // Not optimal, but for now I put two helper functions inside the def of calculateIntensityImage because of "legacy"/laziness reasons.
             function averageLineTime(arr) { // OBSOLETE!!
                   var startTimes = [];
@@ -58,6 +58,7 @@ module.exports = {
                   return (counterStart);
             };
 
+            let binningFactor = 2 ** binning;
             let arr = decodedArr;
 
             // Counting line start / stop markers and check if it matches info in shortinfo object
@@ -153,7 +154,7 @@ module.exports = {
                   // terminate while loop when last frame is detected
                   if (frameCounter >= framesInFile) {
                         lastLine = true;
-                        console.log("Processed " + arr.shortinfo.numRec + " events from " + frameCounter + " frame scannings.\n")
+                        console.log("Processed " + arr.shortinfo.numRec + "/" + eventCounter + " events from " + frameCounter + " frame scannings.\n")
                         break;
                   };
 

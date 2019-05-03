@@ -30,7 +30,7 @@ function createWindow() {
 };
 
 // Increasing the max RAM available to electron
-app.commandLine.appendSwitch('js-flags', '--max-old-space-size=4096');
+app.commandLine.appendSwitch('js-flags', '--max-old-space-size=8192');
 
 
 // This method will be called when Electron has finished

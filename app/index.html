@@ -23,9 +23,9 @@
             <button id="ptuSubmit">Choose File</button>
             <p>
                   Select Channel (0 - 3): <input id="channelSelector" value="0" type="number" min="0" max="3"> </br>
-                  Multiply Intensity with (1 - 255): <input id="intensityMultiplicator" type="number" value="1" min="1"
+                  Multiply Intensity with (1 - 255): <input id="intensityMultiplicator" type="number" value="1" min="0"
                         max="255"></br>
-                  Binning Factor (1 - 10): <input id="binningFactor" type="number" value="1" min="1" max="10"></br>
+                  Binning Factor (0 - 5): <input id="binningFactor" type="number" value="0" min="0" max="5"></br>
                   <button id="processPtu">Show Intensity Image</button> </br>
             </p>
 
@@ -40,6 +40,14 @@
       </br>
 
       <canvas id="outputImg" style="background-color:black" width="256" height="256"></canvas>
+
+      </br>
+
+      <div id="plotArea">
+
+            <canvas id="plot" width="256" height="256"></canvas>
+
+      </div>
 </body>
 <script src=" ./renderer.js"> </script>
 

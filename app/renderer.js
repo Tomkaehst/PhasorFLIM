@@ -1,9 +1,7 @@
 // This file is required by the index.html file and will
 // be executed in the renderer process for that window.
 // All of the Node.js APIs are available in this process.
-
 const ipc = require("electron").ipcRenderer;
-const Plotly = require("plotly.js-dist");
 
 // Loading script for calculation of intensity image; requires PTUReader.js; --> provide filepath to imgCalc.calculateIntensityImage()
 const imgCalc = require("./filedecoding/intensityImage.js");
@@ -17,6 +15,7 @@ const ptuFileBtn = document.getElementById("ptuSubmit");
 const processPtuBtn = document.getElementById("processPtu");
 const imageCanvas = document.getElementById("outputImg");
 const phasorBtn = document.getElementById("makePhasor");
+const overallDecayBtn = document.getElementById("showOverallDecay");
 
 
 // Initializing variables
@@ -59,10 +58,13 @@ processPtuBtn.addEventListener("click", function (event) {
 
 // Calculate phasor transform 
 phasorBtn.addEventListener("click", function () {
-
       if (fileDecoded == undefined) {
             alert("You need to load a .PTU first!")
       } else {
+            if (fileDecoded.nanoPixelArr) {
+                  fileDecoded.nanoPixelArr = null;
+                  fileDecoded.phasors = null;
+            };
             // Calculating phasors
             var channelSelected = document.getElementById("channelSelector").value;
             var binningFactorPhasorSpatial = document.getElementById("binningFactorPhasorSpatial").value;
@@ -71,58 +73,17 @@ phasorBtn.addEventListener("click", function () {
             var frequencyMultiplicator = document.getElementById("frequencyMultiplicator").value;
             fileDecoded.nanoPixelArr = nanoToPixel.attachNanotimes(fileDecoded, channelSelected, binningFactorPhasorSpatial);
             fileDecoded.phasors = phasorCalc.phasorTransform(fileDecoded, binningFactorPhasorTemporal, thresholdPhasor, frequencyMultiplicator);
-
-
-
-            // Make a function out of this!
-            var g = new Array();
-            var s = new Array();
-            let x, y;
-            for (x = 0; x < fileDecoded.phasors.length - 1; x++) {
-                  for (y = 0; y < fileDecoded.phasors[0].length - 1; y++) {
-                        g.push(fileDecoded.phasors[x][y][0]);
-                        s.push(fileDecoded.phasors[x][y][1]);
-                  };
-            };
-
-            var plotData = [
-                  {
-                        x: g,
-                        y: s,
-                        colorscale: "Greys",
-                        reversescale: true,
-                        type: "scatter",
-                        mode: "markers",
-                        contours: {
-                              coloring: "heatmap"
-                        }
-                  }
-            ];
-
-            var layout = {
-                  autosize: false,
-                  width: 800,
-                  height: 600,
-                  xaxis: { range: [0, 1] },
-                  yaxis: { range: [0, 0.6] },
-                  showlegend: false,
-                  plot_bgcolor: "transparent",
-                  shapes: [{
-                        type: 'circle',
-                        xref: 'x',
-                        yref: 'y',
-                        x0: 0,
-                        y0: -1,
-                        x1: 1,
-                        y1: 0.5,
-                        line: {
-                              color: 'black'
-                        }
-                  }],
-            };
-
-            Plotly.newPlot("plotArea", plotData, layout, { staticPlot: true });
-
+            phasorCalc.showPhasor(fileDecoded.phasors);
       };
 
 });
+
+overallDecayBtn.addEventListener("click", function () {
+      if (fileDecoded.nanoPixelArr) {
+            var binningFactorPhasorTemporal = document.getElementById("binningFactorPhasorTemporal").value;
+            var thresholdPhasor = document.getElementById("thresholdPhasor").value;
+            phasorCalc.showOverallDecay(fileDecoded, binningFactorPhasorTemporal, thresholdPhasor);
+      } else {
+            alert("Calculate the phasor first! (Only temporarily...)");
+      }
+})

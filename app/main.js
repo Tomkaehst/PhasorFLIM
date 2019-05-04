@@ -1,24 +1,21 @@
 // Modules to control application life and create native browser window
 const { app, BrowserWindow } = require('electron')
 
-const ipc = require("electron").ipcMain;
-const dialog = require("electron").dialog;
-
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
-let mainWindow;
+let mainWindow, progressbar;
 
 function createWindow() {
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    width: 900, height: 500
+    width: 600, height: 1200
   });
 
   // and load the index.html of the app.
   mainWindow.loadFile('index.html')
 
   // Open the DevTools.
-  mainWindow.webContents.openDevTools()
+  //mainWindow.webContents.openDevTools()
 
   // Emitted when the window is closed.
   mainWindow.on('closed', function () {
@@ -26,8 +23,9 @@ function createWindow() {
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
     mainWindow = null;
-  })
+  });
 };
+
 
 // Increasing the max RAM available to electron
 app.commandLine.appendSwitch('js-flags', '--max-old-space-size=8192');
@@ -63,17 +61,19 @@ app.on('activate', function () {
 
 
 // IPC receivers for processing fs tasks
+require("./main/fsTasks.js");
+// ipc.on("ptu-filepath", function (event) {
+//   dialog.showOpenDialog(mainWindow, {
+//     title: "Select your .ptu file",
+//     defaultPath: "/Users/<username>/Documents/",
+//     buttonLabel: "Decode this .ptu file",
+//     properties: ["openFile"]
+//   }, function (file) {
+//     if (file) {
+//       event.sender.send("selectedptu", file);
+//     };
+//   })
+// });
 
-ipc.on("ptu-filepath", function (event) {
-  dialog.showOpenDialog(mainWindow, {
-    title: "Select your .ptu file",
-    defaultPath: "/Users/<username>/Documents/",
-    buttonLabel: "Decode this .ptu file",
-    properties: ["openFile"]
-  }, function (file) {
-    if (file) {
-      event.sender.send("selectedptu", file);
-    };
-  })
-});
+
 

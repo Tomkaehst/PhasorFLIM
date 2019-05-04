@@ -4,6 +4,10 @@ module.exports = {
 
             const fs = require("fs");
             const bitwise = require("bitwise");
+            const ipc = require("electron").ipcRenderer;
+
+            // Sending to main to start displaying progress bar to the user
+            ipc.send("started-loading-ptu");
 
             var tagTypes = {
                   Empty8: 4294901768,
@@ -232,6 +236,11 @@ module.exports = {
 
                   offset += 4; // Incrementing offset counter to move on
                   i += 1;
+
+
+                  if (offset % 25000 == 0) {
+                        ipc.send("loading-ptu-progress", (offset / bytesToFileEnd));
+                  }
             };
 
 
@@ -247,6 +256,8 @@ module.exports = {
             macrotime = null;
             nanotime = null;
             markers = null;
+
+            ipc.send("loading-ptu-finished");
 
             return (recordData);
       }

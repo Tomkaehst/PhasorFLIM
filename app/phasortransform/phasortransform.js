@@ -24,7 +24,7 @@ module.exports = {
       },
 
 
-      phasorTransform: function (decodedFile, binningFactor, threshold) {
+      phasorTransform: function (decodedFile, binningFactor, threshold, freqUp) {
 
             const mathjs = require("mathjs");
 
@@ -33,11 +33,11 @@ module.exports = {
             let yPixels = decodedFile.nanoPixelArr[0].length;
             let syncRate = decodedFile.shortinfo.syncRate;
             let nanoResolution = mathjs.round(decodedFile.shortinfo.measRes, 12);
-            let freqMult = 1;
+            let freqMult = freqUp;
             let binFactor = binningFactor;
 
             // Calculating constants
-            let bins = mathjs.round((1 / (syncRate * nanoResolution) * freqMult) / binFactor);
+            let bins = mathjs.round((1 / (syncRate * nanoResolution)) / binFactor);
             let angularFrequency = 2 * Math.PI * syncRate * freqMult;
             let timeAxis = mathjs.range(0, (bins * binFactor * nanoResolution), (nanoResolution * binFactor))
 

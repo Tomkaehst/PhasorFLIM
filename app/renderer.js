@@ -33,6 +33,9 @@ ptuFileBtn.addEventListener("click", function (event) {
 // Listening for filepath on "selectedptu" channel
 let fp = "";
 ipc.on("selectedptu", function (event, path) {
+      if (fileDecoded) {
+            fileDecoded = null; // Dereferencing when new file is loaded to free up memory
+      }
       fp = path[0];
       fileDecoded = PTUReader.decodePTU(fp);
 });
@@ -62,10 +65,12 @@ phasorBtn.addEventListener("click", function () {
       } else {
             // Calculating phasors
             var channelSelected = document.getElementById("channelSelector").value;
-            var binningFactorPhasor = document.getElementById("binningFactorPhasor").value;
+            var binningFactorPhasorSpatial = document.getElementById("binningFactorPhasorSpatial").value;
+            var binningFactorPhasorTemporal = document.getElementById("binningFactorPhasorTemporal").value;
             var thresholdPhasor = document.getElementById("thresholdPhasor").value;
-            fileDecoded.nanoPixelArr = nanoToPixel.attachNanotimes(fileDecoded, channelSelected, binningFactorPhasor);
-            fileDecoded.phasors = phasorCalc.phasorTransform(fileDecoded, binningFactorPhasor, thresholdPhasor);
+            var frequencyMultiplicator = document.getElementById("frequencyMultiplicator").value;
+            fileDecoded.nanoPixelArr = nanoToPixel.attachNanotimes(fileDecoded, channelSelected, binningFactorPhasorSpatial);
+            fileDecoded.phasors = phasorCalc.phasorTransform(fileDecoded, binningFactorPhasorTemporal, thresholdPhasor, frequencyMultiplicator);
 
 
 
@@ -86,7 +91,8 @@ phasorBtn.addEventListener("click", function () {
                         y: s,
                         colorscale: "Greys",
                         reversescale: true,
-                        type: "histogram2dcontour",
+                        type: "scatter",
+                        mode: "markers",
                         contours: {
                               coloring: "heatmap"
                         }
@@ -96,11 +102,23 @@ phasorBtn.addEventListener("click", function () {
             var layout = {
                   autosize: false,
                   width: 800,
-                  height: 800,
+                  height: 600,
                   xaxis: { range: [0, 1] },
-                  yaxis: { range: [0, 1] },
+                  yaxis: { range: [0, 0.6] },
                   showlegend: false,
-                  plot_bgcolor: "transparent"
+                  plot_bgcolor: "transparent",
+                  shapes: [{
+                        type: 'circle',
+                        xref: 'x',
+                        yref: 'y',
+                        x0: 0,
+                        y0: -1,
+                        x1: 1,
+                        y1: 0.5,
+                        line: {
+                              color: 'black'
+                        }
+                  }],
             };
 
             Plotly.newPlot("plotArea", plotData, layout, { staticPlot: true });

@@ -42,8 +42,10 @@ module.exports = {
             offset += 8;
 
             if (magic != "PQTTTR") {
+                  ipc.send("loading-ptu-finished");
+                  alert("Not a (valid) .ptu file!");
                   throw "Not a (valid) .ptu file.";
-            }
+            };
 
 
             // Decoding the header section
@@ -239,7 +241,7 @@ module.exports = {
 
 
                   if (offset % 25000 == 0) {
-                        ipc.send("loading-ptu-progress", (offset / bytesToFileEnd));
+                        ipc.send("loading-ptu-progress", Math.round((offset / bytesToFileEnd) * 100));
                   }
             };
 
@@ -258,6 +260,7 @@ module.exports = {
             markers = null;
 
             ipc.send("loading-ptu-finished");
+            let myNotification = new Notification('Finished Loading .ptu')
 
             return (recordData);
       }

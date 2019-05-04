@@ -3,7 +3,7 @@
 // All of the Node.js APIs are available in this process.
 
 const ipc = require("electron").ipcRenderer;
-const chart = require("chart.js");
+const Plotly = require("plotly.js-dist");
 
 // Loading script for calculation of intensity image; requires PTUReader.js; --> provide filepath to imgCalc.calculateIntensityImage()
 const imgCalc = require("./filedecoding/intensityImage.js");
@@ -46,7 +46,7 @@ processPtuBtn.addEventListener("click", function (event) {
             var binningFactor = document.getElementById("binningFactor").value;
             let intImageArr = imgCalc.calculateIntensityImage(fileDecoded, channelSelected, binningFactor);
             intImg.showImage(intImageArr, imageCanvas, intensityMultiplicator);
-            fileDecoded.intImage = intImageArr; // Adding the intensity image data to fileDecoded
+            //fileDecoded.intImage = intImageArr; // Adding the intensity image data to fileDecoded
       } else {
             alert("A .ptu file has to be loaded first.");
       };
@@ -62,55 +62,48 @@ phasorBtn.addEventListener("click", function () {
       } else {
             // Calculating phasors
             var channelSelected = document.getElementById("channelSelector").value;
-            var binningFactor = document.getElementById("binningFactor").value;
-            fileDecoded.nanoPixelArr = nanoToPixel.attachNanotimes(fileDecoded, channelSelected, binningFactor);
-            fileDecoded.phasors = phasorCalc.phasorTransform(fileDecoded, 10);
+            var binningFactorPhasor = document.getElementById("binningFactorPhasor").value;
+            fileDecoded.nanoPixelArr = nanoToPixel.attachNanotimes(fileDecoded, channelSelected, binningFactorPhasor);
+            fileDecoded.phasors = phasorCalc.phasorTransform(fileDecoded, binningFactorPhasor);
 
-            // Rearranging phasor coordinates for Charts.js which expects: [{x: 1, y: 1}, {x: 1, y: 1}, ...]
+
+
+            // Make a function out of this!
+            var g = new Array();
+            var s = new Array();
             let x, y;
-            let phasorData = new Array();
-
             for (x = 0; x < fileDecoded.phasors.length - 1; x++) {
                   for (y = 0; y < fileDecoded.phasors[0].length - 1; y++) {
-                        phasorData.push({ x: fileDecoded.phasors[x][y][0], y: fileDecoded.phasors[x][y][1] })
+                        g.push(fileDecoded.phasors[x][y][0]);
+                        s.push(fileDecoded.phasors[x][y][1]);
                   };
             };
 
-            // There seem to be a bug in chartsjs; I need fixed axes
-            phasorData.push({ x: 1, y: 1 });
-            phasorData.push({ x: 0, y: 0 });
-
-            // Showing plot
-            let pltCtx = document.getElementById("plot").getContext("2d");
-            let phasorPlot = new chart.Chart(pltCtx, {
-                  type: "scatter",
-                  data: {
-                        datasets: [{
-                              label: "Phasor Transform",
-                              data: phasorData
-                        }]
-                  },
-                  options: {
-                        scales: {
-                              xAxes: {
-                                    ticks: {
-                                          beginAtZero: true,
-                                          min: 0,
-                                          max: 1,
-                                          stepSize: 0.1,
-                                    }
-                              },
-                              yAxes: {
-                                    ticks: {
-                                          beginAtZero: true,
-                                          min: 0,
-                                          max: 1,
-                                          stepSize: 0.1,
-                                    }
-                              }
+            var plotData = [
+                  {
+                        x: g,
+                        y: s,
+                        colorscale: "Greys",
+                        reversescale: true,
+                        type: "histogram2dcontour",
+                        contours: {
+                              coloring: "heatmap"
                         }
                   }
-            });
+            ];
+
+            var layout = {
+                  autosize: false,
+                  width: 800,
+                  height: 800,
+                  xaxis: { range: [0, 1] },
+                  yaxis: { range: [0, 1] },
+                  showlegend: false,
+                  plot_bgcolor: "transparent"
+            };
+
+            Plotly.newPlot("plotArea", plotData, layout, { staticPlot: true });
+
       };
 
 });

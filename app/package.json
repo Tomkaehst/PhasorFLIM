@@ -20,6 +20,7 @@
     "mathjs": "^5.9.0",
     "nectarjs": "^0.1.8",
     "os": "^0.1.1",
+    "plotly.js-dist": "^1.47.4",
     "rollup": "^1.10.1"
   },
   "devDependencies": {}

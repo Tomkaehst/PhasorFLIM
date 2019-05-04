@@ -63,8 +63,9 @@ phasorBtn.addEventListener("click", function () {
             // Calculating phasors
             var channelSelected = document.getElementById("channelSelector").value;
             var binningFactorPhasor = document.getElementById("binningFactorPhasor").value;
+            var thresholdPhasor = document.getElementById("thresholdPhasor").value;
             fileDecoded.nanoPixelArr = nanoToPixel.attachNanotimes(fileDecoded, channelSelected, binningFactorPhasor);
-            fileDecoded.phasors = phasorCalc.phasorTransform(fileDecoded, binningFactorPhasor);
+            fileDecoded.phasors = phasorCalc.phasorTransform(fileDecoded, binningFactorPhasor, thresholdPhasor);
 
 
 

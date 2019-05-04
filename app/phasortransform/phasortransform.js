@@ -24,7 +24,7 @@ module.exports = {
       },
 
 
-      phasorTransform: function (decodedFile, binningFactor) {
+      phasorTransform: function (decodedFile, binningFactor, threshold) {
 
             const mathjs = require("mathjs");
 
@@ -61,8 +61,10 @@ module.exports = {
 
             for (x = 0; x < xPixels - 1; x++) {
                   for (y = 0; y < yPixels - 1; y++) {
-                        histTmp = this.extractColumn(this.calcHist(decodedFile.nanoPixelArr[x][y], bins), 1); // This needs to be reformatted so that only an array
-                        phasorArr[x][y] = this.calculatePhasor(histTmp, timeAxis, angularFrequency); // g and s coordinates as array [g, s]
+                        if (decodedFile.nanoPixelArr[x][y] > threshold) {
+                              histTmp = this.extractColumn(this.calcHist(decodedFile.nanoPixelArr[x][y], bins), 1); // This needs to be reformatted so that only an array
+                              phasorArr[x][y] = this.calculatePhasor(histTmp, timeAxis, angularFrequency); // g and s coordinates as array [g, s]
+                        };
                   };
             };
 

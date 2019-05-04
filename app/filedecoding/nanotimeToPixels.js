@@ -114,9 +114,5 @@ module.exports = {
             };
 
             return (imgArr);
-      },
-
-      overallDecay: function (nanotimes, binningFactor) {
-
       }
 };

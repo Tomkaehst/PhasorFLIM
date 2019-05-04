@@ -19,8 +19,18 @@ monoDecayArr = function(timeMax, timeSteps, tau, noise) {
       laser = laser.gauss(
         time,
         amp = 50,
-        dplace = 0,
+        dplace = 1000,
         grsm = 100
+      )
+      
+      laser = laser.afterbump(
+        time, 
+        50, 
+        1000,
+        100,
+        5,
+        15000,
+        20
       )
       
       dD1 = -(1/f)*D1 + laser

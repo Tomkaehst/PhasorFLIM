@@ -18,16 +18,16 @@ plotUniCircle()
 points(test_eval, pch = 4)
 
 # Mono Decay
-testArrNum = generateFLIMarraynumerical(dimX = 5, dimY = 5, dimT = 1000, timeMax = 25000, tau = 2500, noise = 0)
+testArrNum = generateFLIMarraynumerical(dimX = 5, dimY = 5, dimT = 1024, timeMax = 25000, tau = 2500, noise = 0)
 plot(testArrNum[[2]][3, 5, ], type = "l")
 
-test_eval = gsTransform(testArrNum, angFrequency = 2*pi*40e06)
+test_eval = gsTransform(testArrNum, angFrequency = 2*pi*40e6)
 plotUniCircle()
 points(test_eval, pch = 4)
 
 
 # Double Decay
-testArrNum = generateFLIMarraynumericalAcceptor(whichCol = 2, dimX = 3, dimY = 3, dimT = 1000, timeMax = 25000, tau1 = 2500, tau2 = 1400, tauFRET = 2000, noise = 10)
+testArrNum = generateFLIMarraynumericalAcceptor(whichCol = 2, dimX = 3, dimY = 3, dimT = 1000, timeMax = 25000, tau1 = 2500, tau2 = 1400, tauFRET = 2000, noise = 50)
 plot(testArrNum[[2]][1, 1, ], type = "l")
 
 test_eval = gsTransform(testArrNum, angFrequency = 2*pi*40e06)
@@ -39,21 +39,21 @@ points(test_eval, pch = 4)
 # Triple Decay
 
 ## Donor
-testArrNum = generateFLIMarraynumericalTriple(whichCol = 2, dimX = 10, dimY = 10, dimT = 1000, timeMax = 25000, tau1 = 2500, tau2 = 1400, tau3 = 3000, tauFRET1 = 2000, tauFRET2 = 1500, noise = 10)
+testArrNum = generateFLIMarraynumericalTriple(whichCol = 2, dimX = 3, dimY = 3, dimT = 1000, timeMax = 25000, tau1 = 2500, tau2 = 1400, tau3 = 3000, tauFRET1 = 2000, tauFRET2 = 1500, noise = 10)
 evalDonor = gsTransform(testArrNum, angFrequency = 2*pi*40e06)
-plot(testArrNum[[2]][3, 5, ], type = "l", log = "", lwd = 2)
+plot(testArrNum[[2]][3, 3, ], type = "l", log = "", lwd = 2)
 
 ## Acceptor 1
-testArrNum = generateFLIMarraynumericalTriple(whichCol = 4, dimX = 10, dimY = 10, dimT = 1000, timeMax = 25000, tau1 = 2500, tau2 = 2000, tau3 = 3000, tauFRET1 = 2000, tauFRET2 = 1500, noise = 10)
+testArrNum = generateFLIMarraynumericalTriple(whichCol = 4, dimX = 3, dimY = 3, dimT = 1000, timeMax = 25000, tau1 = 2500, tau2 = 2000, tau3 = 3000, tauFRET1 = 2000, tauFRET2 = 1500, noise = 10)
 evalAcc1 = gsTransform(testArrNum, angFrequency = 2*pi*40e06)
-lines(testArrNum[[2]][3, 5, ], type = "l",
+lines(testArrNum[[2]][3, 3, ], type = "l",
       lty = 3, lwd = 2,
       col = "red")
 
 ## Acceptor 2
-testArrNum = generateFLIMarraynumericalTriple(whichCol = 6, dimX = 10, dimY = 10, dimT = 1000, timeMax = 25000, tau1 = 2500, tau2 = 1400, tau3 = 3000, tauFRET1 = 2000, tauFRET2 = 1500, noise = 20)
+testArrNum = generateFLIMarraynumericalTriple(whichCol = 6, dimX = 3, dimY = 3, dimT = 1000, timeMax = 25000, tau1 = 2500, tau2 = 1400, tau3 = 3000, tauFRET1 = 2000, tauFRET2 = 1500, noise = 20)
 evalAcc2 = gsTransform(testArrNum, angFrequency = 2*pi*40e06)
-lines(testArrNum[[2]][3, 5, ], type = "l",
+lines(testArrNum[[2]][3, 3, ], type = "l",
       lty = 3, lwd = 2,
       col = "green")
 
@@ -82,7 +82,7 @@ points(test_eval, pch = 1,
 
 
 # FLIM data simulation with varying FRET rates in the "image"
-testArrNum = genFLIMarray_da_varFRET(whichCol = 4, dimX = 30, dimY = 30, dimT = 1000, timeMax = 25000, tau1 = 2500, tau2 = 1400, FRET_Start = 15000, FRET_Stop = 5000, noise = 0)
+testArrNum = genFLIMarray_da_varFRET(whichCol = 2, dimX = 10, dimY = 10, dimT = 1000, timeMax = 25000, tau1 = 2500, tau2 = 1400, FRET_Start = 15000, FRET_Stop = 5000, noise = 0)
 plot(testArrNum[[2]][5, 8, ], type = "l")
 
 test_eval = gsTransform(testArrNum, angFrequency = 2*pi*40e06)

@@ -1,5 +1,6 @@
 // Modules to control application life and create native browser window
 const { app, BrowserWindow } = require('electron')
+const ipc = require("electron").ipcMain;
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -8,7 +9,7 @@ let mainWindow, progressbar;
 function createWindow() {
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    width: 600, height: 1200
+    width: 800, height: 1200
   });
 
   // and load the index.html of the app.
@@ -62,18 +63,28 @@ app.on('activate', function () {
 
 // IPC receivers for processing fs tasks
 require("./main/fsTasks.js");
-// ipc.on("ptu-filepath", function (event) {
-//   dialog.showOpenDialog(mainWindow, {
-//     title: "Select your .ptu file",
-//     defaultPath: "/Users/<username>/Documents/",
-//     buttonLabel: "Decode this .ptu file",
-//     properties: ["openFile"]
-//   }, function (file) {
-//     if (file) {
-//       event.sender.send("selectedptu", file);
-//     };
-//   })
-// });
 
 
+// Progress bar
+ipc.on("started-loading-ptu", function (event) {
+  progressbar = new BrowserWindow({
+    width: 300,
+    height: 125,
+    resizable: false,
+    parent: mainWindow,
+    modal: true,
+    alwaysOnTop: true
+  });
+  progressbar.loadFile("progressbar.html");
+  progressbar.show();
+});
 
+ipc.on("loading-ptu-progress", function (event, data) {
+  var progress = data;
+  progressbar.webContents.send("update-progressbar", progress);
+});
+
+ipc.on("loading-ptu-finished", function (event) {
+  progressbar.close();
+  progressbar = null;
+});

@@ -36,7 +36,8 @@ ipc.on("selectedptu", function (event, path) {
             fileDecoded = null; // Dereferencing when new file is loaded to free up memory
       }
       fp = path[0];
-      fileDecoded = PTUReader.decodePTU(fp);
+      fileDecoded = PTUReader.decodePTU(fp); // Decoding .ptu file
+      // calculate intensity image
 });
 
 

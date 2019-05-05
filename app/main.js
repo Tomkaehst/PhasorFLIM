@@ -1,6 +1,7 @@
 // Modules to control application life and create native browser window
 const { app, BrowserWindow } = require('electron')
 const ipc = require("electron").ipcMain;
+const dialog = require("electron").dialog;
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -13,7 +14,7 @@ function createWindow() {
   });
 
   // and load the index.html of the app.
-  mainWindow.loadFile('index.html')
+  mainWindow.loadFile('index.html');
 
   // Open the DevTools.
   //mainWindow.webContents.openDevTools()
@@ -45,16 +46,16 @@ app.on('window-all-closed', function () {
   // to stay active until the user quits explicitly with Cmd + Q
   if (process.platform !== 'darwin') {
     app.quit()
-  }
-})
+  };
+});
 
 app.on('activate', function () {
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   if (mainWindow === null) {
     createWindow()
-  }
-})
+  };
+});
 
 
 // In this file you can include the rest of your app's specific main process
@@ -62,7 +63,22 @@ app.on('activate', function () {
 
 
 // IPC receivers for processing fs tasks
-require("./main/fsTasks.js");
+
+ipc.on("ptu-filepath", function (event) {
+  dialog.showOpenDialog(mainWindow, {
+    title: "Select your .ptu file",
+    defaultPath: "/Users/<username>/Documents/",
+    buttonLabel: "Decode this .ptu file",
+    properties: ["openFile"]
+  }, function (file) {
+    if (file) {
+      event.sender.send("selectedptu", file);
+    };
+  })
+});
+
+
+
 
 
 // Progress bar

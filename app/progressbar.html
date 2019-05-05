@@ -11,7 +11,7 @@
 <body>
 
       <div>
-            Loading .ptu file: </br></br>
+            <div id="message"></div></br></br>
             0 %
             <progress id="progressbar" value="0" max="100"></progress>
             100 %
@@ -20,9 +20,11 @@
 </body>
 <script>
       const ipc = require("electron").ipcRenderer;
+      var message = document.getElementById("message");
       var progressbarValue = document.getElementById("progressbar");
       ipc.on("update-progressbar", function (event, data) {
-            progressbarValue.value = data;
+            message.innerHTML = data[0];
+            progressbarValue.value = data[1];
       });
 </script>
 

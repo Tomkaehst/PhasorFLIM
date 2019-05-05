@@ -17,7 +17,7 @@ function createWindow() {
   mainWindow.loadFile('index.html');
 
   // Open the DevTools.
-  //mainWindow.webContents.openDevTools()
+  mainWindow.webContents.openDevTools()
 
   // Emitted when the window is closed.
   mainWindow.on('closed', function () {
@@ -96,8 +96,9 @@ ipc.on("started-loading-ptu", function (event) {
 });
 
 ipc.on("loading-ptu-progress", function (event, data) {
-  var progress = data;
-  progressbar.webContents.send("update-progressbar", progress);
+  var message = data[0];
+  var progress = data[1];
+  progressbar.webContents.send("update-progressbar", [message, progress]);
 });
 
 ipc.on("loading-ptu-finished", function (event) {

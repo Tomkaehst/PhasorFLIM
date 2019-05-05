@@ -19,26 +19,39 @@
             </p>
       </div>
 
-      <div id="controls">
+      <div id="loadingPTU">
+            <h2>1. Loading PTU File</h2>
             <button id="ptuSubmit">Choose File</button>
             <p>
                   Select Channel (0 - 3): <input id="channelSelector" value="0" type="number" min="0" max="3"> </br>
                   Multiply Intensity with (1 - 255): <input id="intensityMultiplicator" type="number" value="1" min="0"
                         max="255"></br>
-                  Binning Factor (0 - 8): <input id="binningFactor" type="number" value="4" min="1" max="8"></br>
+                  Binning Factor (0 - 8): <input id="binningFactor" type="number" value="2" min="0" max="8"></br>
                   <button id="processPtu">Show Intensity Image</button> </br>
             </p>
 
       </div>
 
-
-      </br>
-
       <canvas id="outputImg" style="background-color:black" width="256" height="256"></canvas>
 
       </br>
 
+      <div id="overallDecay">
+            <h2>2. Data Selection</h2>
+            Temporal / Histogram Binning Factor (0 - 8): <input id="binningFactorTemporal" type="number" value="5"
+                  min="1" max="10"></br>
+            Lower limit: <input id="histLowerLimit" type="number" value="0" min="0" max="100"></br>
+            Count Threshold (0 - 200): <input id="thresholdHist" type="number" value="1" min="0" max="5000"></br>
+            <button id="calcHist">Calculate Histogram</button>
+            <div id="histogram">
 
+            </div></br></br>
+      </div>
+
+      </br>
+
+
+      </br>
 
       <div id="phasor">
             Spatial Binning Factor (0 - 8): <input id="binningFactorPhasorSpatial" type="number" value="5" min="1"
@@ -57,9 +70,6 @@
       </br>
 
       <div id="plotArea">
-
-            <!-- <canvas id="plot" width="256" height="256"></canvas> -->
-
       </div>
 </body>
 <script src=" ./renderer.js"> </script>

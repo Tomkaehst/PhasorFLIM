@@ -1,0 +1,106 @@
+// Modules to control application life and create native browser window
+const { app, BrowserWindow } = require('electron')
+const ipc = require("electron").ipcMain;
+const dialog = require("electron").dialog;
+
+// Keep a global reference of the window object, if you don't, the window will
+// be closed automatically when the JavaScript object is garbage collected.
+let mainWindow, progressbar;
+
+function createWindow() {
+  // Create the browser window.
+  mainWindow = new BrowserWindow({
+    width: 800, height: 1200
+  });
+
+  // and load the index.html of the app.
+  mainWindow.loadFile('index.html');
+
+  // Open the DevTools.
+  //mainWindow.webContents.openDevTools()
+
+  // Emitted when the window is closed.
+  mainWindow.on('closed', function () {
+    // Dereference the window object, usually you would store windows
+    // in an array if your app supports multi windows, this is the time
+    // when you should delete the corresponding element.
+    mainWindow = null;
+  });
+};
+
+
+// Increasing the max RAM available to electron
+app.commandLine.appendSwitch('js-flags', '--max-old-space-size=8192');
+
+
+// This method will be called when Electron has finished
+// initialization and is ready to create browser windows.
+// Some APIs can only be used after this event occurs.
+app.on('ready', function () {
+  createWindow();
+});
+
+// Quit when all windows are closed.
+app.on('window-all-closed', function () {
+  // On OS X it is common for applications and their menu bar
+  // to stay active until the user quits explicitly with Cmd + Q
+  if (process.platform !== 'darwin') {
+    app.quit()
+  };
+});
+
+app.on('activate', function () {
+  // On OS X it's common to re-create a window in the app when the
+  // dock icon is clicked and there are no other windows open.
+  if (mainWindow === null) {
+    createWindow()
+  };
+});
+
+
+// In this file you can include the rest of your app's specific main process
+// code. You can also put them in separate files and require them here.
+
+
+// IPC receivers for processing fs tasks
+
+ipc.on("ptu-filepath", function (event) {
+  dialog.showOpenDialog(mainWindow, {
+    title: "Select your .ptu file",
+    defaultPath: "/Users/<username>/Documents/",
+    buttonLabel: "Decode this .ptu file",
+    properties: ["openFile"]
+  }, function (file) {
+    if (file) {
+      event.sender.send("selectedptu", file);
+    };
+  })
+});
+
+
+
+
+
+// Progress bar
+ipc.on("started-loading-ptu", function (event) {
+  progressbar = new BrowserWindow({
+    width: 300,
+    height: 125,
+    resizable: false,
+    parent: mainWindow,
+    modal: true,
+    alwaysOnTop: true
+  });
+  progressbar.loadFile("progressbar.html");
+  progressbar.show();
+});
+
+ipc.on("loading-ptu-progress", function (event, data) {
+  var progress = data;
+  progressbar.webContents.send("update-progressbar", progress);
+});
+
+ipc.on("loading-ptu-finished", function (event) {
+  progressbar.close();
+  progressbar = null;
+});

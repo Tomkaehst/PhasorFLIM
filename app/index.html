@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta http-equiv="X-UA-Compatible" content="ie=edge">
+      <title>PhasorFLIM</title>
+</head>
+
+<body>
+      <div>
+            <h1>Phasor FLIM</h1>
+      </div>
+      <div id="intro">
+            <p>
+                  Phasor transformation of PicoQuant .ptu TTTR data. Final goal: FRET-FLIM analysis in the phasor space
+                  guided by theoretical FRET trajectories.
+            </p>
+      </div>
+
+      <div id="controls">
+            <button id="ptuSubmit">Choose File</button>
+            <p>
+                  Select Channel (0 - 3): <input id="channelSelector" value="0" type="number" min="0" max="3"> </br>
+                  Multiply Intensity with (1 - 255): <input id="intensityMultiplicator" type="number" value="1" min="0"
+                        max="255"></br>
+                  Binning Factor (0 - 8): <input id="binningFactor" type="number" value="4" min="1" max="8"></br>
+                  <button id="processPtu">Show Intensity Image</button> </br>
+            </p>
+
+      </div>
+
+
+      </br>
+
+      <canvas id="outputImg" style="background-color:black" width="256" height="256"></canvas>
+
+      </br>
+
+
+
+      <div id="phasor">
+            Spatial Binning Factor (0 - 8): <input id="binningFactorPhasorSpatial" type="number" value="5" min="1"
+                  max="10"></br>
+            Temporal / Histogram Binning Factor (0 - 8): <input id="binningFactorPhasorTemporal" type="number" value="5"
+                  min="1" max="10"></br>
+            Count Threshold (0 - 200): <input id="thresholdPhasor" type="number" value="1" min="0" max="200"></br>
+            Frequency Multiplicator: <input id="frequencyMultiplicator" type="number" value="1" min="1" max="8"></br>
+            <button id="makePhasor">Calculate Phasor Transform</button></br>
+            <button id="showOverallDecay">Show Overall Decay</button></br>
+      </div>
+
+      </br>
+
+
+      </br>
+
+      <div id="plotArea">
+
+            <!-- <canvas id="plot" width="256" height="256"></canvas> -->
+
+      </div>
+</body>
+<script src=" ./renderer.js"> </script>
+
+</html>

@@ -74,7 +74,7 @@ points(evalAcc2, pch = 4, col = "green")
 testArrNum = generateFLIMCPPtriple(whichCol = 2, dimX = 40, dimY = 40, dimT = 1000, timeMax = 25000, tau1 = 2000, tau2 = 1400, tau3 = 1500, noise = 500)
 plot(testArrNum[[2]][4, 1, ], type = "l")
 
-test_eval = gsTransform(testArrNum, angFrequency = 2*pi*40e06)
+test_eval = gsTransform(testArrNum, angFrequency = 2*pi*20e06)
 plotUniCircle(limX = c(0, 1), limY = c(0, 1))
 points(test_eval, pch = 1,
        col = grey(0.2, 0.5))

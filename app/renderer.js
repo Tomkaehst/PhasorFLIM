@@ -8,6 +8,7 @@ const imgCalc = require("./filedecoding/intensityImage.js");
 const PTUReader = require("./filedecoding/PTUReader.js");
 const intImg = require("./render/showintensityimage.js");
 const nanoToPixel = require("./filedecoding/nanotimeToPixels");
+const histCalc = require("./filedecoding/calculateDecayHist.js");
 const phasorCalc = require("./phasortransform/phasortransform.js");
 
 // Select elements from GUI
@@ -16,6 +17,7 @@ const processPtuBtn = document.getElementById("processPtu");
 const imageCanvas = document.getElementById("outputImg");
 const phasorBtn = document.getElementById("makePhasor");
 const overallDecayBtn = document.getElementById("showOverallDecay");
+const calcHistBtn = document.getElementById("calcHist");
 
 
 // Initializing variables
@@ -37,7 +39,6 @@ ipc.on("selectedptu", function (event, path) {
       }
       fp = path[0];
       fileDecoded = PTUReader.decodePTU(fp); // Decoding .ptu file
-      // calculate intensity image
 });
 
 
@@ -47,13 +48,24 @@ processPtuBtn.addEventListener("click", function (event) {
             var channelSelected = document.getElementById("channelSelector").value;
             var intensityMultiplicator = document.getElementById("intensityMultiplicator").value;
             var binningFactor = document.getElementById("binningFactor").value;
-            let intImageArr = imgCalc.calculateIntensityImage(fileDecoded, channelSelected, binningFactor);
-            intImg.showImage(intImageArr, imageCanvas, intensityMultiplicator);
-            //fileDecoded.intImage = intImageArr; // Adding the intensity image data to fileDecoded
+            fileDecoded.nanoPixelArr = nanoToPixel.attachNanotimes(fileDecoded, channelSelected, binningFactor)
+            fileDecoded.intensityArray = imgCalc.calculateIntensityImage(fileDecoded.nanoPixelArr);
+            intImg.showImage(fileDecoded.intensityArray, imageCanvas, intensityMultiplicator);
       } else {
             alert("A .ptu file has to be loaded first.");
       };
 
+});
+
+// Calculate overall decay and show it for data selection
+calcHistBtn.addEventListener("click", function () {
+      if (fileDecoded) {
+            var thresholdHist = document.getElementById("thresholdHist").value;
+            var binningFactorTemporal = document.getElementById("binningFactorTemporal").value;
+            histCalc.showOverallDecay(fileDecoded, binningFactorTemporal, thresholdHist);
+      } else {
+            alert("Load a .ptu-file first!");
+      }
 });
 
 
@@ -81,8 +93,6 @@ phasorBtn.addEventListener("click", function () {
 
 overallDecayBtn.addEventListener("click", function () {
       if (fileDecoded.nanoPixelArr) {
-            var binningFactorPhasorTemporal = document.getElementById("binningFactorPhasorTemporal").value;
-            var thresholdPhasor = document.getElementById("thresholdPhasor").value;
             phasorCalc.showOverallDecay(fileDecoded, binningFactorPhasorTemporal, thresholdPhasor);
       } else {
             alert("Calculate the phasor first! (Only temporarily...)");

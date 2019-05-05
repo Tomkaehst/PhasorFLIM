@@ -240,8 +240,8 @@ module.exports = {
                   i += 1;
 
 
-                  if (offset % 25000 == 0) {
-                        ipc.send("loading-ptu-progress", Math.round((offset / bytesToFileEnd) * 100));
+                  if (offset % 100000 == 0) {
+                        ipc.send("loading-ptu-progress", ["Decoding .ptu ...", Math.round((offset / bytesToFileEnd) * 100)]);
                   }
             };
 
@@ -259,9 +259,33 @@ module.exports = {
             nanotime = null;
             markers = null;
 
+            // Getting number of lines to see if file is corrupted
+
+            recordData.shortinfo.lines = this.getNumberOfLines(recordData);
+
             ipc.send("loading-ptu-finished");
-            let myNotification = new Notification('Finished Loading .ptu')
+            var myNotification = new Notification('Finished Loading .ptu')
 
             return (recordData);
+      },
+
+      getNumberOfLines(arr) {
+            let counterStart = 0;
+            let counterStop = 0;
+            arr.markers.forEach(function (marker) {
+                  if (marker == 6) { counterStart++; }
+                  if (marker == 7) { counterStop++; }
+            });
+
+            if (counterStart != counterStop) {
+                  alert("Number of line start and line stop markers do not match. Corrupted file?")
+            };
+
+            console.log(counterStart + " line start and " + counterStop + " line stop markers found.");
+            console.log("Image dimensions: X = " + arr.shortinfo.pixelX + ", Y = " + arr.shortinfo.pixelY + "\n");
+            console.log("FLIM Image with " + (counterStart / arr.shortinfo.pixelX) + "/" + (counterStop / arr.shortinfo.pixelX) + " scan repetitions.\n");
+            console.log(arr.shortinfo.numRec + " events in decoded .ptu file.\n")
+
+            return (counterStart);
       }
 };

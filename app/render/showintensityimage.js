@@ -68,12 +68,14 @@ module.exports = {
                               imgData_wColor.data[i + 1] = 255;
                               imgData_wColor.data[i + 2] = 255;
                         };
-                        imgData_wColor.data[i + 3] = imgData[x][y] * intensityMultiplicator;
+                        imgData_wColor.data[i + 3] = imgData[x][y] * intensityMultiplicator + 50;
                         i += 4;
                         index++;
                   };
             };
+            console.log(indicesCounter);
 
             canv.putImageData(imgData_wColor, 0, 0);
+            imgData_wColor = null;
       }
 };

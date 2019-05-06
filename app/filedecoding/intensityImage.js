@@ -9,6 +9,11 @@
 
 
 module.exports = {
+
+      /*
+            The FLIM image encoded in the .ptu file is visualized with this function according to the pixel photon count / light intensity at a pixel. It receives a reference to the nanotimeArray, which is a 3D array: x and y dimensions according to the original image dimension / user-selected binning factor; each pixel habors an array of nanotimes detected over the scanning period of the experiment. The pixel intensity is just the number of nanotimes in this nanotime array, as it corresponds to the number of detected photons.
+            The resulting imgArr (2D array of x and y; each pixel encoded an integer = number of photon counts) is used in showintensityimage.showImage(), where the imgArr is encoded as an HTML canvas imageData object (RGB-alpha, intensity is alpha!).
+      */
       calculateIntensityImage: function (nanotimeArray) {
 
             let pixelX = nanotimeArray.length;

@@ -69,6 +69,5 @@ module.exports = {
 
       extractColumn: function (histArray, column) { // I was lazy and didn't implement the histogram calculation function myself. Therfore I need a function to extract the second column of the 2D array resulting from computeHistogram, because it containts the counts. The first column is the index.
             return histArray.map(x => x[column]);
-
       }
 }

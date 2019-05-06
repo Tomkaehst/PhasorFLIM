@@ -64,8 +64,8 @@ module.exports = {
             console.log(hist.length);
             console.log(timeAxis.size());
 
-            for (x = 0; x < xPixels; x++) {
-                  for (y = 0; y < yPixels; y++) {
+            for (x = 0; x < xPixels - 1; x++) {
+                  for (y = 0; y < yPixels - 1; y++) {
                         if (decodedFile.nanoPixelArr[x][y].length > threshold) {
                               for (i = 0; i < decodedFile.nanoPixelArr[x][y].length; i++) {
                                     bin = Math.round(((decodedFile.nanoPixelArr[x][y][i] - histShift) * 1E-9) / binSteps);
@@ -91,8 +91,8 @@ module.exports = {
             var g = new Array();
             var s = new Array();
             let x, y;
-            for (x = 0; x < phasorArr.length - 1; x++) {
-                  for (y = 0; y < phasorArr[0].length - 1; y++) {
+            for (x = 0; x < phasorArr.length; x++) {
+                  for (y = 0; y < phasorArr[0].length; y++) {
                         g.push(phasorArr[x][y][0]);
                         s.push(phasorArr[x][y][1]);
                   };
@@ -104,7 +104,7 @@ module.exports = {
                         y: s,
                         colorscale: "Greys",
                         reversescale: true,
-                        type: "scatter",
+                        type: "scattergl",
                         mode: "markers"
                   }
             ];
@@ -145,6 +145,7 @@ module.exports = {
                   intImg.colorizeFromPhasorSelection(decodedFile, selectedCoordinates);
             });
 
-
+            g = null;
+            s = null;
       }
 };

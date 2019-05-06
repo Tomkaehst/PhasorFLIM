@@ -1,5 +1,5 @@
 module.exports = {
-      showOverallDecay: function (decodedFile, binningFactor, threshold) {
+      showOverallDecay: function (decodedFile, binningFactor, threshold, histShift) {
             const mathjs = require("mathjs");
             const Plotly = require("plotly.js-dist");
 
@@ -12,37 +12,24 @@ module.exports = {
 
             // Calculating constants
             let bins = mathjs.round((1 / (syncRate * nanoResolution)) / binFactor);
-            let timeAxis = mathjs.range(0, (bins * binFactor * nanoResolution), (nanoResolution * binFactor))
+            let binSteps = nanoResolution * binFactor;
+            let timeAxis = mathjs.range(0, (bins * binFactor * nanoResolution), binSteps);
+            let bin = 0;
 
             // Initializing array for nanotimes
-            let histTmp = new Array(timeAxis.size()[0]).fill(0);
             let hist = new Array(timeAxis.size()[0]).fill(0);
 
-            console.log(histTmp.length);
-            console.log(hist.length);
-
-
-            let x, y;
-
-            for (x = 0; x < xPixels - 1; x++) {
-                  for (y = 0; y < yPixels - 1; y++) {
+            let x, y, i;
+            for (x = 0; x < xPixels; x++) {
+                  for (y = 0; y < yPixels; y++) {
                         if (decodedFile.nanoPixelArr[x][y].length >= threshold) {
-                              histTmp = this.extractColumn(this.calcHist(decodedFile.nanoPixelArr[x][y], bins), 1);
-                              histTmp.forEach(function (value, index) {
-                                    hist[index] += value;
-                              });
-                              //hist = mathjs.add(hist, histTmp);
-                              //nanotimesArr = [].concat(nanotimesArr, decodedFile.nanoPixelArr[x][y]);
+                              for (i = 0; i < decodedFile.nanoPixelArr[x][y].length; i++) {
+                                    bin = Math.round(((decodedFile.nanoPixelArr[x][y][i] - histShift) * 1E-9) / binSteps);
+                                    if (bin >= 0) hist[bin]++;
+                              };
                         };
                   };
-                  console.log(histTmp);
             };
-
-            console.log(hist);
-            //hist[0] = timeAxis._data;
-            //hist[1] = this.extractColumn(this.calcHist(nanotimesArr, bins), 1); // This needs to be reformatted so that only an array
-            // nanotimesArr = null;
-
 
             var plotData = [
                   {
@@ -60,19 +47,22 @@ module.exports = {
                         autorange: true,
                   },
                   yaxis: {
-                        autorange: true//,
-                        //type: "log"
+                        autorange: true,
+                        type: "linear"
                   },
 
             };
 
             Plotly.newPlot("histogram", plotData, layout, { staticPlot: true });
+
+            hist = null;
+            timeAxis = null;
       },
 
 
-      calcHist: function (data, bins) {
+      calcHist: function (data, Nbins) {
             const computeHistogram = require("compute-histogram");
-            var hist = computeHistogram(data, bins);
+            var hist = computeHistogram(data, Nbins);
 
             return (hist);
       },

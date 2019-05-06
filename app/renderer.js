@@ -16,7 +16,6 @@ const ptuFileBtn = document.getElementById("ptuSubmit");
 const processPtuBtn = document.getElementById("processPtu");
 const imageCanvas = document.getElementById("outputImg");
 const phasorBtn = document.getElementById("makePhasor");
-const overallDecayBtn = document.getElementById("showOverallDecay");
 const calcHistBtn = document.getElementById("calcHist");
 
 
@@ -61,8 +60,9 @@ processPtuBtn.addEventListener("click", function (event) {
 calcHistBtn.addEventListener("click", function () {
       if (fileDecoded) {
             var thresholdHist = document.getElementById("thresholdHist").value;
+            var histShift = document.getElementById("histShift").value;
             var binningFactorTemporal = document.getElementById("binningFactorTemporal").value;
-            histCalc.showOverallDecay(fileDecoded, binningFactorTemporal, thresholdHist);
+            histCalc.showOverallDecay(fileDecoded, binningFactorTemporal, thresholdHist, histShift);
       } else {
             alert("Load a .ptu-file first!");
       }
@@ -74,27 +74,29 @@ phasorBtn.addEventListener("click", function () {
       if (fileDecoded == undefined) {
             alert("You need to load a .PTU first!")
       } else {
-            if (fileDecoded.nanoPixelArr) {
-                  fileDecoded.nanoPixelArr = null;
+            if (fileDecoded.nanoPixelArr != undefined) {
                   fileDecoded.phasors = null;
             };
             // Calculating phasors
+
+            var thresholdHist = document.getElementById("thresholdHist").value;
+            var histShift = document.getElementById("histShift").value;
+            var binningFactorTemporal = document.getElementById("binningFactorTemporal").value;
+
             var channelSelected = document.getElementById("channelSelector").value;
             var binningFactorPhasorSpatial = document.getElementById("binningFactorPhasorSpatial").value;
-            var binningFactorPhasorTemporal = document.getElementById("binningFactorPhasorTemporal").value;
-            var thresholdPhasor = document.getElementById("thresholdPhasor").value;
             var frequencyMultiplicator = document.getElementById("frequencyMultiplicator").value;
-            fileDecoded.nanoPixelArr = nanoToPixel.attachNanotimes(fileDecoded, channelSelected, binningFactorPhasorSpatial);
-            fileDecoded.phasors = phasorCalc.phasorTransform(fileDecoded, binningFactorPhasorTemporal, thresholdPhasor, frequencyMultiplicator);
-            phasorCalc.showPhasor(fileDecoded.phasors);
+            fileDecoded.phasors = phasorCalc.phasorTransform(fileDecoded, binningFactorTemporal, thresholdHist, histShift, frequencyMultiplicator);
+            phasorCalc.showPhasor(fileDecoded);
       };
 
 });
 
-overallDecayBtn.addEventListener("click", function () {
-      if (fileDecoded.nanoPixelArr) {
-            phasorCalc.showOverallDecay(fileDecoded, binningFactorPhasorTemporal, thresholdPhasor);
-      } else {
-            alert("Calculate the phasor first! (Only temporarily...)");
-      }
-})
+// overallDecayBtn.addEventListener("click", function () {
+//       if (fileDecoded.nanoPixelArr) {
+//             phasorCalc.showOverallDecay(fileDecoded, binningFactorPhasorTemporal, thresholdPhasor);
+//       } else {
+//             alert("Calculate the phasor first! (Only temporarily...)");
+//       }
+// });
+

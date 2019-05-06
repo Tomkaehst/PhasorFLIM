@@ -24,7 +24,7 @@ module.exports = {
       },
 
 
-      phasorTransform: function (decodedFile, binningFactor, threshold, freqUp) {
+      phasorTransform: function (decodedFile, binningFactor, threshold, histShift, freqUp) {
 
             const mathjs = require("mathjs");
 
@@ -38,8 +38,9 @@ module.exports = {
 
             // Calculating constants
             let bins = mathjs.round((1 / (syncRate * nanoResolution)) / binFactor);
+            let binSteps = nanoResolution * binFactor;
             let angularFrequency = 2 * Math.PI * syncRate * freqMult;
-            let timeAxis = mathjs.range(0, (bins * binFactor * nanoResolution), (nanoResolution * binFactor))
+            let timeAxis = mathjs.range(0, (bins * binFactor * nanoResolution), binSteps);
 
 
 
@@ -47,32 +48,45 @@ module.exports = {
             let phasorArr = new Array(xPixels);
             let x, y;
 
-            for (x = 0; x < xPixels - 1; x++) {
+            for (x = 0; x < xPixels; x++) {
                   phasorArr[x] = new Array(yPixels);
-                  for (y = 0; y < yPixels - 1; y++) {
-                        phasorArr[x][y] = []; // Holds g coordinate at 0 and s coordinate at 1
+                  for (y = 0; y < yPixels; y++) {
+                        phasorArr[x][y] = []; // Holds g coordinate at 0 and s coordinate at 1; corresponding x and y cooridate at array position 2 and 3 respectively
                   };
             };
 
 
 
             // Calculating histogram for each pixel
-            let histTmp = [];
+            let hist = new Array(timeAxis.size()[0]).fill(0);
+            let i;
 
-            for (x = 0; x < xPixels - 1; x++) {
-                  for (y = 0; y < yPixels - 1; y++) {
+            console.log(hist.length);
+            console.log(timeAxis.size());
+
+            for (x = 0; x < xPixels; x++) {
+                  for (y = 0; y < yPixels; y++) {
                         if (decodedFile.nanoPixelArr[x][y].length > threshold) {
-                              histTmp = this.extractColumn(this.calcHist(decodedFile.nanoPixelArr[x][y], bins), 1); // This needs to be reformatted so that only an array
-                              phasorArr[x][y] = this.calculatePhasor(histTmp, timeAxis, angularFrequency); // g and s coordinates as array [g, s]
+                              for (i = 0; i < decodedFile.nanoPixelArr[x][y].length; i++) {
+                                    bin = Math.round(((decodedFile.nanoPixelArr[x][y][i] - histShift) * 1E-9) / binSteps);
+                                    if (bin >= 0) hist[bin]++;
+                              };
+
+                              phasorArr[x][y] = this.calculatePhasor(hist, timeAxis, angularFrequency); // g and s coordinates as array [g, s]
+                              phasorArr[x][y].push(x);
+                              phasorArr[x][y].push(y);
+                              hist.fill(0);
                         };
                   };
             };
-
             return (phasorArr);
       },
 
-      showPhasor(phasorArr) {
+      showPhasor(decodedFile) {
+            let phasorArr = decodedFile.phasors;
+
             const Plotly = require("plotly.js-dist");
+            let plotArea = document.getElementById("plotArea");
 
             var g = new Array();
             var s = new Array();
@@ -91,10 +105,7 @@ module.exports = {
                         colorscale: "Greys",
                         reversescale: true,
                         type: "scatter",
-                        mode: "markers",
-                        contours: {
-                              coloring: "heatmap"
-                        }
+                        mode: "markers"
                   }
             ];
 
@@ -104,7 +115,6 @@ module.exports = {
                   height: 600,
                   xaxis: { range: [0, 1] },
                   yaxis: { range: [0, 0.6] },
-                  showlegend: false,
                   plot_bgcolor: "transparent",
                   shapes: [{
                         type: 'circle',
@@ -120,6 +130,21 @@ module.exports = {
                   }],
             };
 
-            Plotly.newPlot("plotArea", plotData, layout, { staticPlot: true });
+            Plotly.newPlot(plotArea, plotData, layout);
+
+            // Check if user interacts with phasor plot and perform image colorization based on selection
+            const phasorPlot = document.getElementById("plotArea")
+            phasorPlot.on("plotly_selected", (selectedData) => {
+                  let selectedCoordinates = new Array(selectedData.points.length);
+                  // Because all histogram and phasor calculations are based on the nanotime array with x and y pixels, it is safe to assume, that the index number returned by plotly (based on the index of the phasor coordinates arrays) can be mapped back to the pixel in x and y.
+                  selectedData.points.forEach((point, index) => {
+                        selectedCoordinates[index] = point.pointIndex;
+                  });
+                  const intImg = require("../render/showintensityimage.js");
+                  console.log(selectedCoordinates);
+                  intImg.colorizeFromPhasorSelection(decodedFile, selectedCoordinates);
+            });
+
+
       }
 };

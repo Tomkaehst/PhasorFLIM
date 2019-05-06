@@ -9,11 +9,9 @@ module.exports = {
             let pixelY = arr.shortinfo.pixelY / binningFactor;
 
             // Initializing 3D array ([x][y][n]) to attach n nanotimes to each pixel by appending (histogram will be calculated from that "on the fly" to save RAM)
-            var j;
-            var i;
+            let i, j;
 
             let imgArr = new Array(pixelX); // Assuming a square image!
-
             for (i = 0; i < imgArr.length; i++) {
                   imgArr[i] = new Array(pixelY);
                   for (j = 0; j < imgArr[i].length; j++) {
@@ -70,7 +68,8 @@ module.exports = {
                               pixelTime = (lineStop - lineStart) / pixelY;
 
                               // assign the photons from a lineActive period to the corresponding pixels of arr[lineCounter][pixel]
-                              for (var i = 0; i <= tmpEvents.length - 1; i++) {
+                              let i;
+                              for (i = 0; i < tmpEvents.length - 1; i++) {
                                     diff = tmpEvents[i] - lineStart;
                                     pixelID_Y = Math.floor(diff / pixelTime);
 
@@ -86,7 +85,7 @@ module.exports = {
                               lineCounter++;
                               tmpEvents = [];
                               tmpNano = [];
-                              continue;
+                              //continue;
                         };
 
                         eventCounter++;
@@ -106,7 +105,7 @@ module.exports = {
                   if (frameCounter >= framesInFile) {
                         lastLine = true;
                         console.log("Processed " + arr.shortinfo.numRec + " events from " + frameCounter + " frame scannings.\n")
-                        //break;
+                        break;
                   };
 
 

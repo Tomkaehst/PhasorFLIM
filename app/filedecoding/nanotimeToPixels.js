@@ -77,7 +77,7 @@ module.exports = {
                                           console.error("Pixel out of range! Line: " + lineCounter + ", Pixel: " + pixelID_Y + ", Frame: " + frameCounter + "\n Assigned out-of-range pixel to nearest edge.");
                                           if (pixelID_Y < 0) pixelID_Y = 0;
                                           if (pixelID_Y > pixelX - 1) pixelID_Y = pixelX - 1;
-                                    }
+                                    };
                                     imgArr[Math.floor(pixelID_X)][pixelID_Y].push(tmpNano[i]);
                               };
 

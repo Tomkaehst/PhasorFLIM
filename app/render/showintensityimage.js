@@ -42,14 +42,20 @@ module.exports = {
 
             colorizeFromPhasorSelection() acts on the intensityArray of the fileDecoded object!
       */
-      colorizeFromPhasorSelection(decodedFile, indices, color) {
+      colorizeFromPhasorSelection(decodedFile, indices) {
             let canv = document.getElementById("colorImg").getContext("2d");
-            let colorArr = [255, 0, 125];
             let imgData = decodedFile.intensityArray;
             let imgX = imgData.length;
             let imgY = imgData[0].length;
             let imgData_wColor = canv.createImageData(imgX, imgY);
             var intensityMultiplicator = document.getElementById("intensityMultiplicator").value;
+
+            let colorSelector = document.getElementById("colorSelector").value - 1;
+            let colorArr = [
+                  [220, 20, 60],
+                  [255, 255, 0],
+                  [0, 255, 127]
+            ];
 
             var i, x, y, index, indicesCounter;
             i = 0;
@@ -59,9 +65,9 @@ module.exports = {
             for (x = 0; x < imgX; x++) {
                   for (y = 0; y < imgY; y++) {
                         if (index == indices[indicesCounter]) {
-                              imgData_wColor.data[i + 0] = 255;
-                              imgData_wColor.data[i + 1] = 0;
-                              imgData_wColor.data[i + 2] = 125;
+                              imgData_wColor.data[i + 0] = colorArr[colorSelector][0];
+                              imgData_wColor.data[i + 1] = colorArr[colorSelector][1];
+                              imgData_wColor.data[i + 2] = colorArr[colorSelector][2];
                               indicesCounter++;
                         } else {
                               imgData_wColor.data[i + 0] = 255;

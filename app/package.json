@@ -9,19 +9,15 @@
   "author": "Tom Kache",
   "license": "GPL-3.0",
   "dependencies": {
-    "bitwise": "^2.0.3",
     "cluster": "^0.7.7",
     "colormap": "^2.3.1",
     "compute-histogram": "^0.9.7",
     "electron": "^4.1.4",
     "electron-packager": "^13.1.1",
     "mathjs": "^5.9.0",
-    "nectarjs": "^0.1.8",
     "node-addon-api": "^1.6.3",
     "os": "^0.1.1",
-    "performance-now": "^2.1.0",
-    "plotly.js-dist": "^1.47.4",
-    "rollup": "^1.10.1"
+    "plotly.js-dist": "^1.47.4"
   },
   "devDependencies": {
     "node-gyp": "^4.0.0"

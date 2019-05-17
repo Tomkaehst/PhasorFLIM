@@ -23,7 +23,7 @@ doubleDecayArr = function(whichCol, timeMax, timeSteps, tau1, tau2, tauFRET, noi
       laser = laser.gauss(
         time,
         amp = 150,
-        dplace = 1000,
+        dplace = 100,
         grsm = 100
       )
       

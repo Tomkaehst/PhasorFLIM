@@ -1,5 +1,5 @@
 module.exports = {
-      showOverallDecay: function (decodedFile, binningFactor, threshold, histShift) {
+      showOverallDecay: function (decodedFile, binningFactor, threshold, histShiftLeft, histShiftRight, histOffset) {
             const mathjs = require("mathjs");
             const Plotly = require("plotly.js-dist");
 
@@ -14,7 +14,7 @@ module.exports = {
             let bins = mathjs.round((1 / (syncRate * nanoResolution)) / binFactor);
             let binSteps = nanoResolution * binFactor;
             let timeAxis = mathjs.range(0, (bins * binFactor * nanoResolution), binSteps);
-            let bin = 0;
+            var bin = 0;
 
             // Initializing array for nanotimes
             let hist = new Array(timeAxis.size()[0]).fill(0);
@@ -24,18 +24,28 @@ module.exports = {
                   for (y = 0; y < yPixels; y++) {
                         if (decodedFile.nanoPixelArr[x][y].length >= threshold) {
                               for (i = 0; i < decodedFile.nanoPixelArr[x][y].length; i++) {
-                                    bin = Math.round(((decodedFile.nanoPixelArr[x][y][i] - histShift) * 1E-9) / binSteps);
+                                    if (decodedFile.nanoPixelArr[x][y][i] <= (histShiftRight)) {
+                                          bin = Math.round(((decodedFile.nanoPixelArr[x][y][i] - histShiftLeft) * 1E-9) / binSteps);
+                                    };
+
                                     if (bin >= 0) hist[bin]++;
                               };
                         };
                   };
             };
 
+            hist.forEach((bin, index) => {
+                  hist[index] = (bin - histOffset);
+            });
+
+
+            // Plotting data
             var plotData = [
                   {
                         x: timeAxis._data,
                         y: hist,
-                        type: "scatter",
+                        type: "scattergl",
+                        mode: "markers"
                   }
             ];
 
@@ -45,15 +55,23 @@ module.exports = {
                   height: 600,
                   xaxis: {
                         autorange: true,
+                        title: {
+                              text: "Time (ns)"
+                        }
                   },
                   yaxis: {
                         autorange: true,
-                        type: "linear"
+                        type: "log",
+                        title: {
+                              text: "log Photon Counts"
+                        }
                   },
 
             };
 
-            Plotly.newPlot("histogram", plotData, layout, { staticPlot: true });
+            let plotAreaHist = document.getElementById("histogram");
+
+            Plotly.newPlot(plotAreaHist, plotData, layout);
 
             hist = null;
             timeAxis = null;

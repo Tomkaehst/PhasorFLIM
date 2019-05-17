@@ -10,14 +10,14 @@ let mainWindow, progressbar;
 function createWindow() {
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    width: 800, height: 1200
+    width: 1098, height: 900
   });
 
   // and load the index.html of the app.
-  mainWindow.loadFile('index.html');
+  mainWindow.loadFile('app.html');
 
   // Open the DevTools.
-  //mainWindow.webContents.openDevTools()
+  // mainWindow.webContents.openDevTools()
 
   // Emitted when the window is closed.
   mainWindow.on('closed', function () {
@@ -82,7 +82,7 @@ ipc.on("ptu-filepath", function (event) {
 
 
 // Progress bar
-ipc.on("started-loading-ptu", function (event) {
+ipc.on("start-progressbar", function (event) {
   progressbar = new BrowserWindow({
     width: 300,
     height: 125,
@@ -95,13 +95,13 @@ ipc.on("started-loading-ptu", function (event) {
   progressbar.show();
 });
 
-ipc.on("loading-ptu-progress", function (event, data) {
+ipc.on("update-progressbar", function (event, data) {
   var message = data[0];
   var progress = data[1];
   progressbar.webContents.send("update-progressbar", [message, progress]);
 });
 
-ipc.on("loading-ptu-finished", function (event) {
+ipc.on("end-progressbar", function (event) {
   progressbar.close();
   progressbar = null;
 });

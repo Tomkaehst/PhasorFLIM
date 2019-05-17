@@ -1,23 +1,53 @@
 {
   "name": "phasor-flim",
-  "version": "0.0.2",
+  "version": "0.0.5",
   "description": "Transform PicoQuant .ptu files into the phasor representation and determine FRET in your sample fitting-free.",
   "main": "main.js",
   "scripts": {
     "start": "electron ."
   },
   "author": "Tom Kache",
-  "license": "MIT",
+  "license": "GPL-3.0",
   "dependencies": {
     "bitwise": "^2.0.3",
     "cluster": "^0.7.7",
+    "colormap": "^2.3.1",
     "compute-histogram": "^0.9.7",
     "electron": "^4.1.4",
+    "electron-packager": "^13.1.1",
     "mathjs": "^5.9.0",
     "nectarjs": "^0.1.8",
+    "node-addon-api": "^1.6.3",
     "os": "^0.1.1",
+    "performance-now": "^2.1.0",
     "plotly.js-dist": "^1.47.4",
     "rollup": "^1.10.1"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "node-gyp": "^4.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tomkaehst/PhasorFLIM.git"
+  },
+  "keywords": [
+    "FLIM",
+    "Biololgy",
+    "Biochemistry",
+    "FRET-FLIM",
+    "Phasor",
+    "FRET",
+    "Cell",
+    "Biology",
+    "Fluorescence",
+    "Lifetime",
+    "Fluorescence",
+    "Lifetime",
+    "Imaging",
+    "Microscopy"
+  ],
+  "bugs": {
+    "url": "https://github.com/Tomkaehst/PhasorFLIM/issues"
+  },
+  "homepage": "https://github.com/Tomkaehst/PhasorFLIM#readme"
 }

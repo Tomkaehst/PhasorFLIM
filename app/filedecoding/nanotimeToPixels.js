@@ -1,6 +1,8 @@
 module.exports = {
       attachNanotimes: function (decodedFile, channel, binning) {
 
+            const { ipcRenderer } = require("electron");
+
             // Passing JavaScript OBJECT as function argument passes reference to that object!
             let arr = decodedFile;
             let binningFactor = 2 ** binning;
@@ -44,7 +46,7 @@ module.exports = {
 
                   tmpMarker = arr.markers[eventCounter];
 
-                  if (tmpMarker == 6) { // event is line start
+                  if (tmpMarker == 65) { // event is line start
                         lineActive = true;
                         lineStart = arr.macrotime[eventCounter]; // Saving the time when the line start occured
                         eventCounter++;
@@ -62,7 +64,7 @@ module.exports = {
                         if (tmpMarker == channel) {
                               tmpEvents.push(tmpMacro);
                               tmpNano.push(tmpNanotime);
-                        } else if (tmpMarker == 7) {
+                        } else if (tmpMarker == 66) {
                               lineActive = false;
                               lineStop = tmpMacro;
                               pixelTime = (lineStop - lineStart) / pixelY;
@@ -85,14 +87,11 @@ module.exports = {
                               lineCounter++;
                               tmpEvents = [];
                               tmpNano = [];
-                              //continue;
                         };
 
                         eventCounter++;
 
                   };
-
-
 
                   // Check if all lines in one frame have been evaluated
                   if (lineCounter > (arr.shortinfo.pixelX - 1)) {
@@ -109,8 +108,19 @@ module.exports = {
                   };
 
 
+                  // Showing Progress to User
+                  if (eventCounter % 25000 == 0) {
+                        ipc.send("update-progressbar", ["Sorting photons ...", Math.round((eventCounter / arr.shortinfo.numRec) * 100)]);
+                  };
+
                   eventCounter++;
             };
+
+
+            var myNotification = new Notification('Finished Loading ' + arr.shortinfo.filename);
+
+            // Stop showing progress bar
+            ipc.send("end-progressbar");
 
             return (imgArr);
       }

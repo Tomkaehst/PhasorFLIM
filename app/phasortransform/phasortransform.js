@@ -20,11 +20,12 @@ module.exports = {
             var gSum = mathjs.sum(gUpper);
             var sSum = mathjs.sum(sUpper);
             var result = [(gSum / histSum), (sSum / histSum)];
+            // var polar = [mathjs.sqrt(result[0] ** 2 + result[1] ** 2), mathjs.multiply((360) / (2 * Math.PI), mathjs.atan2(result[1], result[0]))];
             return (result);
       },
 
 
-      phasorTransform: function (decodedFile, binningFactor, threshold, histShift, freqUp) {
+      phasorTransform: function (decodedFile, binningFactor, threshold, histShiftLeft, histShiftRight, histOffset, freqUp) {
 
             const mathjs = require("mathjs");
 
@@ -58,35 +59,57 @@ module.exports = {
 
 
             // Calculating histogram for each pixel
-            let hist = new Array(timeAxis.size()[0]).fill(0);
-            let i;
+            var hist = new Array(timeAxis.size()[0]).fill(0);
+            var i, bin;
 
-            console.log(hist.length);
-            console.log(timeAxis.size());
+            // Start showing progressbar
+            ipc.send("start-progressbar");
 
+            // Calculating hist for each pixel and g/s coordinates
             for (x = 0; x < xPixels - 1; x++) {
                   for (y = 0; y < yPixels - 1; y++) {
+                        // Only evaluate pixels that have > counts than user-defined count threshold
                         if (decodedFile.nanoPixelArr[x][y].length > threshold) {
                               for (i = 0; i < decodedFile.nanoPixelArr[x][y].length; i++) {
-                                    bin = Math.round(((decodedFile.nanoPixelArr[x][y][i] - histShift) * 1E-9) / binSteps);
+                                    if (decodedFile.nanoPixelArr[x][y][i] <= (histShiftRight)) {
+                                          bin = Math.round(((decodedFile.nanoPixelArr[x][y][i] - histShiftLeft) * 1E-9) / binSteps);
+                                    };
+
                                     if (bin >= 0) hist[bin]++;
                               };
 
+                              // Subtracting user-defined count offset
+                              hist.forEach((bin, index) => {
+                                    hist[index] = (bin - histOffset);
+                              });
+
+                              // Calculate phasor 
                               phasorArr[x][y] = this.calculatePhasor(hist, timeAxis, angularFrequency); // g and s coordinates as array [g, s]
                               phasorArr[x][y].push(x);
                               phasorArr[x][y].push(y);
                               hist.fill(0);
                         };
                   };
+                  // Updating progressbar
+                  ipc.send("update-progressbar", ["Calculating Phasors ...", Math.round((x / xPixels) * 100)]);
             };
+
+            ipc.send("end-progressbar");
             return (phasorArr);
       },
 
-      showPhasor(decodedFile) {
+      showPhasor: function (decodedFile, frequencyMultiplicator) {
             let phasorArr = decodedFile.phasors;
 
             const Plotly = require("plotly.js-dist");
             let plotArea = document.getElementById("plotArea");
+
+
+            // Pushing the phasor coordinates into an array for visualization in plotlyjs; calculating mean lifetime also
+            let angularFrequency = 2 * Math.PI * decodedFile.shortinfo.syncRate * frequencyMultiplicator;
+            let gAvg = 0;
+            let sAvg = 0;
+
 
             var g = new Array();
             var s = new Array();
@@ -95,33 +118,72 @@ module.exports = {
                   for (y = 0; y < phasorArr[0].length; y++) {
                         g.push(phasorArr[x][y][0]);
                         s.push(phasorArr[x][y][1]);
+                        if (phasorArr[x][y][0] != undefined && phasorArr[x][y][1] != undefined) {
+                              gAvg += phasorArr[x][y][0] * decodedFile.nanoPixelArr[x][y].length; // Multiplied with number of photons in pixel for weighting, later divided by number of overall photons
+                              sAvg += phasorArr[x][y][1] * decodedFile.nanoPixelArr[x][y].length;
+                        };
                   };
             };
 
-            var plotData = [
-                  {
-                        x: g,
-                        y: s,
-                        colorscale: "Greys",
-                        reversescale: true,
-                        type: "scattergl",
-                        mode: "markers"
-                  }
-            ];
+            let lifetimeFromPhasors = (1 / angularFrequency) * ((sAvg / decodedFile.shortinfo.numRec) / (gAvg / decodedFile.shortinfo.numRec));
+            document.getElementById("avgLifetime").innerHTML = " " + Number((lifetimeFromPhasors * 1E9).toFixed(2)) + " ns"
+
+            var points = {
+                  x: g,
+                  y: s,
+                  mode: 'markers',
+                  name: 'points',
+                  marker: {
+                        color: 'rgb(100, 100, 100)',
+                        size: 0.1,
+                        opacity: 0
+                  },
+                  type: "scattergl"
+            };
+
+            // Defining contour plot
+            var density = {
+                  x: g,
+                  y: s,
+                  name: 'histogram2dcontour',
+                  ncontours: 10,
+                  colorscale: 'Hot',
+                  reversescale: true,
+                  showscale: true,
+                  type: 'histogram2dcontour'
+            };
+
+            // Adding lifetime reference points to plot
+            var lifetimeRefs = this.calculateReferencePoints([1E-9, 1.5E-9, 2E-9, 2.5E-9, 3E-9, 5E-9, 10E-9], angularFrequency);
+            var refPoints = {
+                  type: "scattergl",
+                  mode: "markers+text",
+                  x: lifetimeRefs[0],
+                  y: lifetimeRefs[1],
+                  color: "black",
+                  text: ["1 ns", "1.5 ns", "2 ns", "2.5 ns", "3 ns", "5 ns", "10 ns"],
+                  textposition: "bottom",
+            };
+
+            var plotData = [points, density, refPoints];
 
             var layout = {
+                  hovermode: false,
                   autosize: false,
                   width: 800,
                   height: 600,
                   xaxis: { range: [0, 1] },
-                  yaxis: { range: [0, 0.6] },
-                  plot_bgcolor: "transparent",
+                  yaxis: {
+                        range: [0, 0.6]
+                  },
+                  plot_bgcolor: "rgba(0, 0, 0, 0)",
+                  paper_bgcolor: "rgba(0, 0, 0, 0)",
                   shapes: [{
                         type: 'circle',
                         xref: 'x',
                         yref: 'y',
                         x0: 0,
-                        y0: -1,
+                        y0: -0.5,
                         x1: 1,
                         y1: 0.5,
                         line: {
@@ -141,11 +203,25 @@ module.exports = {
                         selectedCoordinates[index] = point.pointIndex;
                   });
                   const intImg = require("../render/showintensityimage.js");
-                  console.log(selectedCoordinates);
                   intImg.colorizeFromPhasorSelection(decodedFile, selectedCoordinates);
             });
 
+
+
+            // Dereferencing g and s coordinates for memory 
             g = null;
             s = null;
+      },
+
+      calculateReferencePoints(lifetimes, angularFrequency) {
+            var refG = [];
+            var refS = [];
+
+            lifetimes.forEach((lifetime) => {
+                  refG.push((1) / (1 + (angularFrequency ** 2) * (lifetime ** 2)));
+                  refS.push((angularFrequency * lifetime) / (1 + (angularFrequency ** 2) * lifetime ** 2));
+            });
+
+            return ([refG, refS]);
       }
 };

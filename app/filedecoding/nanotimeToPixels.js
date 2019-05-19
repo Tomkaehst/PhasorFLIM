@@ -116,9 +116,6 @@ module.exports = {
                   eventCounter++;
             };
 
-
-            var myNotification = new Notification('Finished Loading ' + arr.shortinfo.filename);
-
             // Stop showing progress bar
             ipc.send("end-progressbar");
 

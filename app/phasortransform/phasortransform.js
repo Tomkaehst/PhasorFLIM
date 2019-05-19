@@ -132,7 +132,6 @@ module.exports = {
                   x: g,
                   y: s,
                   mode: 'markers',
-                  name: 'points',
                   marker: {
                         color: 'rgb(100, 100, 100)',
                         size: 0.1,
@@ -145,7 +144,6 @@ module.exports = {
             var density = {
                   x: g,
                   y: s,
-                  name: 'histogram2dcontour',
                   ncontours: 10,
                   colorscale: 'Hot',
                   reversescale: true,
@@ -223,5 +221,65 @@ module.exports = {
             });
 
             return ([refG, refS]);
+      },
+
+      lifetimeDistributionFromPhasors: function (decodedFile, tauStart, tauEnd, frequencyMultiplicator) {
+
+            // Initializing variables
+            const mathjs = require("mathjs");
+            let lifetimeRange = (tauStart - tauEnd);
+            let bins = Math.round(lifetimeRange * 100); // 100 bins per ns
+            var lifetimeHist = new Array(2); // [0] is for the x-axis, [1] for the lifetime density
+            lifetimeHist[0] = mathjs.range(tauEnd, tauStart, 0.01)
+            lifetimeHist[1] = new Array(bins).fill(0);
+            var x, y, tmpLifetime, tmpBin;
+
+            // Constants for calculating lifetime
+            let angularFrequency = 2 * Math.PI * decodedFile.shortinfo.syncRate * frequencyMultiplicator;
+            // let lifetimeFromPhasors = (1 / angularFrequency) * ((sAvg / decodedFile.shortinfo.numRec) / (gAvg / decodedFile.shortinfo.numRec));
+
+            for (x = 0; x < decodedFile.phasors.length; x++) {
+                  for (y = 0; y < decodedFile.phasors[0].length; y++) {
+                        if (decodedFile.phasors[x][y][0] != undefined || decodedFile.phasors[x][y][1] != undefined) {
+                              tmpLifetime = (1 / angularFrequency) * (decodedFile.phasors[x][y][1] / decodedFile.phasors[x][y][0]);
+                              tmpBin = Math.floor((((tmpLifetime * 1E9) - tauEnd) / lifetimeRange) * lifetimeHist[0].size());
+
+                              lifetimeHist[1][tmpBin]++;
+                        };
+
+                  };
+            };
+
+            return (lifetimeHist);
+      },
+
+      showLifetimeHist: function (decodedFile) {
+            const Plotly = require("plotly.js-dist");
+
+            var histArea = document.getElementById("lifetimeHistArea");
+
+            var histData = {
+                  x: decodedFile.lifetimeHist[0]._data,
+                  y: decodedFile.lifetimeHist[1],
+                  //mode: "markers",
+                  type: "bar",
+                  autobinx: false
+            };
+
+            var layout = {
+                  width: 800,
+                  height: 600,
+                  bargap: 0.05,
+                  title: "Lifetime Distribution",
+                  xaxis: {
+                        title: "Lifetime (ns)"
+                  },
+                  yaxis: {
+                        title: "Counts"
+                  }
+            };
+
+            Plotly.newPlot(histArea, [histData], layout);
       }
+
 };

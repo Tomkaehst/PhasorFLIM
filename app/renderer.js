@@ -40,9 +40,12 @@ ipc.on("selectedptu", function (event, path) {
       }
       var channelSelected = document.getElementById("channelSelector").value;
       var binningFactor = document.getElementById("binningFactor").value;
+      var intensityMultiplicator = document.getElementById("intensityMultiplicator").value;
       fp = path[0];
       fileDecoded = PTUReader.decodePTU(fp); // Decoding .ptu file
       fileDecoded.nanoPixelArr = nanoToPixel.attachNanotimes(fileDecoded, channelSelected, binningFactor)
+      fileDecoded.intensityArray = imgCalc.calculateIntensityImage(fileDecoded.nanoPixelArr);
+      intImg.showImage(fileDecoded.intensityArray, imageCanvas, intensityMultiplicator);
 
       // Display filename to User
       document.getElementById("filename").innerHTML = fileDecoded.shortinfo.filename;
@@ -99,7 +102,6 @@ phasorBtn.addEventListener("click", () => {
             var binningFactorTemporal = document.getElementById("binningFactorTemporal").value;
             var frequencyMultiplicator = document.getElementById("frequencyMultiplicator").value;
             fileDecoded.phasors = phasorCalc.phasorTransform(fileDecoded, binningFactorTemporal, thresholdHist, histShiftLeft, histShiftRight, histOffset, frequencyMultiplicator);
-            // let lifetimeFromPhasorAv = phasorCalc.calculateLifetime(fileDecoded.phasors);
             phasorCalc.showPhasor(fileDecoded, frequencyMultiplicator);
       };
 
@@ -113,4 +115,6 @@ colorBtn.addEventListener("click", function (event) {
       var frequencyMultiplicator = document.getElementById("frequencyMultiplicator").value;
       var intensityMultiplicator = document.getElementById("intensityMultiplicator").value;
       intImg.colorizeFromLifetimeRange(fileDecoded, frequencyMultiplicator, intensityMultiplicator, donoronly, fretpositive);
+      fileDecoded.lifetimeHist = phasorCalc.lifetimeDistributionFromPhasors(fileDecoded, donoronly, fretpositive, frequencyMultiplicator);
+      phasorCalc.showLifetimeHist(fileDecoded);
 });

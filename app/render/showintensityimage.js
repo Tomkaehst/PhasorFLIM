@@ -85,7 +85,7 @@ module.exports = {
             var angularFrequency = 2 * Math.PI * decodedFile.shortinfo.syncRate * frequencyMultiplicator;
             var lifetimeRange = tauStart - tauEnd;
             var colors = new colormap({
-                  colormap: "portland",
+                  colormap: "plasma",
                   nshades: 20,
                   format: "rgba"
             });
@@ -100,7 +100,6 @@ module.exports = {
 
                               index = Math.floor((x / imgX) * colors.length);
                               colorTemp = colors[index];
-                              console.log(index);
 
                               imgData_wColor.data[i + 0] = colorTemp[0];
                               imgData_wColor.data[i + 1] = colorTemp[1];
@@ -129,7 +128,7 @@ module.exports = {
                               imgData_wColor.data[i + 0] = colorTemp[0];
                               imgData_wColor.data[i + 1] = colorTemp[1];
                               imgData_wColor.data[i + 2] = colorTemp[2];
-                              imgData_wColor.data[i + 3] = imgData[x][y];
+                              imgData_wColor.data[i + 3] = imgData[x][y] * intensityMultiplicator;
                         };
 
                         i += 4;

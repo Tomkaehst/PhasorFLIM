@@ -11,14 +11,21 @@ const intImg = require("./render/showintensityimage.js");
 const nanoToPixel = require("./filedecoding/nanotimeToPixels");
 const histCalc = require("./filedecoding/calculateDecayHist.js");
 const phasorCalc = require("./phasortransform/phasortransform.js");
+const exportFunctions = require("./render/exportFunctions.js");
 
 // Select elements from GUI
 const ptuFileBtn = document.getElementById("ptuSubmit");
 const processPtuBtn = document.getElementById("processPtu");
 const imageCanvas = document.getElementById("outputImg");
+const lifetimeCanvas = document.getElementById("colorImg")
 const phasorBtn = document.getElementById("makePhasor");
 const calcHistBtn = document.getElementById("calcHist");
 const colorBtn = document.getElementById("MapLifetimeToColor");
+const saveIntImg = document.getElementById("saveIntensityImage");
+const saveLifetimeImg = document.getElementById("saveLifetimeImage");
+const saveLifetimeHist = document.getElementById("saveLifetimeHistogram");
+const savePhasorCoordinates = document.getElementById("savePhasorCoordinates");
+
 
 // Initializing variables
 var fileDecoded; // JavaScript object; holds decoded ptu events and is appended with intensity image and phasor coordinates
@@ -114,7 +121,38 @@ colorBtn.addEventListener("click", function (event) {
       var fretpositive = document.getElementById("fretpositive").value;
       var frequencyMultiplicator = document.getElementById("frequencyMultiplicator").value;
       var intensityMultiplicator = document.getElementById("intensityMultiplicator").value;
-      intImg.colorizeFromLifetimeRange(fileDecoded, frequencyMultiplicator, intensityMultiplicator, donoronly, fretpositive);
+      intImg.colorizeFromLifetimeRange(fileDecoded, lifetimeCanvas, frequencyMultiplicator, intensityMultiplicator, donoronly, fretpositive);
       fileDecoded.lifetimeHist = phasorCalc.lifetimeDistributionFromPhasors(fileDecoded, donoronly, fretpositive, frequencyMultiplicator);
       phasorCalc.showLifetimeHist(fileDecoded);
+});
+
+
+// Output intensity image to file system
+saveIntImg.addEventListener("click", function (event) {
+      // Calcutage base64 image (png) for export
+      var intImageForExport = exportFunctions.exportIntensityImage(imageCanvas);
+
+      // Send off base 64 png to main process for saving to file system
+      ipc.send("intensity-image-base64", intImageForExport);
+});
+
+
+// Output lifetime image to file system
+saveLifetimeImg.addEventListener("click", function (event) {
+      // Calcutage base64 image (png) for export
+      var lifetimeImgCanv = document.getElementById("colorImg");
+      var lifetimeImageForExport = exportFunctions.exportLifetimeImage(lifetimeImgCanv);
+
+      // Send off base 64 jpeg to main process for saving to file system
+      ipc.send("intensity-image-base64", lifetimeImageForExport);
+});
+
+// Saving lifetime hist to filesystem as csv / send to main via IPC
+saveLifetimeHist.addEventListener("click", function (event) {
+      ipc.send("saveLifetimeHistAsCSV", fileDecoded.lifetimeHist);
+});
+
+// Saving the phasor coordinates as csv / send to main via IPC
+savePhasorCoordinates.addEventListener("click", function (event) {
+      ipc.send("savePhasorCoordinatesAsCSV", fileDecoded.phasors); // stored in PhasorFLIM as 3d array: x-y-(g, s, x, y); will be saved as 1D array!
 });

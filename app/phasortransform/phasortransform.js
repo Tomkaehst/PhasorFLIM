@@ -126,6 +126,7 @@ module.exports = {
             };
 
             let lifetimeFromPhasors = (1 / angularFrequency) * ((sAvg / decodedFile.shortinfo.numRec) / (gAvg / decodedFile.shortinfo.numRec));
+            // let lifetimeFromPhasors = (1 / angularFrequency) * (sAvg / gAvg);
             document.getElementById("avgLifetime").innerHTML = " " + Number((lifetimeFromPhasors * 1E9).toFixed(2)) + " ns"
 
             var points = {
@@ -193,16 +194,16 @@ module.exports = {
             Plotly.newPlot(plotArea, plotData, layout);
 
             // Check if user interacts with phasor plot and perform image colorization based on selection
-            const phasorPlot = document.getElementById("plotArea")
-            phasorPlot.on("plotly_selected", (selectedData) => {
-                  let selectedCoordinates = new Array(selectedData.points.length);
-                  // Because all histogram and phasor calculations are based on the nanotime array with x and y pixels, it is safe to assume, that the index number returned by plotly (based on the index of the phasor coordinates arrays) can be mapped back to the pixel in x and y.
-                  selectedData.points.forEach((point, index) => {
-                        selectedCoordinates[index] = point.pointIndex;
-                  });
-                  const intImg = require("../render/showintensityimage.js");
-                  intImg.colorizeFromPhasorSelection(decodedFile, selectedCoordinates);
-            });
+            // const phasorPlot = document.getElementById("plotArea")
+            // phasorPlot.on("plotly_selected", (selectedData) => {
+            //       let selectedCoordinates = new Array(selectedData.points.length);
+            //       // Because all histogram and phasor calculations are based on the nanotime array with x and y pixels, it is safe to assume, that the index number returned by plotly (based on the index of the phasor coordinates arrays) can be mapped back to the pixel in x and y.
+            //       selectedData.points.forEach((point, index) => {
+            //             selectedCoordinates[index] = point.pointIndex;
+            //       });
+            //       const intImg = require("../render/showintensityimage.js");
+            //       intImg.colorizeFromPhasorSelection(decodedFile, selectedCoordinates);
+            // });
 
 
 

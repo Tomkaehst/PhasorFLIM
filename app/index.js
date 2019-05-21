@@ -1,23 +1,22 @@
-const colormap = require("colormap");
+const fs = require("fs");
 
-var colors = new colormap({
-      colormap: "jet",
-      nshades: 100,
-      format: "rgba"
-})
+var test = [
+      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      [10, 59, 84, 2, 4575, 474, 84, 4, 14, 2]
+];
 
-let arr = new Array(10);
-var x, y;
-let value = 0;
+var path = "./test.csv";
+var header = ["Lifetime", "Counts"];
 
-for (x = 0; x < arr.length; x++) {
-      arr[x] = new Array(10);
-      for (y = 0; y < arr[0].length; y++) {
-            arr[x][y] = colors[value];
-            value += 1;
-      };
+var writeStream = fs.createWriteStream(path);
+
+writeStream.write(header.toString() + "\n");
+
+var tmp, i;
+for (i = 0; i < test[0].length; i++) {
+      tmp = [test[0][i], test[1][i]].toString();
+      writeStream.write(tmp + "\n");
 };
 
-var test = colors[20];
 
-console.log(test[0]);
+writeStream.close();

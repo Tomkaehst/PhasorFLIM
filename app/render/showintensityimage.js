@@ -13,15 +13,16 @@ module.exports = {
 
             for (x = 0; x < imgX; x++) {
                   for (y = 0; y < imgY; y++) {
-                        imgData.data[i + 0] = 255;
-                        imgData.data[i + 1] = 255;
-                        imgData.data[i + 2] = 255;
-                        imgData.data[i + 3] = arr[x][y] * intensityMultiplicator;
+                        imgData.data[i + 0] = arr[x][y] * intensityMultiplicator;
+                        imgData.data[i + 1] = arr[x][y] * intensityMultiplicator;
+                        imgData.data[i + 2] = arr[x][y] * intensityMultiplicator;
+                        imgData.data[i + 3] = 255;//arr[x][y] * intensityMultiplicator;
                         i += 4;
 
                   };
             };
-
+            // canv.fillStyle = "rgb(0, 0, 0)";
+            // canv.fillRect(0, 0, imgX, imgY);
             canv.putImageData(imgData, 0, 0);
             return (imgData);
 
@@ -32,61 +33,64 @@ module.exports = {
 
             colorizeFromPhasorSelection() acts on the intensityArray of the fileDecoded object!
       */
-      colorizeFromPhasorSelection(decodedFile, indices) {
-            let canv = document.getElementById("colorImg").getContext("2d");
-            let imgData = decodedFile.intensityArray;
-            let imgX = imgData.length;
-            let imgY = imgData[0].length;
-            let imgData_wColor = canv.createImageData(imgX, imgY);
-            var intensityMultiplicator = document.getElementById("intensityMultiplicator").value;
+      // colorizeFromPhasorSelection(decodedFile, imagecanvas, indices) {
+      //       let canv = imagecanvas.getContext("2d");
+      //       let imgData = decodedFile.intensityArray;
+      //       let imgX = imgData.length;
+      //       let imgY = imgData[0].length;
+      //       let imgData_wColor = canv.createImageData(imgX, imgY);
+      //       var intensityMultiplicator = document.getElementById("intensityMultiplicator").value;
 
-            let colorSelector = document.getElementById("colorSelector").value - 1;
-            let colorArr = [
-                  [220, 20, 60],
-                  [255, 255, 0],
-                  [0, 255, 127]
-            ];
+      //       let colorSelector = document.getElementById("colorSelector").value - 1;
+      //       let colorArr = [
+      //             [220, 20, 60],
+      //             [255, 255, 0],
+      //             [0, 255, 127]
+      //       ];
 
-            var i, x, y, index, indicesCounter;
-            i = 0;
-            index = 0;
-            indicesCounter = 0;
+      //       var i, x, y, index, indicesCounter;
+      //       i = 0;
+      //       index = 0;
+      //       indicesCounter = 0;
 
-            for (x = 0; x < imgX; x++) {
-                  for (y = 0; y < imgY; y++) {
-                        if (index == indices[indicesCounter]) {
-                              imgData_wColor.data[i + 0] = colorArr[colorSelector][0];
-                              imgData_wColor.data[i + 1] = colorArr[colorSelector][1];
-                              imgData_wColor.data[i + 2] = colorArr[colorSelector][2];
-                              indicesCounter++;
-                        } else {
-                              imgData_wColor.data[i + 0] = colorArr[colorSelector + 1][0];
-                              imgData_wColor.data[i + 1] = colorArr[colorSelector + 1][1];
-                              imgData_wColor.data[i + 2] = colorArr[colorSelector + 1][2];
-                        };
-                        imgData_wColor.data[i + 3] = imgData[x][y] * intensityMultiplicator + 50;
-                        i += 4;
-                        index++;
-                  };
-            };
+      //       for (x = 0; x < imgX; x++) {
+      //             for (y = 0; y < imgY; y++) {
+      //                   if (index == indices[indicesCounter]) {
+      //                         imgData_wColor.data[i + 0] = colorArr[colorSelector][0];
+      //                         imgData_wColor.data[i + 1] = colorArr[colorSelector][1];
+      //                         imgData_wColor.data[i + 2] = colorArr[colorSelector][2];
+      //                         indicesCounter++;
+      //                   } else {
+      //                         imgData_wColor.data[i + 0] = colorArr[colorSelector + 1][0];
+      //                         imgData_wColor.data[i + 1] = colorArr[colorSelector + 1][1];
+      //                         imgData_wColor.data[i + 2] = colorArr[colorSelector + 1][2];
+      //                   };
+      //                   imgData_wColor.data[i + 3] = imgData[x][y] * intensityMultiplicator + 50;
+      //                   i += 4;
+      //                   index++;
+      //             };
+      //       };
 
-            canv.putImageData(imgData_wColor, 0, 0);
-            imgData_wColor = null;
-      },
+      //       canv.putImageData(imgData_wColor, 0, 0);
+      //       imgData_wColor = null;
+      // },
 
-      colorizeFromLifetimeRange: function (decodedFile, frequencyMultiplicator, intensityMultiplicator, tauStart, tauEnd) {
+      colorizeFromLifetimeRange: function (decodedFile, imgcanv, frequencyMultiplicator, intensityMultiplicator, tauStart, tauEnd) {
             const colormap = require("colormap");
-            let canv = document.getElementById("colorImg").getContext("2d");
+            var canv = imgcanv.getContext("2d");
             let imgData = decodedFile.intensityArray;
             let imgX = imgData.length;
             let imgY = imgData[0].length;
-            let imgData_wColor = canv.createImageData(imgX, imgY + 20);
+
+            imgcanv.width = imgX;
+            imgcanv.height = imgY;
+            var imgData_wColor = canv.createImageData(imgX, imgY);
 
             var angularFrequency = 2 * Math.PI * decodedFile.shortinfo.syncRate * frequencyMultiplicator;
             var lifetimeRange = tauStart - tauEnd;
             var colors = new colormap({
                   colormap: "plasma",
-                  nshades: 20,
+                  nshades: 25,
                   format: "rgba"
             });
 
@@ -96,7 +100,7 @@ module.exports = {
 
             for (x = 0; x < imgX; x++) {
                   for (y = 0; y < imgY; y++) {
-                        if (y < 20) {
+                        if (y < 10) {
 
                               index = Math.floor((x / imgX) * colors.length);
                               colorTemp = colors[index];
@@ -122,7 +126,7 @@ module.exports = {
                                     }
 
                               } else {
-                                    colorTemp = [255, 255, 255];
+                                    colorTemp = [0, 0, 0, 255];
                               };
 
                               imgData_wColor.data[i + 0] = colorTemp[0];
@@ -135,13 +139,17 @@ module.exports = {
                   };
             };
 
+            // Adding a black rectangle as background
+            canv.fillStyle = "rgb(0, 0, 0)";
+            canv.fillRect(0, 0, imgX, imgY);
+
             canv.putImageData(imgData_wColor, 0, 0);
 
             // Adding upper and lower lifetime limit as text to the colorscale; This is added after the content of imageData_wColor is drawn on the canvas
             canv.font = "18px sans-serif";
             canv.fillStyle = "white";
-            canv.fillText(tauStart.toString(), 25, 20);
-            canv.fillText(tauEnd.toString(), 25, imgX - 20);
+            canv.fillText(tauStart.toString(), 15, 20);
+            canv.fillText(tauEnd.toString(), 15, imgX - 10);
 
             imgData_wColor = null;
       }

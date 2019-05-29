@@ -229,9 +229,9 @@ module.exports = {
             // Initializing variables
             const mathjs = require("mathjs");
             let lifetimeRange = (tauStart - tauEnd);
-            let bins = Math.round(lifetimeRange * 100); // 100 bins per ns
+            let bins = Math.round(lifetimeRange * 50); // 10 bins per ns
             var lifetimeHist = new Array(2); // [0] is for the x-axis, [1] for the lifetime density
-            lifetimeHist[0] = mathjs.range(tauEnd, tauStart, 0.01)
+            lifetimeHist[0] = mathjs.range(tauEnd, tauStart, 0.05)
             lifetimeHist[1] = new Array(bins).fill(0);
             var x, y, tmpLifetime, tmpBin;
 

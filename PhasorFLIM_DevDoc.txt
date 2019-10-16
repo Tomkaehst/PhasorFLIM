@@ -1,0 +1,10 @@
+# *Phasor FLIM* Developer Documentation
+
+## Current State of the Project
+
+
+## Application Description
+
+
+## Application Architecture
+

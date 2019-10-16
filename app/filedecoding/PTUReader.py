@@ -2,6 +2,7 @@ import struct
 import sys
 import io
 import os
+import json
 import numpy as np
 from numba import jit
 
@@ -60,7 +61,6 @@ while(reached_headerend == False):
         reached_headerend = True
         # Offset required so that photon records (see second part) are 'in frame'!
         filereadstream.read(4)
-        print('Found Header_End.')
         break
 
     if(tagType == tyEmpty8):
@@ -80,7 +80,6 @@ while(reached_headerend == False):
 
     elif(tagType == tyFloat8Array):
         value = struct.unpack("<q", tagVal)[0]
-        print('Float array with %d entries' % value / 8)
 
     elif(tagType == tyAnsiString):
         value = struct.unpack('<q', tagVal)[0]
@@ -109,7 +108,7 @@ while(reached_headerend == False):
         header_contents[tagId] = value
 
     elif(tagType == tyTDateTime):
-        print(' ')
+        continue
 
     else:
         continue
@@ -202,3 +201,6 @@ flimarray[:]['nanotime'] = np.right_shift(
 treatOverflows(flimarray, macroMultFactor)
 
 print("Read and recovered raw photon data from %s" % filepath)
+
+
+sys.stdout.flush()

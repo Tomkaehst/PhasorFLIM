@@ -3,6 +3,7 @@ const { app, BrowserWindow } = require('electron')
 const ipc = require("electron").ipcMain;
 const dialog = require("electron").dialog;
 const fs = require("fs");
+const { PythonShell } = require("python-shell")
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -234,5 +235,14 @@ ipc.on("savePhasorCoordinatesAsCSV", function (event, data) {
 
 // Python Test Area
 
-// Spawning a Python process and executing the hello.py script in //pythonscripts
+let pythonOptions = {
+  mode: "text",
+  pythonOptions: ["-u"],
+  args: ["/Users/tomkache/Documents/Studium/PhD/2019/Data Analysis/PhasorFLIM/app/testData/EGFP_Cherry_Co_1_1.ptu"]
+};
 
+PythonShell.run("filedecoding/PTUReader.py", pythonOptions, function (err, output) {
+  if (err) throw err;
+
+  console.log("Python Output: %j" % output);
+})

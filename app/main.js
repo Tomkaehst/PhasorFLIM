@@ -223,3 +223,16 @@ ipc.on("savePhasorCoordinatesAsCSV", function (event, data) {
     };
   });
 });
+
+
+
+
+
+
+
+
+
+// Python Test Area
+
+// Spawning a Python process and executing the hello.py script in //pythonscripts
+

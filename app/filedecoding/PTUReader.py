@@ -40,7 +40,7 @@ if(filemagic != 'PQTTTR'):
 
 fileversion = filereadstream.read(8).decode('utf8').strip('\0')
 
-print('Start decoding "%s" TTTR file.\nValid .ptu file\Commencing...' % filepath)
+print('Start decoding "%s" TTTR file.\nValid .ptu file\nCommencing...' % filepath)
 
 
 # Reading Header

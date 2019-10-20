@@ -34,9 +34,12 @@ vignettes/*.pdf
 
 # Shiny token, see https://shiny.rstudio.com/articles/shinyapps.html
 rsconnect/
+<<<<<<< HEAD
 
 
 
 # Node_modules
 app/node_modules/
 node_modules/
+=======
+>>>>>>> d68ee8f3838e5f282229d48b33caaf7331dfac94

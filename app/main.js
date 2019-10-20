@@ -1,6 +1,9 @@
 // Modules to control application life and create native browser window
 const { app, BrowserWindow } = require('electron')
+<<<<<<< HEAD
 const path = require('path');
+=======
+>>>>>>> d68ee8f3838e5f282229d48b33caaf7331dfac94
 const ipc = require("electron").ipcMain;
 const dialog = require("electron").dialog;
 const fs = require("fs");
@@ -239,7 +242,11 @@ ipc.on("savePhasorCoordinatesAsCSV", function (event, data) {
 let pythonOptions = {
   mode: "text",
   pythonOptions: ["-u"],
+<<<<<<< HEAD
   args: [path.join(__dirname ,"testData/EGFP_Cherry_Co_1_1.ptu")]
+=======
+  args: ["/Users/tomkache/Documents/Studium/PhD/2019/Data Analysis/PhasorFLIM/app/testData/EGFP_Cherry_Co_1_1.ptu"]
+>>>>>>> d68ee8f3838e5f282229d48b33caaf7331dfac94
 };
 
 PythonShell.run("filedecoding/PTUReader.py", pythonOptions, function (err, output) {

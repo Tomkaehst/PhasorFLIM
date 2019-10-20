@@ -123,7 +123,11 @@ headerend_bitoffset = filereadstream.tell()
 # - Comment: String containing user comments
 # - TTResultsFormat_TTTRRecType: Type of the photon records i.e. which device was used
 # - TTResultFormat_BitsPerRecord: Number of bits in a photon record
+<<<<<<< HEAD
 # - ReqHdr_SpatialResolution: Width of a pixel in micrometer
+=======
+# - ReqHdr_SpatialResolution: Width of a pixel in µm
+>>>>>>> d68ee8f3838e5f282229d48b33caaf7331dfac94
 # - ImgHdr_PixX: How many pixels in X?
 # - ImgHdr_PixY: How many pixels in Y?
 # - MeasDesc_GlobalResolution: time resolution of measurement

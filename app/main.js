@@ -237,7 +237,16 @@ ipc.on("savePhasorCoordinatesAsCSV", function (event, data) {
 
 // Python Test Area
 
+var python = child_process.spawn(
+  "python",
+  [path.join(__dirname, "filedecoding/PTUReader.py")],
+  []
+);
 
+console.log("Launching python...\n")
+python.stdout.on("data", function(data) {
+  console.log(data.toString("utf8"));
+});
 
 
 /* let pythonOptions = {

@@ -45,7 +45,7 @@ print('Start decoding "%s" TTTR file.\nValid .ptu file\nCommencing...' % filepat
 
 # Reading Header
 # Setting up tuple for header and while loop for byte-wise reading
-
+ 
 headerend_tag = 'Header_End'
 reached_headerend = False
 header_contents = {}

@@ -15,7 +15,7 @@ import reconstructIntensityImage as reconstruct
 def main():
     print("Starting .ptu decoding... \n")
 
-    filepath = sys.argv[1]
+    filepath = "testData/2016-10-28_FLIM1_1_1.ptu"  # sys.argv[1]
     flimarray, FLIMInfo = reader.PTUReader(filepath)
     image = reconstruct.assignNanotimes(
         flimarray, 0, FLIMInfo['LinesInFile'], FLIMInfo['PixelsX'], FLIMInfo['PixelsY'])

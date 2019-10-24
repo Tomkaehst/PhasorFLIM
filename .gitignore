@@ -41,5 +41,9 @@ rsconnect/
 # Node_modules
 app/node_modules/
 node_modules/
+
+
+# Ignore FLIM test data
+app/testData
 =======
 >>>>>>> d68ee8f3838e5f282229d48b33caaf7331dfac94

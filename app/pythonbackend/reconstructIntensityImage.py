@@ -3,7 +3,7 @@ import math
 from numba import jit
 
 
-@jit(nopython=True, cache=True)
+# @jit(nopython=True, cache=True)
 def assignNanotimes(flimarray, channel, linesinfile, pixelsx, pixelsy):
     # assign nanotimes to 3D FLIM Image array
     # flimimage = np.zeros((FLIMInfo['PixelsX'],

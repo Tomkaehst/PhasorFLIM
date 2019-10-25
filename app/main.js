@@ -137,7 +137,7 @@ ipc.on("intensity-image-base64", function (event, data) {
         if (err === null) {
           console.log("The intensity image was saved successfully!")
         } else {
-          console.log("An error occured during saveing the intensity image: " + err)
+          console.log("An error occured during saving the intensity image: " + err)
         }
       });
     }

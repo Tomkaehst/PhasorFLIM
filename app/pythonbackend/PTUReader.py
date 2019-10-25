@@ -35,8 +35,6 @@ def countLines(flimarray):
 
 
 def PTUReader(path):
-    print("Start decoding PTU script...\n")
-
     # Setting up header and record type(s)
     # Identifiers for data contained within header section of .ptu file
     tyEmpty8 = struct.unpack(">i", bytes.fromhex("FFFF0008"))[0]

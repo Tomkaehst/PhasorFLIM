@@ -4,7 +4,7 @@ from numba import jit
 import sys
 
 
-#@jit(nopython=True, cache=True)
+@jit(nopython=True, cache=True)
 def assignNanotimes(flimarray, channel, linesinfile, pixelsx, pixelsy):
     # assign nanotimes to 3D FLIM Image array
     # flimimage = np.zeros((FLIMInfo['PixelsX'],
@@ -63,16 +63,15 @@ def assignNanotimes(flimarray, channel, linesinfile, pixelsx, pixelsy):
                     pixelIDY = math.floor(diff / pixelTime)
 
                     if(pixelIDY < 0 or pixelIDY > (pixelsy - 1)):
-                        print("Photon out of image range!")
-                        print("Line: %d, X: %d Y: %d,Frame: %d" % (lineCounter, pixelIDX, pixelIDY, frameCounter))
-                        print("Assigning photon to nearest edge...\n")
+                        #print("Photon out of image range!")
+                        #print("Line: %d, X: %d Y: %d,Frame: %d" % (lineCounter, pixelIDX, pixelIDY, frameCounter))
+                        #print("Assigning photon to nearest edge...\n")
                         if(pixelIDY < 0):
                             pixelIDY = 0
                         elif(pixelIDY > (pixelsy - 1)):
                             pixelIDY = pixelsy - 1
 
                     intensityImage[pixelIDX][pixelIDY] = intensityImage[pixelIDX][pixelIDY] + 1
-
                 pixelIDX = pixelIDX + 1
                 lineCounter = lineCounter + 1
                 tmpEvents = [np.float64(x) for x in range(0)]
@@ -88,8 +87,8 @@ def assignNanotimes(flimarray, channel, linesinfile, pixelsx, pixelsy):
 
         if(frameCounter >= framesInFile):
             lastLine = True
-            print("Finished last frame...\nEvaluated %d frames." % frameCounter)
-            print("Last Pixels X: %d, Y: %d \nlineCounter: %d\nline state: %d" % (pixelIDX, pixelIDY, lineCounter, lineActive))
+            #print("Finished last frame...\nEvaluated %d frames." % frameCounter)
+            #print("Last Pixels X: %d, Y: %d \nlineCounter: %d\nline state: %d" % (pixelIDX, pixelIDY, lineCounter, lineActive))
             break
 
         eventCounter = eventCounter + 1

@@ -14,12 +14,12 @@ import reconstructIntensityImage as reconstruct
 
 def main():
 
-    filepath = "testData/2016-10-28_FLIM1_1_1.ptu"
+    filepath = "testData/BaseName_3_1.ptu"
     flimarray, FLIMInfo = reader.PTUReader(filepath)
     image = reconstruct.assignNanotimes(
-        flimarray, 0, FLIMInfo['LinesInFile'], FLIMInfo['PixelsX'], FLIMInfo['PixelsY'])
+        flimarray, 1, FLIMInfo['LinesInFile'], FLIMInfo['PixelsX'], FLIMInfo['PixelsY'])
     img = Image.fromarray(image, mode="L")
-    # img.show()
+    img.show()
     img.save("imgOutput/intImage.png")
 
     sys.exit(0)

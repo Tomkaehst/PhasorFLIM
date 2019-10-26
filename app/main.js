@@ -4,8 +4,8 @@ const path = require('path');
 const ipc = require("electron").ipcMain;
 const dialog = require("electron").dialog;
 const fs = require("fs");
-const { PythonShell } = require("python-shell")
-const child_process = require("child_process");
+//const { PythonShell } = require("python-shell")
+//const child_process = require("child_process");
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -236,7 +236,7 @@ ipc.on("savePhasorCoordinatesAsCSV", function (event, data) {
 
 
 // Python Test Area
-
+/*
 var python = child_process.spawn(
   "python",
   [path.join(__dirname, "filedecoding/PTUReader.py")],
@@ -247,7 +247,7 @@ console.log("Launching python...\n")
 python.stdout.on("data", function(data) {
   console.log(data.toString("utf8"));
 });
-
+*/
 
 /* let pythonOptions = {
   mode: "text",

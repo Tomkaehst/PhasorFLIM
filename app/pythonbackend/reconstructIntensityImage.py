@@ -4,7 +4,7 @@ from numba import jit
 import sys
 
 
-@jit(nopython=True, cache=True)
+#@jit(nopython=True, cache=True)
 def assignNanotimes(flimarray, channel, linesinfile, pixelsx, pixelsy):
     # assign nanotimes to 3D FLIM Image array
     # flimimage = np.zeros((FLIMInfo['PixelsX'],
@@ -36,7 +36,7 @@ def assignNanotimes(flimarray, channel, linesinfile, pixelsx, pixelsy):
     tmpNanotime = 0  # Holds nanotime value for one loop iteration
     diff = 0  # Stores difference between photon macro time and line start to determine photon y-position
 
-    pixelIDX = 0  # Current x position in image
+    #pixelIDX = 0  # Current x position in image; equals lineCounter!
     pixelIDY = 0  # Current y position in image
 
     # 2D array for intensity image
@@ -78,8 +78,8 @@ def assignNanotimes(flimarray, channel, linesinfile, pixelsx, pixelsy):
                         elif(pixelIDY > (pixelsy - 1)):
                             pixelIDY = pixelsy - 1
 
-                    intensityImage[pixelIDX][pixelIDY] = intensityImage[pixelIDX][pixelIDY] + 1
-                pixelIDX = pixelIDX + 1
+                    intensityImage[lineCounter][pixelIDY] = intensityImage[lineCounter][pixelIDY] + 1
+                #pixelIDX = pixelIDX + 1
                 lineCounter = lineCounter + 1
                 tmpEvents = [np.float64(x) for x in range(0)]
                 tmpNano = [np.float64(x) for x in range(0)]
@@ -88,7 +88,7 @@ def assignNanotimes(flimarray, channel, linesinfile, pixelsx, pixelsy):
 
             if(lineCounter > (pixelsx - 1)):
                 frameCounter = frameCounter + 1
-                pixelIDX = 0
+                #pixelIDX = 0
                 lineCounter = 0
             if(frameCounter >= framesInFile):
                 lastLine = True

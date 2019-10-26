@@ -9,11 +9,11 @@
   "author": "Tom Kache",
   "license": "GPL-3.0",
   "dependencies": {
+    "child_process": "^1.0.2",
     "cluster": "^0.7.7",
     "colormap": "^2.3.1",
     "compute-histogram": "^0.9.7",
     "convert-array-to-csv": "^1.0.9",
-    "electron": "^4.2.11",
     "electron-packager": "^13.1.1",
     "mathjs": "^5.10.3",
     "node-addon-api": "^1.7.1",
@@ -22,6 +22,7 @@
     "python-shell": "^1.0.8"
   },
   "devDependencies": {
+    "electron": "^4.2.11",
     "node-gyp": "^4.0.0"
   },
   "repository": {

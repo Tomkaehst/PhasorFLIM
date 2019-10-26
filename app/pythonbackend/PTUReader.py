@@ -14,23 +14,20 @@ def treatOverflows(recordarray, macrotimefactor):
 
     for record in recordarray:
         if(record['marker'] == 127):
-            overflow_cor = overflow_cor + overflow_period * \
-                (record['record'] & (2 ^ 10 - 1))
+            overflow_cor += overflow_period * \
+                (record['record'] & (2**10 - 1))
 
-        record['macrotime'] = (
-            overflow_cor + (record['record'] & 1023)) * macrotimefactor
-
+        record['macrotime'] = (overflow_cor + np.bitwise_and(record['record'], 2**10-1)) * macrotimefactor
+            
     return(recordarray)
-
-
 @jit(nopython=True)
 def countLines(flimarray):
     numLinesStart = np.sum(flimarray['marker'] == 65)
     numLinesStop = np.sum(flimarray['marker'] == 66)
-
+    
     if(numLinesStart != numLinesStop):
         print("Line start and stop numbers not equal. Corrupted file?")
-
+    
     return numLinesStart
 
 
@@ -212,7 +209,5 @@ def PTUReader(path):
     FLIMInfo['LinesInFile'] = countLines(flimarray)
 
     print("Read and recovered raw photon data from %s" % filepath)
-
-    sys.stdout.flush()
 
     return(flimarray, FLIMInfo)

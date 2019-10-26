@@ -43,7 +43,7 @@ def assignNanotimes(flimarray, channel, linesinfile, pixelsx, pixelsy):
         if(tmpMarker == 65): # Event is line start marker
             lineActive = True # Starting line evaluation (next while loop)
             lineStart = flimarray['macrotime'][eventCounter] # Store line start time
-            eventCounter = eventCounter + 1
+            eventCounter += 1
             continue # Skip this loop iteration
 
         while(lineActive == True):
@@ -61,7 +61,6 @@ def assignNanotimes(flimarray, channel, linesinfile, pixelsx, pixelsy):
 
                 for photon in tmpEvents:
                     diff = photon - lineStart
-                    print(diff)
                     pixelIDY = math.floor(diff / pixelTime)
 
                     if(pixelIDY < 0 or pixelIDY > (pixelsy - 1)):
@@ -78,18 +77,18 @@ def assignNanotimes(flimarray, channel, linesinfile, pixelsx, pixelsy):
                 tmpEvents = [np.float64(x) for x in range(0)]
                 tmpNano = [np.float64(x) for x in range(0)]
 
-            eventCounter = eventCounter + 1
+            eventCounter += 1
 
-        if(lineCounter > (pixelsx - 1)):
+        if(lineCounter >= (pixelsx - 1)):
             frameCounter = frameCounter + 1
             pixelIDX = 0
             lineCounter = 0
 
         if(frameCounter >= framesInFile):
             lastLine = True
-            break
+            #break
 
-        eventCounter = eventCounter + 1
+        eventCounter += 1
 
 
 

@@ -22,7 +22,7 @@
     "python-shell": "^1.0.8"
   },
   "devDependencies": {
-    "electron": "^4.2.11",
+    "electron": "^3.0.0",
     "node-gyp": "^4.0.0"
   },
   "repository": {

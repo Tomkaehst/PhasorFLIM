@@ -74,7 +74,6 @@ module.exports = {
                               for (i = 0; i < tmpEvents.length - 1; i++) {
                                     diff = tmpEvents[i] - lineStart;
                                     pixelID_Y = Math.floor(diff / pixelTime);
-                                    console.log(diff)
 
                                     if (pixelID_Y < 0 || pixelID_Y > pixelY - 1) {
                                           console.error("Pixel out of range! Line: " + lineCounter + ", Pixel: " + pixelID_Y + ", Frame: " + frameCounter + "\n Assigned out-of-range pixel to nearest edge.");

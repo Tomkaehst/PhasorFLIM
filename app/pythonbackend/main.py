@@ -14,7 +14,7 @@ import reconstructIntensityImage as recon
 def main():
     filepath = "testData/EGFP_Cherry_Co_1_1.ptu"
     flimarray, FLIMInfo = reader.PTUReader(filepath)
-    image = recon.assignNanotimes(flimarray, 0, FLIMInfo['LinesInFile'], FLIMInfo['PixelsX'], FLIMInfo['PixelsY'])
+    image = recon.reconstructImage(flimarray, 0, FLIMInfo['LinesInFile'], FLIMInfo['PixelsX'], FLIMInfo['PixelsY'])
     img = Image.fromarray(image, mode="L")
     #img.show()
     img.save("imgOutput/intImage.png")

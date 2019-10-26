@@ -4,9 +4,6 @@ module.exports = {
             const fs = require("fs");
             const ipc = require("electron").ipcRenderer;
 
-            // Sending to main to start displaying progress bar to the user
-            ipc.send("start-progressbar");
-
             var tagTypes = {
                   Empty8: 4294901768,
                   Bool8: 8,
@@ -43,6 +40,9 @@ module.exports = {
                   alert("Not a (valid) .ptu file!");
                   throw "Not a (valid) .ptu file.";
             };
+
+            // Sending to main to start displaying progress bar to the user
+            ipc.send("start-progressbar");
 
 
             // Decoding the header section

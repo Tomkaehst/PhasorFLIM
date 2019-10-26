@@ -17,8 +17,8 @@ def treatOverflows(recordarray, macrotimefactor):
             overflow_cor = overflow_cor + overflow_period * \
                 (record['record'] & (2 ^ 10 - 1))
 
-        record['macrotime'] = overflow_cor + \
-            ((record['record'] & 1023) * macrotimefactor)
+        record['macrotime'] = (
+            overflow_cor + (record['record'] & 1023)) * macrotimefactor
 
     return(recordarray)
 
@@ -202,12 +202,12 @@ def PTUReader(path):
         file.close()
 
     # Recovering markers and nanotimes from raw photon records by applying right bitshift to flimarray
-    flimarray[:]['marker'] = np.right_shift(flimarray[:]['record'], 25)
-    flimarray[:]['nanotime'] = np.right_shift(
-        flimarray[:]['record'], 10) * nanoMultFactor
+    flimarray[:]['marker'] = (np.right_shift(flimarray[:]['record'], 25) & 127)
+    flimarray[:]['nanotime'] = (np.right_shift(
+        flimarray[:]['record'], 10) & 32767) * nanoMultFactor
 
     # Recover macrotimes and treat overflows by calling treatOverflows()
-    treatOverflows(flimarray, macroMultFactor)
+    flimarray = treatOverflows(flimarray, macroMultFactor)
     # Count line start and stop markers
     FLIMInfo['LinesInFile'] = countLines(flimarray)
 

@@ -68,7 +68,6 @@ module.exports = {
                               lineActive = false;
                               lineStop = tmpMacro;
                               pixelTime = (lineStop - lineStart) / pixelY;
-                              //console.log(pixelTime)
 
                               // assign the photons from a lineActive period to the corresponding pixels of arr[lineCounter][pixel]
                               let i;

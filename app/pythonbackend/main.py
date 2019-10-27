@@ -10,12 +10,15 @@ from PIL import Image
 
 import PTUReader as reader
 import reconstructIntensityImage as recon
+import globalFitting as glFit
 
 
 def main():
     filepath = sys.argv[1]
     recordarray, FLIMInfo = reader.PTUReader(filepath)
+    print("******************************")
     FLIMInfo['channelList'] = recon.checkChannelAvailability(recordarray)
+    print("******************************")
     print("\nFLIMInfo: ", FLIMInfo, "\n")
     flimarray, intimage = recon.buildFLIMArray(recordarray,
                                                0,
@@ -35,7 +38,13 @@ def main():
     # plt.yscale("log")
     plt.savefig("imgOutput/decay.png")
     plt.show()
-    # Image.open("out.png")
+
+    lifetime = glFit.globalTailFit(flimarray, FLIMInfo)
+
+    print("******************************")
+    print("\nOverall fluorescence lifetime:", lifetime, "ns.")
+    print("******************************")
+    print("\nTerminating script...\n")
 
 
 if(__name__ == '__main__'):

@@ -27,17 +27,17 @@ def main():
                                                FLIMInfo['PixelsY'],
                                                FLIMInfo['GlobalResolution'],
                                                FLIMInfo['Resolution'],
-                                               2,
+                                               0,
                                                4)
     recordarray = None
     plt.imshow(intimage, cmap="gray")
     plt.savefig("imgOutput/out.png")
     plt.show()
 
-    plt.plot(flimarray[100][120][:])
+    # plt.plot(flimarray[100][120][:])
     # plt.yscale("log")
-    plt.savefig("imgOutput/decay.png")
-    plt.show()
+    # plt.savefig("imgOutput/decay.png")
+    # plt.show()
 
     lifetime = glFit.globalTailFit(flimarray, FLIMInfo)
 

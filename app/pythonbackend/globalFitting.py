@@ -12,10 +12,10 @@ def globalTailFit(flimarray, FLIMInfo):
     endOfData = overallDecay.size - 1
     plt.plot(xaxis, overallDecay, 'b.')
     tau_fit, tau_cov = curve_fit(
-        expDecay, xaxis[maxVal:endOfData], overallDecay[maxVal:endOfData], p0=(max(overallDecay), 1, 5))
+        expDecay, xaxis[maxVal:endOfData-20], overallDecay[maxVal:endOfData-20], p0=(max(overallDecay), 0, 5))
 
-    plt.plot(xaxis, expDecay(xaxis, *tau_fit), 'r-')
-    plt.yscale("log")
+    plt.plot(xaxis[maxVal:endOfData-20],
+             expDecay(xaxis, *tau_fit)[maxVal:endOfData-20], 'r-')
     plt.show()
 
     lifetime = round(tau_fit[2], 4)

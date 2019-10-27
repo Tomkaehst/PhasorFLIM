@@ -21,14 +21,39 @@ def treatOverflows(recordarray, macrotimefactor):
             
     return(recordarray)
 @jit(nopython=True)
-def countLines(flimarray):
-    numLinesStart = np.sum(flimarray['marker'] == 65)
-    numLinesStop = np.sum(flimarray['marker'] == 66)
+def countLines(recordarray):
+    numLinesStart = np.sum(recordarray['marker'] == 65)
+    numLinesStop = np.sum(recordarray['marker'] == 66)
     
     if(numLinesStart != numLinesStop):
         print("Line start and stop numbers not equal. Corrupted file?")
     
     return numLinesStart
+
+
+def checkChannelAvailability(recordarray):
+    '''
+    Function: checkChannelAvailability(recordarray)
+    Checks for channel markers (0 to 3 for channels 1 to 4) and returns list with available channels
+    '''
+
+    channelList = []
+
+    if(np.any(recordarray['marker'] == 0)):
+        channelList.append(0)
+        
+    if(np.any(recordarray['marker'] == 1)):
+        channelList.append(1)
+        
+    if(np.any(recordarray['marker'] == 2)):
+        channelList.append(2)
+        
+    if(np.any(recordarray['marker'] == 3)):
+        channelList.append(3)
+    
+    print("Detected channels: ", channelList)
+
+    return channelList
 
 
 def PTUReader(path):
@@ -62,7 +87,7 @@ def PTUReader(path):
 
     fileversion = filereadstream.read(8).decode('utf8').strip('\0')
 
-    print('Start decoding "%s" TTTR file.\nValid .ptu file\nCommencing...' % filepath)
+    print('Start decoding "%s" TTTR file.\nValid .ptu file detected.\n...' % filepath)
 
     # Reading Header
     # Setting up tuple for header and while loop for byte-wise reading
@@ -182,10 +207,10 @@ def PTUReader(path):
     recordBitType = np.dtype([('record', np.uint32), ('marker', np.uint8),
                               ('nanotime', np.float64), ('macrotime', np.float64)])
 
-    flimarray = np.zeros(
+    recordarray = np.zeros(
         shape=FLIMInfo['NumberOfRecords'] - 1, dtype=recordBitType)
 
-    # Calculating factors to recover true macrotime and nanotime from raw photon records stored in flimarray['record]
+    # Calculating factors to recover true macrotime and nanotime from raw photon records stored in recordarray['record]
     # Multiply with truensync to get experiment macro time
     macroMultFactor = FLIMInfo['GlobalResolution']
     nanoMultFactor = FLIMInfo['Resolution'] * 1e9
@@ -195,19 +220,19 @@ def PTUReader(path):
 
     with open(filepath, 'rb') as file:
         file.seek(headerend_bitoffset)
-        flimarray[:]['record'] = np.fromfile(file, dtype=np.uint32)
+        recordarray[:]['record'] = np.fromfile(file, dtype=np.uint32)
         file.close()
 
-    # Recovering markers and nanotimes from raw photon records by applying right bitshift to flimarray
-    flimarray[:]['marker'] = (np.right_shift(flimarray[:]['record'], 25) & 127)
-    flimarray[:]['nanotime'] = (np.right_shift(
-        flimarray[:]['record'], 10) & 32767) * nanoMultFactor
+    # Recovering markers and nanotimes from raw photon records by applying right bitshift to recordarray
+    recordarray[:]['marker'] = (np.right_shift(recordarray[:]['record'], 25) & 127)
+    recordarray[:]['nanotime'] = (np.right_shift(
+        recordarray[:]['record'], 10) & 32767) * nanoMultFactor
 
     # Recover macrotimes and treat overflows by calling treatOverflows()
-    flimarray = treatOverflows(flimarray, macroMultFactor)
+    recordarray = treatOverflows(recordarray, macroMultFactor)
     # Count line start and stop markers
-    FLIMInfo['LinesInFile'] = countLines(flimarray)
+    FLIMInfo['LinesInFile'] = countLines(recordarray)
 
     print("Read and recovered raw photon data from %s" % filepath)
 
-    return(flimarray, FLIMInfo)
+    return(recordarray, FLIMInfo)

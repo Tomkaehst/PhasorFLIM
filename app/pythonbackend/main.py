@@ -13,12 +13,27 @@ import reconstructIntensityImage as recon
 
 
 def main():
-    filepath = "testData/BaseName_3_1.ptu"
-    flimarray, FLIMInfo = reader.PTUReader(filepath)
-    image = recon.reconstructImage(
-        flimarray, 0, FLIMInfo['LinesInFile'], FLIMInfo['PixelsX'], FLIMInfo['PixelsY'])
-    plt.imshow(image, cmap="inferno")
+    filepath = sys.argv[1]
+    recordarray, FLIMInfo = reader.PTUReader(filepath)
+    FLIMInfo['channelList'] = recon.checkChannelAvailability(recordarray)
+    print("\nFLIMInfo: ", FLIMInfo, "\n")
+    flimarray, intimage = recon.buildFLIMArray(recordarray,
+                                     1,
+                                     FLIMInfo['LinesInFile'],
+                                     FLIMInfo['PixelsX'],
+                                     FLIMInfo['PixelsY'],
+                                     FLIMInfo['GlobalResolution'],
+                                     FLIMInfo['Resolution'],
+                                     2,
+                                     4)
+    plt.imshow(intimage, cmap="gray")
     plt.savefig("imgOutput/out.png")
+    plt.show()
+
+    plt.plot(flimarray[68][52][:])
+    #plt.yscale("log")
+    plt.savefig("imgOutput/decay.png")
+    plt.show()
     # Image.open("out.png")
 
 

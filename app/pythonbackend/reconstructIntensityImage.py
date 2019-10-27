@@ -57,6 +57,9 @@ def reconstructImage(recordarray, channel, linesinfile, pixelsx, pixelsy):
             eventCounter += 1
             continue  # Skip this loop iteration
 
+        if(tmpMarker == 0 or tmpMarker == 1 or tmpMarker == 2 or tmpMarker == 3):
+            oorPhotons += 1
+
         while(lineActive == True):
             tmpMarker = recordarray['marker'][eventCounter]
             tmpMacro = recordarray['macrotime'][eventCounter]
@@ -113,16 +116,16 @@ def checkChannelAvailability(recordarray):
 
     if(np.any(recordarray['marker'] == 0)):
         channelList.append(0)
-        
+
     if(np.any(recordarray['marker'] == 1)):
         channelList.append(1)
-        
+
     if(np.any(recordarray['marker'] == 2)):
         channelList.append(2)
-        
+
     if(np.any(recordarray['marker'] == 3)):
         channelList.append(3)
-    
+
     print("Detected channels: ", channelList)
 
     return channelList
@@ -130,7 +133,6 @@ def checkChannelAvailability(recordarray):
 
 @jit(nopython=True, cache=True)
 def buildFLIMArray(recordarray, channel, linesinfile, pixelsx, pixelsy, globRes, timeRes, spatialBinning, temporalBinning):
-
     '''
     Function: buildFLIMArray(
         recordarray:
@@ -145,50 +147,60 @@ def buildFLIMArray(recordarray, channel, linesinfile, pixelsx, pixelsy, globRes,
     )
     '''
 
-    eventCounter = 0 # Keeps track of photon / marker events while looping through data
-    lineCounter = 0 # Stores current scan line numbers
-    frameCounter = 0 # Stores current frame number
-    framesInFile = linesinfile / pixelsx # How many frames are in the image; assume square format
-    decayBins = math.ceil((globRes / timeRes)/(2**temporalBinning)) # Number of TCSPC bins based on time between pulses and TCSPC time resolution
-    globalResolution = globRes * 10E8 # time between pulses in ns
-    timeResolution = timeRes * 10E9 # TCSPC time resolution in nss
-    
-    
+    eventCounter = 0  # Keeps track of photon / marker events while looping through data
+    lineCounter = 0  # Stores current scan line numbers
+    frameCounter = 0  # Stores current frame number
+    # How many frames are in the image; assume square format
+    framesInFile = linesinfile / pixelsx
+    # Number of TCSPC bins based on time between pulses and TCSPC time resolution
+    decayBins = math.ceil((globRes / timeRes)/(2**temporalBinning))
+    globalResolution = globRes * 10E8  # time between pulses in ns
+    timeResolution = timeRes * 10E9  # TCSPC time resolution in nss
+
     binningFactor = 2**spatialBinning
-    
+
     lineStart = 0
     lineStop = 0
-    pixelTime = 0 # Tmp variable for storing time/pixel when line start and stop macro times are determined; needed to assign photons to y pixels in a line
+    pixelTime = 0  # Tmp variable for storing time/pixel when line start and stop macro times are determined; needed to assign photons to y pixels in a line
 
-    lastLine = False # Set to True when last scan line was evaluated and frameCounter >= framesInFile
-    lineActive = False # Set to True when line start marker is found (= 65), starts photon assignments to y-pixels in a line (x); set to False when line stop marker is found (=66)
+    # Set to True when last scan line was evaluated and frameCounter >= framesInFile
+    lastLine = False
+    # Set to True when line start marker is found (= 65), starts photon assignments to y-pixels in a line (x); set to False when line stop marker is found (=66)
+    lineActive = False
 
-    tmpEvents = [np.float64(x) for x in range(0)] # List storing photon macrotimes when line is active to determine y-pixel position of photon
-    tmpNano = [np.float64(x) for x in range(0)] # List storing photon nanotimes to assign to 3D-FLIM array in x-y position 
-    tmpMarker = 0 # Holds marker value for one loop iteration
-    tmpMacro = 0 # Holds macrotime value for one loop iteration
-    tmpNanotime = 0 # Holds nanotime value for one loop iteration
-    diff = 0 # Stores difference between photon macro time and line start to determine photon y-position
-    oorPhotons = 0 # Count out-of-range photons (photons with macrotime below or above line time difference)
-    
+    # List storing photon macrotimes when line is active to determine y-pixel position of photon
+    tmpEvents = [np.float64(x) for x in range(0)]
+    # List storing photon nanotimes to assign to 3D-FLIM array in x-y position
+    tmpNano = [np.float64(x) for x in range(0)]
+    tmpMarker = 0  # Holds marker value for one loop iteration
+    tmpMacro = 0  # Holds macrotime value for one loop iteration
+    tmpNanotime = 0  # Holds nanotime value for one loop iteration
+    diff = 0  # Stores difference between photon macro time and line start to determine photon y-position
+    # Count out-of-range photons (photons with macrotime below or above line time difference)
+    oorPhotons = 0
+
     nPixelX = int(pixelsx / binningFactor)
     nPixelY = int(pixelsy / binningFactor)
 
-    pixelIDX = 0 # Current x position in image
-    pixelIDY = 0 # Current y position in image
-    
-    
-    flimarray = np.zeros((nPixelX, nPixelY, decayBins), dtype = np.uint16)
-    intensityImage = np.zeros((nPixelX, nPixelY), dtype=np.uint16) # 2D array for intensity image
+    pixelIDX = 0  # Current x position in image
+    pixelIDY = 0  # Current y position in image
+
+    flimarray = np.zeros((nPixelX, nPixelY, decayBins), dtype=np.uint16)
+    # 2D array for intensity image
+    intensityImage = np.zeros((nPixelX, nPixelY), dtype=np.uint16)
 
     while(lastLine == False):
         tmpMarker = recordarray['marker'][eventCounter]
 
-        if(tmpMarker == 65): # Event is line start marker
-            lineActive = True # Starting line evaluation (next while loop)
-            lineStart = recordarray['macrotime'][eventCounter] # Store line start time
+        if(tmpMarker == 65):  # Event is line start marker
+            lineActive = True  # Starting line evaluation (next while loop)
+            # Store line start time
+            lineStart = recordarray['macrotime'][eventCounter]
             eventCounter += 1
-            continue # Skip this loop iteration
+            continue  # Skip this loop iteration
+
+        if(tmpMarker == 0 or tmpMarker == 1 or tmpMarker == 2 or tmpMarker == 3):
+            oorPhotons += 1
 
         while(lineActive == True):
             tmpMarker = recordarray['marker'][eventCounter]
@@ -202,7 +214,7 @@ def buildFLIMArray(recordarray, channel, linesinfile, pixelsx, pixelsy, globRes,
                 lineActive = False
                 lineStop = tmpMacro
                 pixelTime = (lineStop - lineStart) / (nPixelY)
-                
+
                 # Build intensity image and FLIM array from photon macro times
                 for i in range(0, len(tmpEvents)):
                     diff = tmpEvents[i] - lineStart
@@ -236,12 +248,8 @@ def buildFLIMArray(recordarray, channel, linesinfile, pixelsx, pixelsy, globRes,
 
         eventCounter += 1
 
-
-
     print("Assigned photons to pixels.\n",
           (oorPhotons / np.sum(intensityImage))*100,
           "% of photons were out of range... Total:", oorPhotons, "of", np.sum(intensityImage), "photons.")
-
-
 
     return flimarray, intensityImage

@@ -18,7 +18,7 @@ def main():
     FLIMInfo['channelList'] = recon.checkChannelAvailability(recordarray)
     print("\nFLIMInfo: ", FLIMInfo, "\n")
     flimarray, intimage = recon.buildFLIMArray(recordarray,
-                                     1,
+                                     0,
                                      FLIMInfo['LinesInFile'],
                                      FLIMInfo['PixelsX'],
                                      FLIMInfo['PixelsY'],
@@ -26,11 +26,12 @@ def main():
                                      FLIMInfo['Resolution'],
                                      2,
                                      4)
+    recordarray = None
     plt.imshow(intimage, cmap="gray")
     plt.savefig("imgOutput/out.png")
     plt.show()
 
-    plt.plot(flimarray[68][52][:])
+    plt.plot(flimarray[40][60][:])
     #plt.yscale("log")
     plt.savefig("imgOutput/decay.png")
     plt.show()

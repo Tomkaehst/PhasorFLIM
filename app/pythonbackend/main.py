@@ -20,8 +20,12 @@ def main():
     FLIMInfo['channelList'] = recon.checkChannelAvailability(recordarray)
     print("******************************")
     print("\nFLIMInfo: ", FLIMInfo, "\n")
+    print("******************************")
+
+    channel = int(input("Select channel (integer): "))
+
     flimarray, intimage = recon.buildFLIMArray(recordarray,
-                                               0,
+                                               channel,
                                                FLIMInfo['LinesInFile'],
                                                FLIMInfo['PixelsX'],
                                                FLIMInfo['PixelsY'],
@@ -30,7 +34,7 @@ def main():
                                                0,
                                                4)
     recordarray = None
-    plt.imshow(intimage, cmap="gray")
+    plt.imshow(intimage, cmap="Greys")
     plt.savefig("imgOutput/out.png")
     plt.show()
 

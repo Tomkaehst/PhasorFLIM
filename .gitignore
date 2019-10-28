@@ -45,5 +45,4 @@ node_modules/
 
 # Ignore FLIM test data
 app/testData
-=======
->>>>>>> d68ee8f3838e5f282229d48b33caaf7331dfac94
+qt_app/testData

@@ -1,23 +1,14 @@
-# import required third-party modules
-import sys
-import struct
-import io
-import os
-import math
-import numpy as np
-from numba import jit
-import matplotlib.pyplot as plt
-from PIL import Image
+# -*- coding: utf-8 -*-
 
-# GUI
+# Form implementation generated from reading ui file 'gui/phasorflim.ui'
+#
+# Created by: PyQt5 UI code generator 5.13.1
+#
+# WARNING! All changes made in this file will be lost!
+
+
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-
-# Importing analysis script
-import PTUReader as reader
-import reconstructIntensityImage as recon
-import globalFitting as glFit
-import visualizationFunctions as vis
 
 class Ui_mainWindow(object):
     def setupUi(self, mainWindow):
@@ -81,55 +72,11 @@ class Ui_mainWindow(object):
         self.actionQuit.setText(_translate("mainWindow", "Quit"))
 
 
-# App Logic
-
-def cliMain():
-    filepath = sys.argv[1]
-    recordarray, FLIMInfo = reader.PTUReader(filepath)
-    print("******************************")
-    FLIMInfo['channelList'] = recon.checkChannelAvailability(recordarray)
-    print("******************************")
-    print("\nFLIMInfo: ", FLIMInfo, "\n")
-    print("******************************")
-
-    channel = int(input("Select channel (integer): "))
-
-    flimarray, intimage = recon.buildFLIMArray(recordarray,
-                                               channel,
-                                               FLIMInfo['LinesInFile'],
-                                               FLIMInfo['PixelsX'],
-                                               FLIMInfo['PixelsY'],
-                                               FLIMInfo['GlobalResolution'],
-                                               FLIMInfo['Resolution'],
-                                               3,
-                                               5)
-    recordarray = None
-    plt.imshow(intimage, cmap="gray")
-    plt.savefig("imgOutput/out.png")
-    plt.show()
-
-    lifetime = glFit.globalTailFit(flimarray, FLIMInfo, showPlot = False)
-    lifetimeImage = glFit.pixelwiseSimpleDecay(flimarray, 100, 10,FLIMInfo['GlobalResolution'])
-
-    plt.imshow(lifetimeImage, cmap = "cubehelix")
-    plt.text(10, 10, lifetime)
-    plt.clim(0, 5)
-    plt.colorbar()
-    plt.show()
-
-
-    print("******************************")
-    print("\nOverall fluorescence lifetime:", lifetime, "ns.")
-    print("******************************")
-    print("\nTerminating script...\n")
-
-if(__name__ == '__main__'):
+if __name__ == "__main__":
+    import sys
     app = QtWidgets.QApplication(sys.argv)
     mainWindow = QtWidgets.QMainWindow()
     ui = Ui_mainWindow()
     ui.setupUi(mainWindow)
     mainWindow.show()
-    app.exec_()
-    cliMain()
-
-    sys.exit()
+    sys.exit(app.exec_())

@@ -109,7 +109,7 @@ def reconstructImage(recordarray, channel, linesinfile, pixelsx, pixelsy):
 
     return intensityImage
 
-
+@jit(nopython=True, cache=True)
 def checkChannelAvailability(recordarray):
 
     channelList = []

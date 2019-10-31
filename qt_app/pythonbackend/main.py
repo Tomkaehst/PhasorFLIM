@@ -101,7 +101,7 @@ def cliMain():
                                                FLIMInfo['PixelsY'],
                                                FLIMInfo['GlobalResolution'],
                                                FLIMInfo['Resolution'],
-                                               2,
+                                               1,
                                                4)
     recordarray = None
     plt.imshow(intimage, cmap="gray")
@@ -113,7 +113,7 @@ def cliMain():
 
     plt.imshow(lifetimeImage, cmap = "cubehelix")
     plt.text(10, 10, lifetime)
-    plt.clim(1, 3)
+    plt.clim(1, 5)
     plt.colorbar()
     plt.show()
 

@@ -182,6 +182,7 @@ def PTUReader(path):
     # - TTResult_NumberOfRecords: How many 32 bit records in file?
     FLIMInfo = {
         'Filename': header_contents['$Filename'],
+        'Comment': header_contents['$Comment'],
         'RecordType': header_contents['TTResultFormat_TTTRRecType'],
         'BitsPerRecord': header_contents['TTResultFormat_BitsPerRecord'],
         'PixelResolution': header_contents['$ReqHdr_SpatialResolution'],

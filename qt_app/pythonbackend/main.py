@@ -20,6 +20,8 @@ import globalFitting as glFit
 import visualizationFunctions as vis
 
 class Ui_mainWindow(object):
+
+    # UI Setup, automatically translated into python by cmd line tool from PyQt Designer
     def setupUi(self, mainWindow):
         mainWindow.setObjectName("mainWindow")
         mainWindow.resize(800, 600)
@@ -70,6 +72,7 @@ class Ui_mainWindow(object):
         self.retranslateUi(mainWindow)
         QtCore.QMetaObject.connectSlotsByName(mainWindow)
 
+
     def retranslateUi(self, mainWindow):
         _translate = QtCore.QCoreApplication.translate
         mainWindow.setWindowTitle(_translate("mainWindow", "MainWindow"))
@@ -79,6 +82,8 @@ class Ui_mainWindow(object):
         self.label_temporalBinning.setText(_translate("mainWindow", "Temporal Binning"))
         self.menuFile.setTitle(_translate("mainWindow", "File"))
         self.actionQuit.setText(_translate("mainWindow", "Quit"))
+
+
 
 
 # App Logic
@@ -101,25 +106,19 @@ def cliMain():
                                                FLIMInfo['PixelsY'],
                                                FLIMInfo['GlobalResolution'],
                                                FLIMInfo['Resolution'],
-                                               1,
-                                               4)
-    recordarray = None
-    plt.imshow(intimage, cmap="gray")
-    plt.savefig("imgOutput/out.png")
-    plt.show()
+                                               2,
+                                               5)
+    recordarray = None # Dereferencing recordarray to save RAM space
 
-    lifetime = glFit.globalTailFit(flimarray, FLIMInfo, showPlot = False)
+    vis.showIntensityImage(intimage, saveImage = False)
+
+    globalLifetime = glFit.globalTailFit(flimarray, FLIMInfo, showPlot = True)
     lifetimeImage = glFit.pixelwiseSimpleDecay(flimarray, 100, 10,FLIMInfo['GlobalResolution'])
 
-    plt.imshow(lifetimeImage, cmap = "cubehelix")
-    plt.text(10, 10, lifetime)
-    plt.clim(1, 5)
-    plt.colorbar()
-    plt.show()
-
+    vis.showLifetimeImage(lifetimeImage, globalLifetime)
 
     print("******************************")
-    print("\nOverall fluorescence lifetime:", lifetime, "ns.")
+    print("\nOverall fluorescence lifetime:", globalLifetime, "ns.")
     print("******************************")
     print("\nTerminating script...\n")
 

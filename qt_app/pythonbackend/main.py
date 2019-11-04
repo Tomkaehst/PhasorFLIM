@@ -19,6 +19,7 @@ import reconstructIntensityImage as recon
 import globalFitting as glFit
 import visualizationFunctions as vis
 
+
 class Ui_mainWindow(object):
 
     # UI Setup, automatically translated into python by cmd line tool from PyQt Designer
@@ -72,18 +73,17 @@ class Ui_mainWindow(object):
         self.retranslateUi(mainWindow)
         QtCore.QMetaObject.connectSlotsByName(mainWindow)
 
-
     def retranslateUi(self, mainWindow):
         _translate = QtCore.QCoreApplication.translate
         mainWindow.setWindowTitle(_translate("mainWindow", "MainWindow"))
         self.btnLoadPTU.setText(_translate("mainWindow", "Load PTU File"))
         self.label_channel.setText(_translate("mainWindow", "Channel"))
-        self.label_spatialBinning.setText(_translate("mainWindow", "Spatial Binning"))
-        self.label_temporalBinning.setText(_translate("mainWindow", "Temporal Binning"))
+        self.label_spatialBinning.setText(
+            _translate("mainWindow", "Spatial Binning"))
+        self.label_temporalBinning.setText(
+            _translate("mainWindow", "Temporal Binning"))
         self.menuFile.setTitle(_translate("mainWindow", "File"))
         self.actionQuit.setText(_translate("mainWindow", "Quit"))
-
-
 
 
 # App Logic
@@ -106,21 +106,24 @@ def cliMain():
                                                FLIMInfo['PixelsY'],
                                                FLIMInfo['GlobalResolution'],
                                                FLIMInfo['Resolution'],
-                                               2,
-                                               5)
-    recordarray = None # Dereferencing recordarray to save RAM space
+                                               3,
+                                               4)
+    recordarray = None  # Dereferencing recordarray to save RAM space
 
-    vis.showIntensityImage(intimage, saveImage = False)
+    vis.showIntensityImage(intimage, saveImage=False)
 
-    globalLifetime = glFit.globalTailFit(flimarray, FLIMInfo, showPlot = True)
-    lifetimeImage = glFit.pixelwiseSimpleDecay(flimarray, 100, 10,FLIMInfo['GlobalResolution'])
+    globalLifetime = glFit.globalTailFit(flimarray, FLIMInfo, showPlot=True)
+    lifetimeImage = glFit.pixelwiseSimpleDecay(
+        flimarray, 100, 10, FLIMInfo['GlobalResolution'])
 
-    vis.showLifetimeImage(lifetimeImage, globalLifetime)
+    vis.showLifetimeImage(lifetimeImage, globalLifetime,
+                          lowerLimit=1.5, upperLimit=3)
 
     print("******************************")
     print("\nOverall fluorescence lifetime:", globalLifetime, "ns.")
     print("******************************")
     print("\nTerminating script...\n")
+
 
 if(__name__ == '__main__'):
     app = QtWidgets.QApplication(sys.argv)

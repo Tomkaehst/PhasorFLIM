@@ -134,16 +134,15 @@ def checkChannelAvailability(recordarray):
 @jit(nopython=True, cache=True)
 def buildFLIMArray(recordarray, channel, linesinfile, pixelsx, pixelsy, globRes, timeRes, spatialBinning, temporalBinning):
     '''
-    Function: buildFLIMArray(
-        recordarray:
-        channel:
-        linesinfile:
-        pixelsx:
-        pixelsy:
-        globRes:
-        timeRes:
-        spatialBinning:
-        temporalBinning:
+    buildFLIMArray(
+    - recordarray: 4 x numRec NumPy array, holds raw photon data and system events
+    - channel: int; which channel to reconstruct the flimarray from
+    - pixelsx: original image dimension in X, stored in FLIMInfo
+    - pixelsy: original image dimension in Y, stored in FLIMInfo
+    - globRes: global measurment of nanotime, stored in FLIMInfo, in ns, 51 ns for 20 MHz laser pulse frequency
+    - timeRes: nanotime resolution of TCSPC device, in ps
+    - spatialBinning: user-defined binning factor of image, calculated as 2**factor
+    - temporalBinning: user-defined binning factor for fluorescence decay histogram
     )
     '''
 

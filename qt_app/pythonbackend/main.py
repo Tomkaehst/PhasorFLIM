@@ -99,6 +99,9 @@ def cliMain():
 
     channel = int(input("Select channel (integer): "))
 
+    spatialBin = int(input("Spatial Binning Factor (integer):"))
+    temporalBin = int(input("Temporal Binning Factor (integer):"))
+
     flimarray, intimage = recon.buildFLIMArray(recordarray,
                                                channel,
                                                FLIMInfo['LinesInFile'],
@@ -106,15 +109,15 @@ def cliMain():
                                                FLIMInfo['PixelsY'],
                                                FLIMInfo['GlobalResolution'],
                                                FLIMInfo['Resolution'],
-                                               3,
-                                               4)
+                                               spatialBin,
+                                               temporalBin)
     recordarray = None  # Dereferencing recordarray to save RAM space
 
     vis.showIntensityImage(intimage, saveImage=False)
 
     globalLifetime = glFit.globalTailFit(flimarray, FLIMInfo, showPlot=True)
     lifetimeImage = glFit.pixelwiseSimpleDecay(
-        flimarray, 100, 10, FLIMInfo['GlobalResolution'])
+        flimarray, 250, 10, FLIMInfo['GlobalResolution'])
 
     vis.showLifetimeImage(lifetimeImage, globalLifetime,
                           lowerLimit=1.5, upperLimit=3)
@@ -126,12 +129,12 @@ def cliMain():
 
 
 if(__name__ == '__main__'):
-    app = QtWidgets.QApplication(sys.argv)
-    mainWindow = QtWidgets.QMainWindow()
-    ui = Ui_mainWindow()
-    ui.setupUi(mainWindow)
-    mainWindow.show()
-    app.exec_()
+    #app = QtWidgets.QApplication(sys.argv)
+    #mainWindow = QtWidgets.QMainWindow()
+    #ui = Ui_mainWindow()
+    #ui.setupUi(mainWindow)
+    #mainWindow.show()
+    #app.exec_()
     cliMain()
 
     sys.exit()

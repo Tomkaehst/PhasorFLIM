@@ -9,6 +9,17 @@ from numba import jit
 
 @jit(nopython=True, cache=True)
 def treatOverflows(recordarray, macrotimefactor):
+    '''
+    Function treatOverflows(
+    recordarray: 4 x numRec NumPy array holding raw 32 bit photon records in ['record']
+    macrotimefactor: multiplication factor for mactotime clock to recover real experiment macrotime
+    )
+    Output is recordarray, but with populated ['macrotime'] row
+    
+    Takes whole record array and recovers real macrotime from raw photon TTTR data by adding
+    number of macrotime clock overflows. See PicoQuant PTU documentary for further details and explanation.
+    '''
+
     overflow_period = 1024
     overflow_cor = 0
 
@@ -20,8 +31,19 @@ def treatOverflows(recordarray, macrotimefactor):
         record['macrotime'] = (overflow_cor + np.bitwise_and(record['record'], 2**10-1)) * macrotimefactor
             
     return(recordarray)
+
+
 @jit(nopython=True)
 def countLines(recordarray):
+    '''
+    Function: countLines(
+    - recordarray: 4 x numRec NumPy array, holds raw photon data and system events
+    )
+    
+    - Counts number of line start (marker == 65) and line stop (marker == 66) events in raw photon data
+    - Purpose: check data integrity
+    '''
+
     numLinesStart = np.sum(recordarray['marker'] == 65)
     numLinesStop = np.sum(recordarray['marker'] == 66)
     

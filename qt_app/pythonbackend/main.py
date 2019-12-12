@@ -18,6 +18,7 @@ import PTUReader as reader
 import reconstructIntensityImage as recon
 import globalFitting as glFit
 import visualizationFunctions as vis
+import odefitting as ode
 
 
 class Ui_mainWindow(object):
@@ -126,6 +127,8 @@ def cliMain():
     print("\nOverall fluorescence lifetime:", globalLifetime, "ns.")
     print("******************************")
     print("\nTerminating script...\n")
+
+    ode.fitSimulatedDecay()
 
 
 if(__name__ == '__main__'):

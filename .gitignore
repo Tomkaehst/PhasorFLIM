@@ -46,3 +46,4 @@ node_modules/
 # Ignore FLIM test data
 app/testData
 qt_app/testData
+notebooks/data

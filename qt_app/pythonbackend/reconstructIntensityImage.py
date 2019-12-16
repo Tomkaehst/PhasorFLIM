@@ -218,9 +218,9 @@ def buildFLIMArray(recordarray, channel, linesinfile, pixelsx, pixelsy, globRes,
                 for i in range(0, len(tmpEvents)):
                     diff = tmpEvents[i] - lineStart
                     pixelIDY = math.floor(diff / pixelTime)
-                    binID = math.floor((tmpNano[i]/globalResolution)*decayBins)
+                    binID = math.floor((tmpNano[i]/globalResolution)*decayBins) - 1
 
-                    if(pixelIDY < 0 or pixelIDY > nPixelY):
+                    if(pixelIDY < 0 or pixelIDY > (nPixelY - 1)):
                         oorPhotons = oorPhotons + 1
                         if(pixelIDY < 0):
                             pixelIDY = 0

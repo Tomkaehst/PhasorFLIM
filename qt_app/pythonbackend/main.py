@@ -16,48 +16,61 @@ import reconstructIntensityImage as recon
 import globalFitting as glFit
 import visualizationFunctions as vis
 import odefitting as ode
+from flimdata import *
 
 
 def cliMain():
-    filepath = sys.argv[1]
-    recordarray, FLIMInfo = reader.PTUReader(filepath)
-    print("******************************")
-    FLIMInfo['channelList'] = recon.checkChannelAvailability(recordarray)
-    print("******************************")
-    print("\nFLIMInfo: ", FLIMInfo, "\n")
-    print("******************************")
+    # filepath = sys.argv[1]
+    # recordarray, FLIMInfo = reader.PTUReader(filepath)
+    # print("******************************")
+    # FLIMInfo['channelList'] = recon.checkChannelAvailability(recordarray)
+    # print("******************************")
+    # print("\nFLIMInfo: ", FLIMInfo, "\n")
+    # print("******************************")
 
-    channel = int(input("Select channel (integer): "))
+    # channel = int(input("Select channel (integer): "))
 
-    spatialBin = int(input("Spatial Binning Factor (integer):"))
-    temporalBin = int(input("Temporal Binning Factor (integer):"))
+    # spatialBin = int(input("Spatial Binning Factor (integer):"))
+    # temporalBin = int(input("Temporal Binning Factor (integer):"))
 
-    flimarray, intimage = recon.buildFLIMArray(recordarray,
-                                               channel,
-                                               FLIMInfo['LinesInFile'],
-                                               FLIMInfo['PixelsX'],
-                                               FLIMInfo['PixelsY'],
-                                               FLIMInfo['GlobalResolution'],
-                                               FLIMInfo['Resolution'],
-                                               spatialBin,
-                                               temporalBin)
-    recordarray = None  # Dereferencing recordarray to save RAM space
+    # flimarray, intimage = recon.buildFLIMArray(recordarray,
+    #                                            channel,
+    #                                            FLIMInfo['LinesInFile'],
+    #                                            FLIMInfo['PixelsX'],
+    #                                            FLIMInfo['PixelsY'],
+    #                                            FLIMInfo['GlobalResolution'],
+    #                                            FLIMInfo['Resolution'],
+    #                                            spatialBin,
+    #                                            temporalBin)
+    # recordarray = None  # Dereferencing recordarray to save RAM space
 
-    vis.showIntensityImage(intimage, saveImage=False)
+    # vis.showIntensityImage(intimage, saveImage=False)
 
-    globalLifetime = glFit.globalTailFit(flimarray, FLIMInfo, showPlot=True)
-    lifetimeImage = glFit.pixelwiseSimpleDecay(
-        flimarray, 250, 10, FLIMInfo['GlobalResolution'])
+    # globalLifetime = glFit.globalTailFit(flimarray, FLIMInfo, showPlot=True)
+    # lifetimeImage = glFit.pixelwiseSimpleDecay(
+    #     flimarray, 250, 10, FLIMInfo['GlobalResolution'])
 
-    vis.showLifetimeImage(lifetimeImage, globalLifetime,
-                          lowerLimit=1.5, upperLimit=3)
+    # vis.showLifetimeImage(lifetimeImage, globalLifetime,
+    #                       lowerLimit=1.5, upperLimit=3)
 
-    print("******************************")
-    print("\nOverall fluorescence lifetime:", globalLifetime, "ns.")
-    print("******************************")
-    print("\nTerminating script...\n")
+    # print("******************************")
+    # print("\nOverall fluorescence lifetime:", globalLifetime, "ns.")
+    # print("******************************")
+    # print("\nTerminating script...\n")
 
-    ode.fitSimulatedDecay()
+    # ode.fitSimulatedDecay()
+
+    testfile = sys.argv[1]
+
+    test = flimdata(testfile)
+
+    for k in test.header_contents:
+        print(k, test.header_contents[k])
+
+    test_hist = np.histogram(test.recordarray['macrotime'], bins = 10000)
+    plt.plot(test_hist[0])
+    plt.show()
+
     return(0)
 
 

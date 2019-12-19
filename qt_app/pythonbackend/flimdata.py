@@ -1,29 +1,49 @@
-import sys, os, io, struct
+import sys
+import os
+import io
+import struct
+import math
 import numpy as np
 from numba import jit
-
 
 
 class flimdata(object):
 
     def __init__(self, filepath):
-        super().__init__()
+        # super().__init__()
         self.filepath = filepath
-
+        self.spatialBinning = None
+        self.temporalBinning = None
         # Defining data types for the raw record array where ptu data stream is written in to
         self.recordarrayDataTypes = np.dtype([('record', np.uint32), ('marker', np.uint8),
                                               ('nanotime', np.float64), ('macrotime', np.float64)])
-        self.FLIMInfo = None # Quick access FLIM image infos
-        self.header_contents = None # Whole file header
-        self.headerBitOffset = int(0) # Bit offset of file in filepath, where TTTR records start
-
+        self.FLIMInfo = None  # Quick access FLIM image infos
+        self.header_contents = None  # Whole file header
+        # Bit offset of file in filepath, where TTTR records start
+        self.headerBitOffset = None
 
         # Reading header; do this automatically when flimdata instance is created; no great time pennalty
         self.readPTUHeader(self.filepath)
-        self.recordarray = self.readPhotonData(self.filepath, self.headerBitOffset, self.FLIMInfo['NumberOfRecords'])
+
+        # Loading photon data into recordarray
+        self.recordarray = self.readPhotonData(
+            self.filepath, self.headerBitOffset, self.FLIMInfo['NumberOfRecords']
+        )
+
+        # Generating nano time axis
+        self.timeAxis = self.generateNanotimeaxis(self.FLIMInfo)
+
+        # Getting list of channels from the data
+        self.FLIMInfo['availableChannels'] = self.checkChannelAvailability(
+            self.recordarray)
+
+        # Generating overall decay histograms from available channels
+        self.overallDecays = self.overallDecay(
+            self.recordarray, self.FLIMInfo['availableChannels']
+        )
 
     def readPTUHeader(self, filepath):
-        
+
         # Setting up header and record types
         tyEmpty8 = struct.unpack(">i", bytes.fromhex("FFFF0008"))[0]
         tyBool8 = struct.unpack(">i", bytes.fromhex("00000008"))[0]
@@ -37,19 +57,20 @@ class flimdata(object):
         tyWideString = struct.unpack(">i", bytes.fromhex("4002FFFF"))[0]
         tyBinaryBlob = struct.unpack(">i", bytes.fromhex("FFFFFFFF"))[0]
 
-        rtHydraHarp2T3 = struct.unpack(">i", bytes.fromhex('01010304'))[0] # Only coding for HydraHarp V2 TTTR data
+        rtHydraHarp2T3 = struct.unpack(">i", bytes.fromhex('01010304'))[
+            0]  # Only coding for HydraHarp V2 TTTR data
 
         # Setting up file reading
         filereadstream = open(self.filepath, 'rb')
-        
+
         # Checking first 8 bytes for correct file magic
         filemagic = filereadstream.read(8).decode('utf8').strip('\0')
         if(filemagic != 'PQTTTR'):
             print('%s is not a valid PTU file. Aborting.' % self.filepath)
             exit(0)
-        
+
         # Reading Header
-        ## Setting up tuple for header contents and stop condition variable for exiting the whole loop
+        # Setting up tuple for header contents and stop condition variable for exiting the whole loop
         headerend_tag = 'Header_End'
         reached_headerend = False
         header_contents = {}
@@ -88,12 +109,14 @@ class flimdata(object):
 
             elif(tagType == tyAnsiString):
                 value = struct.unpack('<q', tagVal)[0]
-                string = filereadstream.read(value).decode('latin1').strip('\0')
+                string = filereadstream.read(
+                    value).decode('latin1').strip('\0')
                 header_contents[tagId] = string
 
             elif(tagType == tyWideString):
                 value = struct.unpack('<q', tagVal)[0]
-                string = filereadstream.read(value).decode('utf-16-le').strip('\0')
+                string = filereadstream.read(
+                    value).decode('utf-16-le').strip('\0')
                 header_contents[tagId] = string
 
             elif(tagType == tyBinaryBlob):
@@ -119,8 +142,8 @@ class flimdata(object):
                 continue
                 # print('Unknown header tag type. Ignored.')
 
-
-        headerend_bitoffset = filereadstream.tell() # Getting current position of readstream; used later to quickly jump to position in file where photon records start
+        # Getting current position of readstream; used later to quickly jump to position in file where photon records start
+        headerend_bitoffset = filereadstream.tell()
         self.headerBitOffset = filereadstream.tell()
 
         # Reading header contents into FLIMInfo dict for quick access
@@ -154,23 +177,24 @@ class flimdata(object):
         }
 
         self.FLIMInfo = FLIMInfo
-        self.header_contents =  header_contents
+        self.header_contents = header_contents
 
         # Closing file readstream
         filereadstream.close()
 
         return(0)
 
-    
-    #@jit(nopython = True, cache = True)
+    # @jit(nopython = True, cache = True)
+
     def readPhotonData(self, filepath, bitoffset, numRecords):
         # Initializing recordarray
-        recordarray = np.zeros(shape = numRecords - 1, dtype = self.recordarrayDataTypes)
+        recordarray = np.zeros(shape=numRecords - 1,
+                               dtype=self.recordarrayDataTypes)
 
         # Reading data from file into recordarray
         with open(filepath, 'rb') as file:
             file.seek(bitoffset)
-            recordarray[:]['record'] = np.fromfile(file, dtype = np.uint32)
+            recordarray[:]['record'] = np.fromfile(file, dtype=np.uint32)
             file.close()
 
         '''
@@ -183,17 +207,19 @@ class flimdata(object):
         nanoMultFactor = self.FLIMInfo['Resolution'] * 1e9
         macroMultFactor = self.FLIMInfo['GlobalResolution']
 
-        recordarray['marker'] = (np.right_shift(recordarray[:]['record'], 25) & 127)
-        recordarray['nanotime'] = (np.right_shift(recordarray[:]['record'], 10) & 322767) * nanoMultFactor
+        recordarray['marker'] = (np.right_shift(
+            recordarray[:]['record'], 25) & 127)
+        recordarray['nanotime'] = (np.right_shift(
+            recordarray[:]['record'], 10) & 322767) * nanoMultFactor
         recordarray = self.treatOverflows(recordarray, macroMultFactor)
 
         return(recordarray)
 
+    # @jit(nopython = True, cache = True)
 
-
-
-    #@jit(nopython = True, cache = True)
-    def treatOverflows(self, recordarray, macrotimefactor):
+    @staticmethod
+    @jit(nopython=True, cache=True)
+    def treatOverflows(recordarray, macrotimefactor):
         '''
             Description:
                 - 
@@ -203,16 +229,18 @@ class flimdata(object):
         overflow_correction = 0
 
         for record in recordarray:
-            if(record['marker'] == 127): # All bits in a record set = macro time overflow
-                overflow_correction += overflow_period * (record['record'] & (2**10 -1))
+            if(record['marker'] == 127):  # All bits in a record set = macro time overflow
+                overflow_correction += overflow_period * \
+                    (record['record'] & (2**10 - 1))
 
-            record['macrotime'] = (overflow_correction + np.bitwise_and(record['record'], 2**10 - 1)) * macrotimefactor
-
+            record['macrotime'] = (
+                overflow_correction + np.bitwise_and(record['record'], 2**10 - 1)) * macrotimefactor
 
         return(recordarray)
 
-    @jit(nopython = True, cache = True)
-    def countLines(self, recordarray):
+    @staticmethod
+    @jit(nopython=True, cache=True)
+    def countLines(recordarray):
         '''
             Description:
                 Counts number of line start (marker == 65) and line stop (marker == 66) events in raw photon data marker stream.
@@ -224,11 +252,12 @@ class flimdata(object):
         numLineStop = np.sum(recordarray['marker'] == 66)
 
         if(numLineStart != numLineStop):
-            print('Number of line start and line stop markers does not match. File may be corrupted.')
-        
+            print(
+                'Number of line start and line stop markers does not match. File may be corrupted.')
+
         return(numLineStart, numLineStop)
 
-    @jit(nopython = True, cache = True)
+    # @jit(nopython=True, cache=True)
     def checkChannelAvailability(self, recordarray):
         '''
             Checks for which channels events were detected in photon data stream.
@@ -247,4 +276,17 @@ class flimdata(object):
 
         return(channelList)
 
-    
+    def generateNanotimeaxis(self, FLIMInfo):
+        tEnd = FLIMInfo['GlobalResolution'] * 1E12  # Converting to picoseconds
+        dt = FLIMInfo['Resolution'] * 1E12
+        nBins = math.ceil((tEnd / dt))
+        t = np.linspace(0, tEnd, nBins)
+        return(t)
+
+    def overallDecay(self, recordarray, channelList):
+
+        overallDecays = np.ndarray((len(channelList, max(self.timeAxis))))
+
+        for channel in channelList:
+            overallDecays[channelList] = np.sum(recordarray[])
+        return(0)

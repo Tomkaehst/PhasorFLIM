@@ -64,11 +64,10 @@ def cliMain():
 
     test = flimdata(testfile)
 
-    for k in test.header_contents:
-        print(k, test.header_contents[k])
-
-    test_hist = np.histogram(test.recordarray['macrotime'], bins = 10000)
-    plt.plot(test_hist[0])
+    #test_hist = np.histogram(test.recordarray['macrotime'], bins=10000)
+    # plt.plot(test_hist[0])
+    # plt.show()
+    plt.plot(test.timeAxis)
     plt.show()
 
     return(0)

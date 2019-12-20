@@ -3,8 +3,10 @@ import os
 import io
 import struct
 import math
+import matplotlib.pyplot as plt
 import numpy as np
 from numba import jit
+from numba.typed import List
 
 
 class flimdata(object):
@@ -35,15 +37,29 @@ class flimdata(object):
 
         # Getting list of channels from the data
         self.FLIMInfo['availableChannels'] = self.checkChannelAvailability(
-            self.recordarray)
-
-        # Generating overall decay histograms from available channels
-        self.overallDecays = self.overallDecay(
-            self.recordarray, self.FLIMInfo['availableChannels']
+            self.recordarray
         )
 
-    def readPTUHeader(self, filepath):
+        # Counting line events, requires for image reconstruction
+        self.FLIMInfo['LinesInFile'] = self.countLines(self.recordarray)
 
+        # Calculating intensity image for all available channels
+        self.intensityImage = self.reconstructIntensityImage(
+            self.recordarray,
+            self.FLIMInfo['availableChannels'][0],
+            self.FLIMInfo['LinesInFile'],
+            self.FLIMInfo['PixelsX'],
+            self.FLIMInfo['PixelsY']
+        )
+
+        # Generating overall decay histograms from available channels
+        #self.overallDecays = self.overallDecay(
+        #    self.recordarray, self.FLIMInfo['availableChannels']
+        #)
+
+
+
+    def readPTUHeader(self, filepath):
         # Setting up header and record types
         tyEmpty8 = struct.unpack(">i", bytes.fromhex("FFFF0008"))[0]
         tyBool8 = struct.unpack(">i", bytes.fromhex("00000008"))[0]
@@ -184,8 +200,10 @@ class flimdata(object):
 
         return(0)
 
-    # @jit(nopython = True, cache = True)
 
+
+
+    # @jit(nopython = True, cache = True)
     def readPhotonData(self, filepath, bitoffset, numRecords):
         # Initializing recordarray
         recordarray = np.zeros(shape=numRecords - 1,
@@ -217,7 +235,14 @@ class flimdata(object):
 
     # @jit(nopython = True, cache = True)
 
-    @staticmethod
+
+
+    '''
+    In order to use Numba in a class method, the method needs to be defined as static.
+    This means, that it has no direct access to self and all arguments need to be explicitly passed
+    to that function.
+    '''
+    @staticmethod 
     @jit(nopython=True, cache=True)
     def treatOverflows(recordarray, macrotimefactor):
         '''
@@ -253,7 +278,8 @@ class flimdata(object):
 
         if(numLineStart != numLineStop):
             print(
-                'Number of line start and line stop markers does not match. File may be corrupted.')
+                'Number of line start and line stop markers does not match. File may be corrupted.'
+                )
 
         return(numLineStart, numLineStop)
 
@@ -263,7 +289,7 @@ class flimdata(object):
             Checks for which channels events were detected in photon data stream.
         '''
 
-        channelList = []
+        channelList = List() # Initialized as numba.typed.List, because Python lists will be deprecated in future Numba versions
 
         if(np.any(recordarray['marker'] == 0)):
             channelList.append(0)
@@ -275,6 +301,117 @@ class flimdata(object):
             channelList.append(3)
 
         return(channelList)
+
+
+    @staticmethod
+    @jit(nopython = True, cache = True)
+    def reconstructIntensityImage(recordarray, channel, linesinfile, pixelsx, pixelsy):
+        '''
+            Function sums photons detected in an image in order to reconstruct the intensity image from the TTTR data.
+        '''
+
+        eventCounter = 0  # Keeps track of photon / marker events while looping through data
+        lineCounter = 0  # Stores current scan line numbers
+        frameCounter = 0  # Stores current frame number
+        # How many frames are in the image; assume square format
+        framesInFile = linesinfile[0] / pixelsx # linesinfile has two element, we only use the first one, because we assume a square image
+
+        lineStart = 0
+        lineStop = 0
+        pixelTime = 0  # Tmp variable for storing time/pixel when line start and stop macro times are determined; needed to assign photons to y pixels in a line
+
+        # Set to True when last scan line was evaluated and frameCounter >= framesInFile
+        lastLine = False
+        # Set to True when line start marker is found (= 65), starts photon assignments to y-pixels in a line (x); set to False when line stop marker is found (=66)
+        lineActive = False
+
+        # List storing photon macrotimes when line is active to determine y-pixel position of photon
+        tmpEvents = [np.float64(x) for x in range(0)]
+        # List storing photon nanotimes to assign to 3D-FLIM array in x-y position
+        tmpNano = [np.float64(x) for x in range(0)]
+        tmpMarker = 0  # Holds marker value for one loop iteration
+        tmpMacro = 0  # Holds macrotime value for one loop 
+        tmpNanotime = 0  # Holds nanotime value for one loop iteration
+        diff = 0  # Stores difference between photon macro time and line start to determine photon y-position
+        # Count out-of-range photons (photons with macrotime below or above line time difference)
+        oorPhotons = 0
+
+        pixelIDX = 0  # Current x position in image
+        pixelIDY = 0  # Current y position in image
+
+        # 2D array of arrays for intensity image, as many arrays as elements in channelList
+
+        #intensityImages = []
+
+        #for channel in channelList:
+        #    temp = np.zeros((pixelsx, pixelsy), dtype = np.int16)
+        #    intensityImages.append(temp)
+
+        #channel = 0
+
+        intensityImage = np.zeros((pixelsx, pixelsy), dtype=np.int16)
+
+        while(lastLine == False):
+            tmpMarker = recordarray['marker'][eventCounter]
+
+            if(tmpMarker == 65):  # Event is line start marker
+                lineActive = True  # Starting line evaluation (next while loop)
+                # Store line start time
+                lineStart = recordarray['macrotime'][eventCounter]
+                eventCounter += 1
+                continue  # Skip this loop iteration
+
+            while(lineActive == True):
+                tmpMarker = recordarray['marker'][eventCounter]
+                tmpMacro = recordarray['macrotime'][eventCounter]
+                tmpNanotime = recordarray['nanotime'][eventCounter]
+
+                if(tmpMarker == channel):
+                    tmpEvents.append(tmpMacro)
+                    tmpNano.append(tmpNanotime)
+                elif(tmpMarker == 66):
+                    lineActive = False
+                    lineStop = tmpMacro
+                    pixelTime = (lineStop - lineStart) / pixelsy
+
+                    for photon in tmpEvents:
+                        diff = photon - lineStart
+                        pixelIDY = math.floor(diff / pixelTime)
+
+                        if(pixelIDY < 0 or pixelIDY > (pixelsy - 1)):
+                            oorPhotons = oorPhotons + 1
+                            if(pixelIDY < 0):
+                                pixelIDY = 0
+                            elif(pixelIDY > (pixelsy - 1)):
+                                pixelIDY = pixelsy - 1
+
+                        intensityImage[pixelIDX][pixelIDY] = intensityImage[pixelIDX][pixelIDY] + 1
+
+                    pixelIDX = pixelIDX + 1
+                    lineCounter = lineCounter + 1
+                    tmpEvents = [np.float64(x) for x in range(0)]
+                    tmpNano = [np.float64(x) for x in range(0)]
+
+                eventCounter += 1
+
+            if(lineCounter > (pixelsx - 1)):
+                frameCounter = frameCounter + 1
+                pixelIDX = 0
+                lineCounter = 0
+
+            if(frameCounter >= framesInFile):
+                lastLine = True
+
+            eventCounter += 1
+
+        return(intensityImage)
+
+    def showIntensityImage(self, channel, color_palette = 'gray_r', interpolation_method = 'bessel'):
+
+        plt.imshow(self.intensityImage, cmap = color_palette, interpolation = interpolation_method)
+        plt.show()
+
+        return(0)
 
     def generateNanotimeaxis(self, FLIMInfo):
         tEnd = FLIMInfo['GlobalResolution'] * 1E12  # Converting to picoseconds
@@ -288,5 +425,7 @@ class flimdata(object):
         overallDecays = np.ndarray((len(channelList, max(self.timeAxis))))
 
         for channel in channelList:
-            overallDecays[channelList] = np.sum(recordarray[])
+            print("lol")
+            #overallDecays[channelList] = np.sum(recordarray[])
+
         return(0)

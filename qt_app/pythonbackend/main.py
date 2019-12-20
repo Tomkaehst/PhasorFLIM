@@ -62,13 +62,12 @@ def cliMain():
 
     testfile = sys.argv[1]
 
-    test = flimdata(testfile)
+    test = flimdata(filepath = testfile)
 
-    #test_hist = np.histogram(test.recordarray['macrotime'], bins=10000)
-    # plt.plot(test_hist[0])
-    # plt.show()
-    plt.plot(test.timeAxis)
-    plt.show()
+    print(test.FLIMInfo['availableChannels'])
+
+    test.showIntensityImage(test.FLIMInfo['availableChannels'])
+
 
     return(0)
 

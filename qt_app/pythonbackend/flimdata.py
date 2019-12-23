@@ -53,11 +53,9 @@ class flimdata(object):
         )
 
         # Generating overall decay histograms from available channels
-        #self.overallDecays = self.overallDecay(
+        # self.overallDecays = self.overallDecay(
         #    self.recordarray, self.FLIMInfo['availableChannels']
-        #)
-
-
+        # )
 
     def readPTUHeader(self, filepath):
         # Setting up header and record types
@@ -200,10 +198,8 @@ class flimdata(object):
 
         return(0)
 
-
-
-
     # @jit(nopython = True, cache = True)
+
     def readPhotonData(self, filepath, bitoffset, numRecords):
         # Initializing recordarray
         recordarray = np.zeros(shape=numRecords - 1,
@@ -235,14 +231,12 @@ class flimdata(object):
 
     # @jit(nopython = True, cache = True)
 
-
-
     '''
     In order to use Numba in a class method, the method needs to be defined as static.
     This means, that it has no direct access to self and all arguments need to be explicitly passed
     to that function.
     '''
-    @staticmethod 
+    @staticmethod
     @jit(nopython=True, cache=True)
     def treatOverflows(recordarray, macrotimefactor):
         '''
@@ -279,7 +273,7 @@ class flimdata(object):
         if(numLineStart != numLineStop):
             print(
                 'Number of line start and line stop markers does not match. File may be corrupted.'
-                )
+            )
 
         return(numLineStart, numLineStop)
 
@@ -289,7 +283,8 @@ class flimdata(object):
             Checks for which channels events were detected in photon data stream.
         '''
 
-        channelList = List() # Initialized as numba.typed.List, because Python lists will be deprecated in future Numba versions
+        # Initialized as numba.typed.List, because Python lists will be deprecated in future Numba versions
+        channelList = List()
 
         if(np.any(recordarray['marker'] == 0)):
             channelList.append(0)
@@ -302,9 +297,8 @@ class flimdata(object):
 
         return(channelList)
 
-
     @staticmethod
-    @jit(nopython = True, cache = True)
+    @jit(nopython=True, cache=True)
     def reconstructIntensityImage(recordarray, channel, linesinfile, pixelsx, pixelsy):
         '''
             Function sums photons detected in an image in order to reconstruct the intensity image from the TTTR data.
@@ -314,7 +308,8 @@ class flimdata(object):
         lineCounter = 0  # Stores current scan line numbers
         frameCounter = 0  # Stores current frame number
         # How many frames are in the image; assume square format
-        framesInFile = linesinfile[0] / pixelsx # linesinfile has two element, we only use the first one, because we assume a square image
+        # linesinfile has two element, we only use the first one, because we assume a square image
+        framesInFile = linesinfile[0] / pixelsx
 
         lineStart = 0
         lineStop = 0
@@ -330,7 +325,7 @@ class flimdata(object):
         # List storing photon nanotimes to assign to 3D-FLIM array in x-y position
         tmpNano = [np.float64(x) for x in range(0)]
         tmpMarker = 0  # Holds marker value for one loop iteration
-        tmpMacro = 0  # Holds macrotime value for one loop 
+        tmpMacro = 0  # Holds macrotime value for one loop
         tmpNanotime = 0  # Holds nanotime value for one loop iteration
         diff = 0  # Stores difference between photon macro time and line start to determine photon y-position
         # Count out-of-range photons (photons with macrotime below or above line time difference)
@@ -343,7 +338,7 @@ class flimdata(object):
 
         #intensityImages = []
 
-        #for channel in channelList:
+        # for channel in channelList:
         #    temp = np.zeros((pixelsx, pixelsy), dtype = np.int16)
         #    intensityImages.append(temp)
 
@@ -406,9 +401,10 @@ class flimdata(object):
 
         return(intensityImage)
 
-    def showIntensityImage(self, channel, color_palette = 'gray_r', interpolation_method = 'bessel'):
+    def showIntensityImage(self, channel, color_palette='gray_r', interpolation_method='bessel'):
 
-        plt.imshow(self.intensityImage, cmap = color_palette, interpolation = interpolation_method)
+        plt.imshow(self.intensityImage, cmap=color_palette,
+                   interpolation=interpolation_method)
         plt.show()
 
         return(0)
@@ -426,6 +422,6 @@ class flimdata(object):
 
         for channel in channelList:
             print("lol")
-            #overallDecays[channelList] = np.sum(recordarray[])
+            # overallDecays[channelList] = np.sum(recordarray[])
 
         return(0)

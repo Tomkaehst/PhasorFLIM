@@ -62,12 +62,11 @@ def cliMain():
 
     testfile = sys.argv[1]
 
-    test = flimdata(filepath = testfile)
+    test = flimdata(filepath=testfile)
 
     print(test.FLIMInfo['availableChannels'])
 
     test.showIntensityImage(test.FLIMInfo['availableChannels'])
-
 
     return(0)
 

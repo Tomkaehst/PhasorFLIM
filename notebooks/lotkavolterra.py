@@ -1,5 +1,6 @@
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
+import math
 
 
 def lotkavolterra(t, z, a = 1, b = 1, c = 1, d = 1):

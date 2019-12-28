@@ -85,6 +85,7 @@ import matplotlib.pyplot as plt
 
 plt.plot([1, 23, 2, 5, 65, 24, 2, 4])
 plt.ylabel('Some stupid numbers')
+plt.show()
 
 class MyApp(App):
     def build(self):

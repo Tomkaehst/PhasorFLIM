@@ -79,6 +79,7 @@ load_action = QtWidgets.QAction('&Open')
 
 def load_ptu(object, path):
     outObject = flimdata(filepath = path)
+    
 
     return(outObject)
 

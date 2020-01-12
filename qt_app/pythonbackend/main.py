@@ -19,6 +19,11 @@ import odefitting as ode
 from flimdata import *
 
 
+# Importing GUI scripts and modules
+import gui.phasorflim as gui
+from PyQt5 import QtCore, QtGui, QtWidgets
+
+
 def cliMain():
     # filepath = sys.argv[1]
     # recordarray, FLIMInfo = reader.PTUReader(filepath)
@@ -60,7 +65,7 @@ def cliMain():
 
     # ode.fitSimulatedDecay()
 
-    testfile = sys.argv[1]
+    testfile = '../../app/testData/Coumarin2P_1_1.ptu'
 
     test = flimdata(filepath=testfile)
 
@@ -70,8 +75,27 @@ def cliMain():
 
     return(0)
 
+load_action = QtWidgets.QAction('&Open')
+
+def load_ptu(object, path):
+    outObject = flimdata(filepath = path)
+    
+
+    return(outObject)
+
+load_action.triggered.connect(load_ptu)
+
+
 
 if(__name__ == '__main__'):
+    # Initializing GUI
+    app = QtWidgets.QApplication(sys.argv)
+    mainWindow = QtWidgets.QMainWindow()
+    ui = gui.Ui_mainWindow()
+    ui.setupUi(mainWindow)
+    mainWindow.show()
+    app.exec_()
+
     cliMain()
 
     sys.exit()

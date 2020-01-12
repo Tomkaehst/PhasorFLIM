@@ -72,11 +72,11 @@ class Ui_mainWindow(object):
         self.actionQuit.setText(_translate("mainWindow", "Quit"))
 
 
-if __name__ == "__main__":
-    import sys
-    app = QtWidgets.QApplication(sys.argv)
-    mainWindow = QtWidgets.QMainWindow()
-    ui = Ui_mainWindow()
-    ui.setupUi(mainWindow)
-    mainWindow.show()
-    sys.exit(app.exec_())
+# if __name__ == "__main__":
+#     import sys
+#     app = QtWidgets.QApplication(sys.argv)
+#     mainWindow = QtWidgets.QMainWindow()
+#     ui = Ui_mainWindow()
+#     ui.setupUi(mainWindow)
+#     mainWindow.show()
+#     sys.exit(app.exec_())

@@ -1,3 +1,19 @@
+'''
+Class: flimdata
+
+Description:
+
+Input:
+
+
+Ou
+
+
+'''
+
+
+
+
 import sys
 import os
 import io
@@ -7,6 +23,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from numba import jit
 from numba.typed import List
+
 
 
 class flimdata(object):

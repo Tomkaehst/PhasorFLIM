@@ -67,7 +67,7 @@ def cliMain():
 
     testfile = '../../app/testData/Coumarin2P_1_1.ptu'
 
-    test = flimdata(filepath=testfile)
+    test = flimdata(filepath=testfile, spatialBinning = 2, temporalBinning = 2)
 
     print(test.FLIMInfo['availableChannels'])
 

@@ -9,6 +9,7 @@ import numpy as np
 from numba import jit
 import matplotlib.pyplot as plt
 from PIL import Image
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 # Importing analysis script
 import PTUReader as reader
@@ -18,10 +19,8 @@ import visualizationFunctions as vis
 import odefitting as ode
 from flimdata import *
 
-
 # Importing GUI scripts and modules
-import gui.phasorflim as gui
-from PyQt5 import QtCore, QtGui, QtWidgets
+import gui.mainwindow as GUI
 
 
 def cliMain():
@@ -41,7 +40,7 @@ if(__name__ == '__main__'):
     # Initializing GUI
     app = QtWidgets.QApplication(sys.argv)
     mainWindow = QtWidgets.QMainWindow()
-    ui = gui.Ui_mainWindow()
+    ui = GUI.Ui_MainWindow()
     ui.setupUi(mainWindow)
     mainWindow.show()
     app.exec_()

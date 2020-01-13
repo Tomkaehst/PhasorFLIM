@@ -16,11 +16,11 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 
 # Importing analysis script
-import PTUReader as reader
-import reconstructIntensityImage as recon
-import globalFitting as glFit
-import visualizationFunctions as vis
-import odefitting as ode
+#import PTUReader as reader
+#import reconstructIntensityImage as recon
+#import globalFitting as glFit
+#import visualizationFunctions as vis
+#import odefitting as ode
 from flimdata import *
 
 # Importing GUI scripts and modules

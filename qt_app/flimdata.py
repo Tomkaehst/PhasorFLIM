@@ -60,9 +60,7 @@ class flimdata:
         )
 
         # Generating overall decay histograms from available channels
-        # self.overallDecays = self.overallDecay(
-        #    self.recordarray, self.FLIMInfo['availableChannels']
-        # )
+        self.overallDecays = self.overallDecay()
 
 
     def readPTUHeader(self, filepath):
@@ -462,17 +460,16 @@ class flimdata:
         return(tAxis)
 
 
-    def overallDecay(self, channelList: List = None):
+    def overallDecay(self):
         """[summary]
-        
-        Keyword Arguments:
-            channelList {List} -- [description] (default: {None})
-        """              
+        """      
 
-        overallDecays = np.ndarray((len(channelList, max(self.timeAxis))))
+        decays = []
 
-        for channel in channelList:
-            print("lol")
-            # overallDecays[channelList] = np.sum(recordarray[])
+        print(self.FLIMInfo['availableChannels'])
+
+        for channel in self.FLIMInfo['availableChannels']:
+            print(channel)
+            temp = np.sum(self.recordarray['nanotime'])
 
         return(0)

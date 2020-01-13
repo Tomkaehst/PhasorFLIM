@@ -1,9 +1,6 @@
 import sys
-import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import plotly.express as px
+import pyqtgraph as pg
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
@@ -44,9 +41,6 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         self.pushButton_showIntensityImage.pressed.connect(
             self.showIntensityImage)
 
-        # Tab Test
-        self.pushButton.pressed.connect(self.tabTestButton)
-
         # Show GUI
         self.show()
         self.updateLog('Finished initializing GUI. Ready for action...')
@@ -64,6 +58,7 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
                 filepath, spatialBinning, temporalBinning)
             self.ptuFileHistory.append(filepath)
             self.updateLog('Loading PTU file.')
+            self.lineEdit_filepath.setText(filepath)
 
         else:
             self.updateLog('No file selected.')
@@ -74,8 +69,9 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
                 self, 'Info', 'No FLIM data has been loaded yet!'
             )
             return
-        plt.imshow(self.flimObject.intensityImage)
-        plt.show()
+        else:
+          #self.graphicsView.image(self.flimObject.intensityImage)
+          pg.image(self.flimObject.intensityImage)
 
     def tabTestButton(self):
         self.updateLogprint("LOL!")

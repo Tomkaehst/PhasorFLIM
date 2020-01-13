@@ -5,7 +5,7 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 
-from gui.phasorflim import Ui_mainWindow
+from gui.mainWindow import Ui_mainWindow
 from flimdata import flimdata
 
 

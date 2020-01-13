@@ -14,11 +14,11 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QPushButton" name="btnLoadPTU">
+   <widget class="QPushButton" name="pushButton_LoadPTU">
     <property name="geometry">
      <rect>
-      <x>50</x>
-      <y>40</y>
+      <x>40</x>
+      <y>10</y>
       <width>111</width>
       <height>21</height>
      </rect>
@@ -27,7 +27,7 @@
      <string>Load PTU File</string>
     </property>
    </widget>
-   <widget class="QGraphicsView" name="ViewArea">
+   <widget class="QGraphicsView" name="plotArea">
     <property name="geometry">
      <rect>
       <x>100</x>
@@ -113,6 +113,19 @@
     </property>
     <property name="maximum">
      <number>8</number>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_showIntensityImage">
+    <property name="geometry">
+     <rect>
+      <x>560</x>
+      <y>20</y>
+      <width>161</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Show Intensity Image</string>
     </property>
    </widget>
   </widget>

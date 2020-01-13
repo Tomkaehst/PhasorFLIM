@@ -20,7 +20,7 @@ class flimdata:
             temporalBinning {int} -- [description]
         """        
 
-        self.filepath = None
+        self.filepath = filepath
         self.spatialBinning = spatialBinning
         self.temporalBinning = temporalBinning
 

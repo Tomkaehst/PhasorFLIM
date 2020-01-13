@@ -1,19 +1,3 @@
-'''
-Class: flimdata
-
-Description:
-
-Input:
-
-
-Ou
-
-
-'''
-
-
-
-
 import sys
 import os
 import io
@@ -26,17 +10,17 @@ from numba.typed import List
 
 
 
-class flimdata:    
-    def __init__(self, filepath, spatialBinning, temporalBinning):
+class flimdata:
+    def __init__(self, filepath: str, spatialBinning: int, temporalBinning: int):
         """[summary]
         
         Arguments:
-            filepath {[type]} -- [description]
-            spatialBinning {[type]} -- [description]
-            temporalBinning {[type]} -- [description]
-        """
+            filepath {str} -- [description]
+            spatialBinning {int} -- [description]
+            temporalBinning {int} -- [description]
+        """        
 
-        self.filepath = filepath
+        self.filepath = None
         self.spatialBinning = spatialBinning
         self.temporalBinning = temporalBinning
 
@@ -61,9 +45,7 @@ class flimdata:
         self.timeAxis = self.generateNanotimeaxis()
 
         # Getting list of channels from the data
-        self.FLIMInfo['availableChannels'] = self.checkChannelAvailability(
-            self.recordarray
-        )
+        self.FLIMInfo['availableChannels'] = self.checkChannelAvailability(self.recordarray)
 
         # Counting line events, requires for image reconstruction
         self.FLIMInfo['LinesInFile'] = self.countLines(self.recordarray)
@@ -81,7 +63,6 @@ class flimdata:
         # self.overallDecays = self.overallDecay(
         #    self.recordarray, self.FLIMInfo['availableChannels']
         # )
-
 
 
     def readPTUHeader(self, filepath):

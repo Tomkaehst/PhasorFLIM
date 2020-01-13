@@ -11,15 +11,18 @@ from PyQt5.QtCore import *
 from gui.phasorflim import Ui_mainWindow
 from flimdata import flimdata
 
+
 class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
 
     def __init__(self, *args, **kwargs):
 
         # Inheriting Ui_mainWindow and initializung GUI
-        print('Inheriting Ui_mainWindow class...')
+        print('Starting GUI...')
         super(Ui_mainWindowInterface, self).__init__(*args, **kwargs)
         print('Setting up Ui_mainWindow...')
         self.setupUi(self)
+
+        self.logHistory = []
 
         # Setting up flimdata class
         self.flimObject = None
@@ -28,45 +31,55 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         self.hour = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         self.data = [32, 535, 64, 646, 757, 574, 457, 576, 546, 432]
 
-
         # GUI Actions
         print('Setting up GUI actions...')
 
-        ## Close application
+        # Close application
         self.actionQuit.triggered.connect(self.close)
 
-        ## Load PTU file
+        # Load PTU file
         self.pushButton_LoadPTU.pressed.connect(self.loadPTUFile)
 
-        ## Show intensity image
-        self.pushButton_showIntensityImage.pressed.connect(self.showIntensityImage)
+        # Show intensity image
+        self.pushButton_showIntensityImage.pressed.connect(
+            self.showIntensityImage)
+
+        # Tab Test
+        self.pushButton.pressed.connect(self.tabTestButton)
 
         # Show GUI
-        print('Finished initializing GUI. Ready for action...')
         self.show()
-
-
+        self.updateLog('Finished initializing GUI. Ready for action...')
 
     def loadPTUFile(self):
 
-        filepath = QFileDialog.getOpenFileName(filter = 'PTU Files (*.ptu)')[0]
+        filepath = QFileDialog.getOpenFileName(filter='PTU Files (*.ptu)')[0]
 
         # Reading spatial and temporal binning factors from GUI
         spatialBinning = self.spinBox_spatialBinning.value()
         temporalBinning = self.spinBox_temporalBinning.value()
 
         if filepath:
-            self.flimObject = flimdata(filepath, spatialBinning, temporalBinning)
+            self.flimObject = flimdata(
+                filepath, spatialBinning, temporalBinning)
             self.ptuFileHistory.append(filepath)
-            print('Loading PTU file', filepath), '...'
+            self.updateLog('Loading PTU file.')
 
         else:
-            print('No file selected.')
-
+            self.updateLog('No file selected.')
 
     def showIntensityImage(self):
-        fig = px.scatter(x = self.hour, y = self.data)
-        fig.show()
+        if self.flimObject is None:
+            QMessageBox.critical(
+                self, 'Info', 'No FLIM data has been loaded yet!'
+            )
+            return
+        plt.imshow(self.flimObject.intensityImage)
+        plt.show()
 
+    def tabTestButton(self):
+        self.updateLogprint("LOL!")
 
-
+    def updateLog(self, logMessage):
+        self.logHistory.append(logMessage)
+        self.logConsole.setText(self.logHistory[-1])

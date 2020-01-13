@@ -46,6 +46,7 @@ if(__name__ == '__main__'):
 
     window = Ui_mainWindowInterface()
 
+    print('Executing Qt5 App...')
     app.exec_()
 
     #cliMain()

@@ -27,18 +27,6 @@ from flimdata import *
 from gui.mainWindowInterface import Ui_mainWindowInterface
 
 
-def cliMain():
-    testfile = '../../app/testData/Coumarin2P_1_1.ptu'
-
-    test = flimdata(filepath=testfile, spatialBinning = 2, temporalBinning = 2)
-
-    print(test.FLIMInfo['availableChannels'])
-
-    test.showIntensityImage(test.FLIMInfo['availableChannels'])
-
-    return(0)
-
-
 
 if(__name__ == '__main__'):
     app = QApplication([])

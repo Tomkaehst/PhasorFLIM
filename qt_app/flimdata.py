@@ -260,8 +260,8 @@ class flimdata:
     This means, that it has no direct access to self and all arguments need to be explicitly passed
     to that function.
     '''
-    #@staticmethod
-    #@jit(nopython=True, cache=True)
+    @staticmethod
+    @jit(nopython=True, cache=True)
     def treatOverflows(recordarray: np.ndarray, macrotimefactor: float):
         """[summary]
         
@@ -283,8 +283,8 @@ class flimdata:
 
         return(recordarray)
 
-    #@staticmethod
-    #@jit(nopython=True, cache=True)
+    @staticmethod
+    @jit(nopython=True, cache=True)
     def countLines(recordarray: np.ndarray):
         """
         Counts number of line start (marker == 65) and line stop (marker == 66) events in raw photon data marker stream.
@@ -326,8 +326,8 @@ class flimdata:
 
         return(channelList)
 
-    #@staticmethod
-    #@jit(nopython=True, cache=True)
+    @staticmethod
+    @jit(nopython=True, cache=True)
     def reconstructIntensityImage(recordarray: np.ndarray, channel: int, linesinfile: int, pixelsx: int, pixelsy: int):             
         '''
             Function sums photons detected in an image in order to reconstruct the intensity image from the TTTR data.

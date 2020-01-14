@@ -78,4 +78,4 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
 
     def updateLog(self, logMessage):
         self.logHistory.append(logMessage)
-        self.logConsole.setText(self.logHistory[-1])
+        self.logConsole.appendPlainText(self.logHistory[-1])

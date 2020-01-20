@@ -28,11 +28,17 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         self.hour = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         self.data = [32, 535, 64, 646, 757, 574, 457, 576, 546, 432]
 
-        # GUI Actions
-        print('Setting up GUI actions...')
+
+
+
+        ''' GUI Actions '''
+        self.updateLog('Setting up GUI actions...')
 
         # Close application
         self.actionQuit.triggered.connect(self.close)
+
+        # Clear log
+        self.pushButton_clearLog.pressed.connect(self.clearLog)
 
         # Load PTU file
         self.pushButton_LoadPTU.pressed.connect(self.loadPTUFile)
@@ -45,7 +51,16 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         self.show()
         self.updateLog('Finished initializing GUI. Ready for action...')
 
+
+
+
+
     def loadPTUFile(self):
+
+        if self.flimObject:
+            self.showError('Attention', 'Previously loaded data will be overwritten!')
+            self.updateLog('Overwriting previous file...')
+            self.flimObject = None
 
         filepath = QFileDialog.getOpenFileName(filter='PTU Files (*.ptu)')[0]
 
@@ -57,25 +72,46 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
             self.flimObject = flimdata(
                 filepath, spatialBinning, temporalBinning)
             self.ptuFileHistory.append(filepath)
-            self.updateLog('Loading PTU file.')
+            self.updateLog('Loading' + filepath)
             self.lineEdit_filepath.setText(filepath)
 
         else:
             self.updateLog('No file selected.')
 
     def showIntensityImage(self):
+
         if self.flimObject is None:
-            QMessageBox.critical(
-                self, 'Info', 'No FLIM data has been loaded yet!'
-            )
+            # Checking if ptu file has been loaded yet.
+            self.showError('Loading Error', 'No FLIM data has been loaded yet!')
             return
         else:
           #self.graphicsView.image(self.flimObject.intensityImage)
           pg.image(self.flimObject.intensityImage)
 
-    def tabTestButton(self):
-        self.updateLogprint("LOL!")
 
-    def updateLog(self, logMessage):
+    def updateLog(self, logMessage: str):
+        """Displays string on text box. Used as log for performed actions and potential errors. logMessage string is appended to list of strings in flimdata object --> logHistory
+        Arguments:
+            logMessage {str} -- Log text to be displayed.
+        """   
         self.logHistory.append(logMessage)
         self.logConsole.appendPlainText(self.logHistory[-1])
+
+    def clearLog(self):
+        self.logHistory = []
+        self.logConsole.clear()
+
+
+    def showError(self, header: str, message: str):
+        """Calls a Qt5 Message Box (critical) to attract users attention.
+        Should be called from function, when a condition to run a certain action is not yet met, e.g. no file has been loaded etc. 
+        
+        Arguments:
+            header {str} -- Window title of message box
+            message {str} -- Message to be displayed in message box
+        """        
+        QMessageBox.critical(
+            self,
+            header,
+            message
+        )

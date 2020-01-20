@@ -60,7 +60,7 @@ class flimdata:
         )
 
         # Generating overall decay histograms from available channels
-        self.overallDecays = self.overallDecay()
+        #self.overallDecays = self.overallDecay()
 
     def readPTUHeader(self, filepath):
         """[summary]

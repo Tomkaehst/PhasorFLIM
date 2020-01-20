@@ -1,12 +1,14 @@
 import sys
 import plotly.express as px
 import pyqtgraph as pg
+import matplotlib.pyplot as plt
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 
 from gui.mainWindow import Ui_mainWindow
 from flimdata import flimdata
+from fitting import fitter
 
 
 class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
@@ -23,8 +25,10 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
 
         # Setting up flimdata class
         self.flimObject = None
-        self.ptuFileHistory: List[str] = []
+        self.ptuFileHistory = []
 
+
+        # Some random data for testing the pyqtgraph module
         self.hour = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         self.data = [32, 535, 64, 646, 757, 574, 457, 576, 546, 432]
 
@@ -46,6 +50,9 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         # Show intensity image
         self.pushButton_showIntensityImage.pressed.connect(
             self.showIntensityImage)
+
+        # Perform test fit
+        self.pushButton_test.pressed.connect(self.testFit)
 
         # Show GUI
         self.show()
@@ -70,9 +77,10 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
 
         if filepath:
             self.flimObject = flimdata(
-                filepath, spatialBinning, temporalBinning)
+                filepath, spatialBinning, temporalBinning
+            )
             self.ptuFileHistory.append(filepath)
-            self.updateLog('Loading' + filepath)
+            self.updateLog('Loaded' + filepath)
             self.lineEdit_filepath.setText(filepath)
 
         else:
@@ -83,7 +91,6 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         if self.flimObject is None:
             # Checking if ptu file has been loaded yet.
             self.showError('Loading Error', 'No FLIM data has been loaded yet!')
-            return
         else:
           #self.graphicsView.image(self.flimObject.intensityImage)
           pg.image(self.flimObject.intensityImage)
@@ -115,3 +122,10 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
             header,
             message
         )
+
+    def testFit(self):
+        fitObject = fitter(self.flimObject.flimarray, timeAxis = self.flimObject.timeAxis)
+
+        testfit = fitObject.pixelwise_fit(photonthreshold = 10, rightcuttoff = 0)
+        plt.imshow(testfit)
+        plt.show()

@@ -81,7 +81,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>2</number>
     </property>
     <widget class="QWidget" name="tab_load">
      <attribute name="title">
@@ -211,6 +211,19 @@
      <attribute name="title">
       <string>Fitting</string>
      </attribute>
+     <widget class="QPushButton" name="pushButton_test">
+      <property name="geometry">
+       <rect>
+        <x>100</x>
+        <y>150</y>
+        <width>89</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Test Fit</string>
+      </property>
+     </widget>
     </widget>
     <widget class="QWidget" name="tab_output">
      <attribute name="title">

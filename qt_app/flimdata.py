@@ -9,16 +9,15 @@ from numba import jit
 from numba.typed import List
 
 
-
 class flimdata:
     def __init__(self, filepath: str, spatialBinning: int, temporalBinning: int):
         """[summary]
-        
+
         Arguments:
             filepath {str} -- [description]
             spatialBinning {int} -- [description]
             temporalBinning {int} -- [description]
-        """        
+        """
 
         self.filepath = filepath
         self.spatialBinning = spatialBinning
@@ -45,7 +44,8 @@ class flimdata:
         self.timeAxis = self.generateNanotimeaxis()
 
         # Getting list of channels from the data
-        self.FLIMInfo['availableChannels'] = self.checkChannelAvailability(self.recordarray)
+        self.FLIMInfo['availableChannels'] = self.checkChannelAvailability(
+            self.recordarray)
 
         # Counting line events, requires for image reconstruction
         self.FLIMInfo['LinesInFile'] = self.countLines(self.recordarray)
@@ -62,13 +62,12 @@ class flimdata:
         # Generating overall decay histograms from available channels
         self.overallDecays = self.overallDecay()
 
-
     def readPTUHeader(self, filepath):
         """[summary]
-        
+
         Arguments:
             filepath {[type]} -- [description]
-        """        
+        """
 
         # Setting up header and record types
         tyEmpty8 = struct.unpack(">i", bytes.fromhex("FFFF0008"))[0]
@@ -83,7 +82,8 @@ class flimdata:
         tyWideString = struct.unpack(">i", bytes.fromhex("4002FFFF"))[0]
         tyBinaryBlob = struct.unpack(">i", bytes.fromhex("FFFFFFFF"))[0]
 
-        rtHydraHarp2T3 = struct.unpack(">i", bytes.fromhex('01010304'))[0]  # Only coding for HydraHarp V2 TTTR data
+        rtHydraHarp2T3 = struct.unpack(">i", bytes.fromhex('01010304'))[
+            0]  # Only coding for HydraHarp V2 TTTR data
 
         # Setting up file reading
         filereadstream = open(self.filepath, 'rb')
@@ -171,7 +171,6 @@ class flimdata:
         headerend_bitoffset = filereadstream.tell()
         self.headerBitOffset = filereadstream.tell()
 
-
         # Reading header contents into FLIMInfo dict for quick access
         # - Filename: Filename
         # - Comment: String containing user comments
@@ -204,7 +203,8 @@ class flimdata:
 
         # Check if photon records from loaded ptu can be read and processed
         if (FLIMInfo['RecordType'] != rtHydraHarp2T3):
-            raise Exception("Loaded PTU file is not from HydraHarp V2 TTTR. Other photon record types are not implemented yet!")
+            raise Exception(
+                "Loaded PTU file is not from HydraHarp V2 TTTR. Other photon record types are not implemented yet!")
 
         self.FLIMInfo = FLIMInfo
         self.header_contents = header_contents
@@ -212,17 +212,16 @@ class flimdata:
         # Closing file readstream
         filereadstream.close()
 
-
-
     # @jit(nopython = True, cache = True)
+
     def readPhotonData(self, filepath: str, bitoffset: int, numRecords: int):
         """[summary]
-        
+
         Arguments:
             filepath {string} -- [description]
             bitoffset {int} -- [description]
             numRecords {int} -- [description]
-        """            
+        """
 
         # Initializing recordarray
         recordarray = np.zeros(shape=numRecords - 1,
@@ -252,9 +251,6 @@ class flimdata:
 
         return(recordarray)
 
-
-
-
     '''
     In order to use Numba in a class method, the method needs to be defined as static.
     This means, that it has no direct access to self and all arguments need to be explicitly passed
@@ -264,12 +260,12 @@ class flimdata:
     @jit(nopython=True, cache=True)
     def treatOverflows(recordarray: np.ndarray, macrotimefactor: float):
         """[summary]
-        
+
         Arguments:
             recordarray {np.ndarray} -- [description]
             macrotimefactor {float} -- [description]
-        """        
-      
+        """
+
         overflow_period = 1024
         overflow_correction = 0
 
@@ -289,10 +285,10 @@ class flimdata:
         """
         Counts number of line start (marker == 65) and line stop (marker == 66) events in raw photon data marker stream.
         Uneven number indicates corrupted file.
-        
+
         Arguments:
             recordarray {np.ndarray} -- 4 x numpy array, ['records'] - raw photon bit data; ['macrotime'] - system event time array, ['nanotime'] - nanotimes of photon events, ['marker'] - system markers
-        """        
+        """
 
         numLineStart = np.sum(recordarray['marker'] == 65)
         numLineStop = np.sum(recordarray['marker'] == 66)
@@ -307,10 +303,10 @@ class flimdata:
     # @jit(nopython=True, cache=True)
     def checkChannelAvailability(self, recordarray: np.ndarray):
         """[summary]
-        
+
         Arguments:
             recordarray {np.ndarray} -- [description]
-        """        
+        """
 
         # Initialized as numba.typed.List, because Python lists will be deprecated in future Numba versions
         channelList = List()
@@ -328,7 +324,7 @@ class flimdata:
 
     @staticmethod
     @jit(nopython=True, cache=True)
-    def reconstructIntensityImage(recordarray: np.ndarray, channel: int, linesinfile: int, pixelsx: int, pixelsy: int):             
+    def reconstructIntensityImage(recordarray: np.ndarray, channel: int, linesinfile: int, pixelsx: int, pixelsy: int):
         '''
             Function sums photons detected in an image in order to reconstruct the intensity image from the TTTR data.
         '''
@@ -432,14 +428,14 @@ class flimdata:
 
     def showIntensityImage(self, channel: int, color_palette: str = None, interpolation_method: str = None):
         """[summary]
-        
+
         Arguments:
             channel {int} -- [description]
-        
+
         Keyword Arguments:
             color_palette {str} -- [description] (default: {None})
             interpolation_method {str} -- [description] (default: {None})
-        """                        
+        """
 
         if color_palette is None:
             color_palette = 'gray_r'
@@ -451,25 +447,31 @@ class flimdata:
                    interpolation=interpolation_method)
         plt.show()
 
-
     def generateNanotimeaxis(self):
-        tEnd = self.FLIMInfo['GlobalResolution'] * 1E12  # Converting to picoseconds
+        tEnd = self.FLIMInfo['GlobalResolution'] * \
+            1E12  # Converting to picoseconds
         dt = self.FLIMInfo['Resolution'] * 1E12
         nBins = math.ceil((tEnd / dt))
         tAxis = np.linspace(0, tEnd, nBins)
         return(tAxis)
 
-
+    @staticmethod
+    @jit
     def overallDecay(self):
         """[summary]
-        """      
+
+        Arguments:
+            recordarray {np.array} -- [description]
+            channelList {List[int]} -- [description]
+        """
 
         decays = []
 
         print(self.FLIMInfo['availableChannels'])
 
         for channel in self.FLIMInfo['availableChannels']:
-            print(channel)
-            temp = np.sum(self.recordarray['nanotime'])
+            temp = np.histogram(
+                self.recordarray['macrotimes'][np.where(self.recordarray['marker'] == channel)], bins=self.timeAxis.size)
+            decays.append(temp)
 
         return(0)

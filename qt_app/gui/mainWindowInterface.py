@@ -126,6 +126,6 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
     def testFit(self):
         fitObject = fitter(self.flimObject.flimarray, timeAxis = self.flimObject.timeAxis)
 
-        testfit = fitObject.pixelwise_fit(photonthreshold = 10, rightcuttoff = 0)
+        testfit = fitObject.pixelwise_fit(photonthreshold = 1, rightcuttoff = 1)
         plt.imshow(testfit)
         plt.show()

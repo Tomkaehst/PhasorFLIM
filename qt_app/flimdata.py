@@ -62,7 +62,7 @@ class flimdata:
         # Reconstruct FLIM array for fitting
         self.flimarray = self.reconstructFlimArray(
             self.recordarray,
-            channel = 'lol',
+            channel = self.FLIMInfo['availableChannels'][0],
             linesinfile = self.FLIMInfo['LinesInFile'],
             pixelsx = self.FLIMInfo['PixelsX'],
             pixelsy = self.FLIMInfo['PixelsY'],
@@ -73,7 +73,7 @@ class flimdata:
         )
 
         # Generating overall decay histograms from available channels
-        #self.overallDecays = self.overallDecay()
+        self.overallDecays = self.overallDecay()
 
     def readPTUHeader(self, filepath):
         """[summary]
@@ -468,8 +468,8 @@ class flimdata:
         tAxis = np.linspace(0, tEnd, nBins)
         return(tAxis)
 
-    @staticmethod
-    @jit
+
+
     def overallDecay(self):
         """[summary]
 
@@ -478,16 +478,12 @@ class flimdata:
             channelList {List[int]} -- [description]
         """
 
-        decays = []
+        decay = np.sum(np.sum(self.flimarray, axis = 0), axis = 0)
 
-        print(self.FLIMInfo['availableChannels'])
+        return(decay)
 
-        for channel in self.FLIMInfo['availableChannels']:
-            temp = np.histogram(
-                self.recordarray['macrotimes'][np.where(self.recordarray['marker'] == channel)], bins=self.timeAxis.size)
-            decays.append(temp)
 
-        return(0)
+
 
     @staticmethod
     @jit(nopython = True)

@@ -617,4 +617,3 @@ class flimdata:
             "% of photons were out of range... Total:", oorPhotons, "of", np.sum(intensityImage), "photons.")
 
         return(flimarray)#, intensityImage
-        # TODO: Refactor this, so that reconstructFlimarray automatically runs in background and both returns flimarray AND intensity image!

@@ -360,11 +360,8 @@ class flimdata:
 
         # List storing photon macrotimes when line is active to determine y-pixel position of photon
         tmpEvents = [np.float64(x) for x in range(0)]
-        # List storing photon nanotimes to assign to 3D-FLIM array in x-y position
-        tmpNano = [np.float64(x) for x in range(0)]
         tmpMarker = 0  # Holds marker value for one loop iteration
         tmpMacro = 0  # Holds macrotime value for one loop
-        tmpNanotime = 0  # Holds nanotime value for one loop iteration
         diff = 0  # Stores difference between photon macro time and line start to determine photon y-position
         # Count out-of-range photons (photons with macrotime below or above line time difference)
         oorPhotons = 0
@@ -397,11 +394,9 @@ class flimdata:
             while(lineActive == True):
                 tmpMarker = recordarray['marker'][eventCounter]
                 tmpMacro = recordarray['macrotime'][eventCounter]
-                tmpNanotime = recordarray['nanotime'][eventCounter]
 
                 if(tmpMarker == channel):
                     tmpEvents.append(tmpMacro)
-                    tmpNano.append(tmpNanotime)
                 elif(tmpMarker == 66):
                     lineActive = False
                     lineStop = tmpMacro
@@ -423,7 +418,6 @@ class flimdata:
                     pixelIDX = pixelIDX + 1
                     lineCounter = lineCounter + 1
                     tmpEvents = [np.float64(x) for x in range(0)]
-                    tmpNano = [np.float64(x) for x in range(0)]
 
                 eventCounter += 1
 
@@ -519,7 +513,7 @@ class flimdata:
         # Number of TCSPC bins based on time between pulses and TCSPC time resolution
         decayBins = math.ceil((globRes / timeRes)/(2**temporalBinning))
         globalResolution = globRes * 10E8  # time between pulses in ns
-        timeResolution = timeRes * 10E9  # TCSPC time resolution in nss
+        timeResolution = timeRes * 10E9  # TCSPC time resolution in ns
 
         binningFactor = 2**spatialBinning
 

@@ -68,6 +68,16 @@ def treatOverflows(recordarray, macrotimefactor):
     return(recordarray)
 
 
+def countLines(recordarray):
+    numLineStart = np.sum(recordarray['marker'] == 65)
+    numLineStop = np.sum(recordarray['marker'] == 66)
+
+    if(numLineStart != numLineStop):
+        print('Line start and line stop markers are not equal. Corrupted file?')
+
+    return(numLineStart)
+
+
 #@jit(nopython = True, cache = True)
 def readPTUData(path: str, makeFLIMInfo: bool = True):
     """readPTUData()
@@ -90,7 +100,7 @@ def readPTUData(path: str, makeFLIMInfo: bool = True):
     filemagic = ptureadstream.read(8).decode('utf8').strip('\0')
 
     if(filemagic != 'PQTTTR'):
-        print('%s is not a .ptu file!' % ptupath)
+        print('%s is not a .ptu file!' % path)
         ptureadstream.close()
     #else:
         #print('%s is a valid .ptu file... Commencing.' % ptupath)
@@ -181,11 +191,11 @@ def readPTUData(path: str, makeFLIMInfo: bool = True):
 
     # Copying header info into FLIMInfo dict
     FLIMInfo = {
-        #'Filename' : header_contents['$Filename'],
-        #'Comment': header_contents['$Comment'],
+        'Filename' : header_contents['$Filename'],
+        'Comment': header_contents['$Comment'],
         'RecordType' : header_contents['TTResultFormat_TTTRRecType'],
         'BitsPerRecord' : header_contents['TTResultFormat_BitsPerRecord'],
-        #'PixelResolution' : header_contents['$ReqHdr_SpatialResolution'],
+        'PixelResolution' : header_contents['$ReqHdr_SpatialResolution'],
         'PixelsX' : header_contents['ImgHdr_PixX'],
         'PixelsY' : header_contents['ImgHdr_PixY'],
         'GlobalResolution' : header_contents['MeasDesc_GlobalResolution'],
@@ -203,7 +213,7 @@ def readPTUData(path: str, makeFLIMInfo: bool = True):
     # Reading photon records from ptu file, reopening read stream at headerend_bitoffset
     ## Initializing record array with pre-defined data types and length (read from header -> NumberOfRecords)
     recordBitType = np.dtype([('record', np.uint32), ('marker', np.uint8),
-                                  ('nanotime', np.float32), ('macrotime', np.float32)])
+                                  ('nanotime', np.float64), ('macrotime', np.float64)])
     recordarray = np.zeros(
             shape=FLIMInfo['NumberOfRecords'] - 1, dtype=recordBitType)
 
@@ -241,13 +251,20 @@ def readPTUData(path: str, makeFLIMInfo: bool = True):
             'SyncRate' : header_contents['TTResult_SyncRate'],
             'NumberOfRecords' : header_contents['TTResult_NumberOfRecords']
         }
-        header_contents = FLIMInfo
+        
+    header_contents = FLIMInfo
+
+    #macrotimes = np.array(recordarray['macrotime'], dtype = np.float32)
+    #nanotimes = np.array(recordarray['nanotime'], dtype = np.float32)
+    #markers = np.array(recordarray['marker'], dtype = np.uint8)
+
+
     
-    return(recordarray)
+    return(recordarray, header_contents)
 
 
 
-@jit(nopython = True)
+@jit(nopython=True, cache=True)
 def buildFLIMArray(recordarray, channel, linesinfile, pixelsx, pixelsy, globRes, timeRes, spatialBinning, temporalBinning):
     '''
     buildFLIMArray(
@@ -261,13 +278,14 @@ def buildFLIMArray(recordarray, channel, linesinfile, pixelsx, pixelsy, globRes,
     - temporalBinning: user-defined binning factor for fluorescence decay histogram
     )
     '''
-    lineCounter = 0  # Stores current scan line numbers
+
     eventCounter = 0  # Keeps track of photon / marker events while looping through data
+    lineCounter = 0  # Stores current scan line numbers
     frameCounter = 0  # Stores current frame number
     # How many frames are in the image; assume square format
     framesInFile = linesinfile / pixelsx
     # Number of TCSPC bins based on time between pulses and TCSPC time resolution
-    decayBins = math.floor((globRes / timeRes)/(2**temporalBinning))
+    decayBins = math.ceil((globRes / timeRes)/(2**temporalBinning))
     globalResolution = globRes * 10E8  # time between pulses in ns
     timeResolution = timeRes * 10E9  # TCSPC time resolution in nss
 
@@ -290,10 +308,11 @@ def buildFLIMArray(recordarray, channel, linesinfile, pixelsx, pixelsy, globRes,
     tmpMacro = 0  # Holds macrotime value for one loop iteration
     tmpNanotime = 0  # Holds nanotime value for one loop iteration
     diff = 0  # Stores difference between photon macro time and line start to determine photon y-position
+    # Count out-of-range photons (photons with macrotime below or above line time difference)
+    oorPhotons = 0
 
     nPixelX = int(pixelsx / binningFactor)
     nPixelY = int(pixelsy / binningFactor)
-    
 
     pixelIDX = 0  # Current x position in image
     pixelIDY = 0  # Current y position in image
@@ -303,19 +322,22 @@ def buildFLIMArray(recordarray, channel, linesinfile, pixelsx, pixelsy, globRes,
     intensityImage = np.zeros((nPixelX, nPixelY), dtype=np.uint16)
 
     while(lastLine == False):
-        tmpMarker = recordarray[2][eventCounter]
+        tmpMarker = recordarray['marker'][eventCounter]
 
         if(tmpMarker == 65):  # Event is line start marker
             lineActive = True  # Starting line evaluation (next while loop)
             # Store line start time
-            lineStart = recordarray[0][eventCounter]
+            lineStart = recordarray['macrotime'][eventCounter]
             eventCounter += 1
             continue  # Skip this loop iteration
 
+        if(tmpMarker == 0 or tmpMarker == 1 or tmpMarker == 2 or tmpMarker == 3):
+            oorPhotons += 1
+
         while(lineActive == True):
-            tmpMarker = recordarray[2][eventCounter]
-            tmpMacro = recordarray[0][eventCounter]
-            tmpNanotime = recordarray[1][eventCounter]
+            tmpMarker = recordarray['marker'][eventCounter]
+            tmpMacro = recordarray['macrotime'][eventCounter]
+            tmpNanotime = recordarray['nanotime'][eventCounter]
 
             if(tmpMarker == channel):
                 tmpEvents.append(tmpMacro)
@@ -332,6 +354,7 @@ def buildFLIMArray(recordarray, channel, linesinfile, pixelsx, pixelsy, globRes,
                     binID = math.floor((tmpNano[i]/globalResolution)*decayBins) - 1
 
                     if(pixelIDY < 0 or pixelIDY > (nPixelY - 1)):
+                        #oorPhotons = oorPhotons + 1
                         if(pixelIDY < 0):
                             pixelIDY = 0
                         elif(pixelIDY > (nPixelY - 1)):
@@ -356,5 +379,9 @@ def buildFLIMArray(recordarray, channel, linesinfile, pixelsx, pixelsy, globRes,
             lastLine = True
 
         eventCounter += 1
-        
+
+    print("Assigned photons to pixels.\n",
+          (oorPhotons / np.sum(intensityImage))*100,
+          "% of photons were out of range... Total:", oorPhotons, "of", np.sum(intensityImage), "photons.")
+
     return(flimarray, intensityImage)

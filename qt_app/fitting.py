@@ -1,6 +1,7 @@
 import flimdata
 import numpy as np
-from scipy.optimize import curve_fit
+import math
+import scipy.optimize as optimize
 from numba import njit
 
 class fitter:
@@ -18,40 +19,136 @@ class fitter:
 
         print(self.timeAxis)
 
+
+    def estimate_background(self, data):
+        '''
+        Calculates median of last 7 % of data.
+        Used for weightung of values that have 0 counts, otherwise division will
+        lead to NaN.
+        '''
+        sample_index_right_cutoff = math.floor(len(data) * 0.97)
+        sample_index_left_cutoff = math.floor(len(data) * 0.90)
+
+        background = np.median(data[sample_index_left_cutoff : sample_index_right_cutoff])
+
+        return(background)
+
+
+    def calculate_weights(self, data):
+
+        weights = np.zeros((len(data)))
+        weights = 1.0/np.sqrt(data, where = (data != 0))
+        weights[np.where(data == 0)] = 1.0/np.sqrt(self.estimate_background(data))
+
+        return(weights)
+
+
+    def residuals(self, para_est, t, data, weighted = True):
+        if(weighted):
+            weights = self.calculate_weights(data)
+            resids = (data - self.convoluted_decay(t, *para_est, True))**2  * weights
+        else:
+            resids = (data - self.convoluted_decay(t, *para_est, True))**2
+
+        return(resids)
+
+
+
     @staticmethod
     @njit
-    def expDecay_mono(x, a, b, tau):
-        return(a * np.exp(-x/tau) + b)
+    def expDecay_mono(t, N0, tau):
+        return(N0 * np.exp(-t/tau))
 
-    def pixelwise_fit(self, photonthreshold, rightcuttoff):
+    @staticmethod
+    @njit
+    def gauss_laser(t, mu, sigma):
+        gauss = (1/(sigma*np.sqrt(2*np.pi))) * np.exp(-(t - mu)**2/(2*sigma)**2)
+        return(gauss)
 
-        print(self.data.shape)
 
-        numdecays_x = self.data.shape[0]
-        numdecays_y = self.data.shape[1]
+    def convoluted_decay(
+        self,
+        t, 
+        offset,
+        amp1, 
+        tau1, 
+        IRFmu,
+        IRFsigma,
+        scatter
+    ):
+        IRF = self.gauss_laser(t, IRFmu, IRFsigma)
+        IRF_scatter = IRF * scatter
+        decay = self.expDecay_mono(t, amp1, tau1)
 
-        lifetime_image = np.zeros((numdecays_x, numdecays_y), dtype = np.int32)
+        convolved_signal = np.convolve(IRF, decay, mode = 'full')[0:len(t)]
+        convolved_signal += IRF_scatter
 
-        tau_fit = []
-        tau_cov = []
+        convolved_signal += offset
 
-        for x in range(numdecays_x):
-            for y in range(numdecays_y):
-                if(self.data[x][y][:].sum() > photonthreshold):
-                    max_value = np.where(self.data[x][y] == max(self.data[x][y]))[0][0]
-                    end_of_data = self.data[x][y].size - rightcuttoff
+        return(convolved_signal)
 
-                    try:
-                        tau_fit = curve_fit(
-                            self.expDecay_mono,
-                            self.timeAxis[max_value:end_of_data],
-                            self.data[x][y][max_value:end_of_data][0]
-                        )
-                        lifetime_image[x][y] = tau_fit[2]
-                    except:
-                        lifetime_image[x][y] = 100
 
-                else:
-                    lifetime_image[x][y] = 100
+    ## Objective functions
 
-        return(lifetime_image)
+    def minimization_least_squares(self, para_est, t, data, weighted = True):
+        fitted = self.convoluted_decay(t, *para_est)
+
+        if(weighted):
+            weights = self.calculate_weights(data)
+            resids = ((data - fitted)**2 * weights) / fitted
+        else:
+            resids = ((data - fitted)**2 * weights) / fitted
+
+        resids = np.nansum(resids)
+
+        return(resids)
+
+
+    def fit_summed_decay(self, data):
+        para_names = (
+            "offset",
+            "amp1",
+            "tau1",
+            "mu",
+            "sig",
+            "scat"
+        )
+
+        para_start = (
+            self.estimate_background(data),
+            50000, # amp1
+            2000, # tau 1
+            1500, # mu
+            100, # sigma
+            max(data) * 10 # scatter
+        )
+
+
+        para_bounds = (
+            (0,
+            1, 
+            200,
+            10,
+            20,
+            0),
+            (1000,
+            500000,
+            10000,
+            10000,
+            10000,
+            500,
+            np.infty)
+        )
+
+
+    para_opt = optimize.least_squares(
+        residuals,
+        para_start,
+        method = 'trf',
+        ftol = 1e-15,
+        xtol = 1e-15,
+        args = (tAxis, fluoresceine_c1_sumDecay),
+        bounds = para_bounds,
+        max_nfev = 10000,
+        verbose = 1
+    )

@@ -141,14 +141,14 @@ class fitter:
         )
 
 
-    para_opt = optimize.least_squares(
-        residuals,
-        para_start,
-        method = 'trf',
-        ftol = 1e-15,
-        xtol = 1e-15,
-        args = (tAxis, fluoresceine_c1_sumDecay),
-        bounds = para_bounds,
-        max_nfev = 10000,
-        verbose = 1
-    )
+        para_opt = optimize.least_squares(
+            residuals,
+            para_start,
+            method = 'trf',
+            ftol = 1e-15,
+            xtol = 1e-15,
+            #args = (tAxis, fluoresceine_c1_sumDecay),
+            bounds = para_bounds,
+            max_nfev = 10000,
+            verbose = 1
+        )

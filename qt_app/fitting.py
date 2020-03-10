@@ -3,6 +3,7 @@ import numpy as np
 import math
 import scipy.optimize as optimize
 from numba import njit
+import matplotlib.pyplot as plt
 
 class fitter:
 
@@ -11,13 +12,17 @@ class fitter:
 
 
         self.data = flimArray
+        self.overall_decay = self.sum_up_flimarray()
         self.timeAxis = timeAxis
         self.settings = fitSettings
 
         self.guessedParameters = []
         self.fittedParameters = []
 
-        print(self.timeAxis)
+
+    def sum_up_flimarray(self):
+        decay = np.sum(np.sum(self.data, axis = 0), axis = 0)
+        return(decay)
 
 
     def estimate_background(self, data):
@@ -68,7 +73,7 @@ class fitter:
 
     def convoluted_decay(
         self,
-        t, 
+        t,
         offset,
         amp1, 
         tau1, 
@@ -95,16 +100,17 @@ class fitter:
 
         if(weighted):
             weights = self.calculate_weights(data)
-            resids = ((data - fitted)**2 * weights) / fitted
+            resids = ((data - fitted)**2 * weights) / data
         else:
-            resids = ((data - fitted)**2 * weights) / fitted
+            resids = ((fitted - data)**2) / data
 
         resids = np.nansum(resids)
+        print()
 
         return(resids)
 
 
-    def fit_summed_decay(self, data):
+    def fit_summed_decay(self):
         para_names = (
             "offset",
             "amp1",
@@ -115,12 +121,12 @@ class fitter:
         )
 
         para_start = (
-            self.estimate_background(data),
-            50000, # amp1
+            self.estimate_background(self.overall_decay),
+            5000, # amp1
             2000, # tau 1
             1500, # mu
             100, # sigma
-            max(data) * 10 # scatter
+            max(self.overall_decay) * 10 # scatter
         )
 
 
@@ -135,20 +141,30 @@ class fitter:
             500000,
             10000,
             10000,
-            10000,
             500,
             np.infty)
         )
 
+        try:
+            para_opt = optimize.least_squares(
+                self.minimization_least_squares,
+                para_start,
+                method = 'trf',
+                ftol = 1e-15,
+                xtol = 1e-15,
+                args = (self.timeAxis, self.overall_decay, False),
+                bounds = para_bounds,
+                #max_nfev = 10000,
+                verbose = 0
+            )
+        except:
+            print('Fitting not possible...\n')
+            para_opt = para_start
 
-        para_opt = optimize.least_squares(
-            residuals,
-            para_start,
-            method = 'trf',
-            ftol = 1e-15,
-            xtol = 1e-15,
-            #args = (tAxis, fluoresceine_c1_sumDecay),
-            bounds = para_bounds,
-            max_nfev = 10000,
-            verbose = 1
-        )
+        #return(para_opt)
+
+        print(para_opt)
+
+        fitted_curve = self.convoluted_decay(self.timeAxis, *para_opt['x'])
+
+        return(fitted_curve)

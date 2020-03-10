@@ -68,8 +68,8 @@ class flimdata:
             pixelsy = self.FLIMInfo['PixelsY'],
             globRes = self.FLIMInfo['GlobalResolution'],
             timeRes = self.FLIMInfo['Resolution'],
-            spatialBinning = 2,
-            temporalBinning = 2
+            spatialBinning = self.spatialBinning,
+            temporalBinning = self.temporalBinning
         )
 
         # Generating overall decay histograms from available channels
@@ -258,8 +258,8 @@ class flimdata:
 
         recordarray['marker'] = (np.right_shift(
             recordarray[:]['record'], 25) & 127)
-        recordarray['nanotime'] = (np.right_shift(
-            recordarray[:]['record'], 10) & 322767) * nanoMultFactor
+        recordarray[:]['nanotime'] = ((np.right_shift(recordarray[:]['record'], 10) & 32767) * nanoMultFactor).astype(np.float32)
+
         recordarray = self.treatOverflows(recordarray, macroMultFactor)
 
         return(recordarray)
@@ -458,7 +458,7 @@ class flimdata:
         tEnd = self.FLIMInfo['GlobalResolution'] * \
             1E12  # Converting to picoseconds
         dt = self.FLIMInfo['Resolution'] * 1E12
-        nBins = math.ceil((tEnd / dt))
+        nBins = math.ceil((tEnd / dt) / 2**self.temporalBinning)
         tAxis = np.linspace(0, tEnd, nBins)
         return(tAxis)
 
@@ -472,7 +472,7 @@ class flimdata:
             channelList {List[int]} -- [description]
         """
 
-        decay = np.sum(np.sum(self.flimarray, axis = 0), axis = 0)
+        decay = np.sum(np.sum(self.flimarray, axis = 1), axis = 0)
 
         return(decay)
 
@@ -535,7 +535,7 @@ class flimdata:
         tmpNanotime = 0  # Holds nanotime value for one loop iteration
         diff = 0  # Stores difference between photon macro time and line start to determine photon y-position
         # Count out-of-range photons (photons with macrotime below or above line time difference)
-        oorPhotons = 0
+        #oorPhotons = 0
 
         nPixelX = int(pixelsx / binningFactor)
         nPixelY = int(pixelsy / binningFactor)
@@ -545,7 +545,7 @@ class flimdata:
 
         flimarray = np.zeros((nPixelX, nPixelY, decayBins), dtype=np.uint16)
         # 2D array for intensity image
-        intensityImage = np.zeros((nPixelX, nPixelY), dtype=np.uint16)
+        #intensityImage = np.zeros((nPixelX, nPixelY), dtype=np.uint16)
 
         while(lastLine == False):
             tmpMarker = recordarray['marker'][eventCounter]
@@ -557,8 +557,8 @@ class flimdata:
                 eventCounter += 1
                 continue  # Skip this loop iteration
 
-            if(tmpMarker == 0 or tmpMarker == 1 or tmpMarker == 2 or tmpMarker == 3):
-                oorPhotons += 1
+            #if(tmpMarker == 0 or tmpMarker == 1 or tmpMarker == 2 or tmpMarker == 3):
+            #    oorPhotons += 1
 
             while(lineActive == True):
                 tmpMarker = recordarray['marker'][eventCounter]
@@ -578,26 +578,24 @@ class flimdata:
                         diff = tmpEvents[i] - lineStart
                         pixelIDY = math.floor(diff / pixelTime)
                         binID = math.floor((tmpNano[i]/globalResolution)*decayBins) - 1
+    
+                        if(pixelIDY < 0):
+                            pixelIDY = 0
+                        elif(pixelIDY > (nPixelY - 1)):
+                            pixelIDY = nPixelY - 1
 
-                        if(pixelIDY < 0 or pixelIDY > (nPixelY - 1)):
-                            #oorPhotons = oorPhotons + 1
-                            if(pixelIDY < 0):
-                                pixelIDY = 0
-                            elif(pixelIDY > (nPixelY - 1)):
-                                pixelIDY = nPixelY - 1
-
-                        intensityImage[math.floor(pixelIDX)][pixelIDY] += 1
+                        #intensityImage[math.floor(pixelIDX)][pixelIDY] += 1
                         flimarray[math.floor(pixelIDX)][pixelIDY][binID] += 1
 
-                    pixelIDX = pixelIDX + (1/binningFactor)
-                    lineCounter = lineCounter + 1
+                    pixelIDX += (1/binningFactor)
+                    lineCounter += 1
                     tmpEvents = [np.float64(x) for x in range(0)]
                     tmpNano = [np.float64(x) for x in range(0)]
 
                 eventCounter += 1
 
-            if(lineCounter > (pixelsx - 1)):
-                frameCounter = frameCounter + 1
+            if(lineCounter > (nPixelY - 1)):
+                frameCounter += 1
                 pixelIDX = 0
                 lineCounter = 0
 
@@ -606,8 +604,8 @@ class flimdata:
 
             eventCounter += 1
 
-        print("Assigned photons to pixels.\n",
-            (oorPhotons / np.sum(intensityImage))*100,
-            "% of photons were out of range... Total:", oorPhotons, "of", np.sum(intensityImage), "photons.")
+        #print("Assigned photons to pixels.\n",
+        #    (oorPhotons / np.sum(intensityImage))*100,
+        #    "% of photons were out of range... Total:", oorPhotons, "of", np.sum(intensityImage), "photons.")
 
         return(flimarray)#, intensityImage

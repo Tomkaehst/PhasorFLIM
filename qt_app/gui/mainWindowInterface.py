@@ -2,6 +2,8 @@ import sys
 import plotly.express as px
 import pyqtgraph as pg
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
@@ -92,8 +94,10 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
             # Checking if ptu file has been loaded yet.
             self.showError('Loading Error', 'No FLIM data has been loaded yet!')
         else:
-          #self.graphicsView.image(self.flimObject.intensityImage)
+          self.graphicsView = pg.PlotWidget()
           pg.image(self.flimObject.intensityImage)
+          self.showError('...', str(self.flimObject.flimarray.shape))
+          self.graphicsView.plot(self.flimObject.timeAxis, self.flimObject.overallDecays)
 
 
     def updateLog(self, logMessage: str):
@@ -124,8 +128,15 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         )
 
     def testFit(self):
-        fitObject = fitter(self.flimObject.flimarray, timeAxis = self.flimObject.timeAxis)
-
-        testfit = fitObject.pixelwise_fit(photonthreshold = 1, rightcuttoff = 1)
-        plt.imshow(testfit)
-        plt.show()
+        if(self.flimObject):
+            fitObject = fitter(self.flimObject.flimarray, timeAxis = self.flimObject.timeAxis)
+            self.showError('Starting fitting procedure...', 'Starting the fitting procedure. This might take a while. Application is unresponsive during fitting...')
+            testfit = fitObject.fit_summed_decay()
+            #pg.plot(
+            #    self.flimObject.timeAxis,
+            #    self.flimObject.overallDecays
+            #)
+            #pg.plot(self.flimObject.timeAxis, testfit, pen = pg.mkPen('r', width = 0.5))
+            #plt.show()
+        else:
+            self.showError('Fitting not possible.', 'Please load a FLIM file first.')

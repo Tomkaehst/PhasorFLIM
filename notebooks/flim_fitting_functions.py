@@ -39,22 +39,12 @@ def make_start_parameters(
     )
 
     parameter_bounds = (
-        (
-            0,
-            1,
-            200,
-            10,
-            20,
-            0
-        ),
-        (
-            1000,
-            500000,
-            10000,
-            10000,
-            500,
-            np.infty
-        )
+        [0, 10000],
+        [1, np.infty],
+        [200, 10000],
+        [100, 10000],
+        [20, 250],
+        [0, np.infty]
     )
 
     return(parameter_names, start_parameters, parameter_bounds)
@@ -111,34 +101,73 @@ def residuals(para_est, t, data, weighted = True):
 
     if(weighted):
         weights = calculate_weights(data)
-        residuals = (data - convoluted_decay(t, *para_est, True) ** 2) * weights
+        residuals = (data - convoluted_decay(t, *para_est) ** 2) * weights
     else:
-        residuals = (data - convoluted_decay(t, *para_est, True) ** 2)
+        residuals = (data - convoluted_decay(t, *para_est) ** 2)
 
     return(residuals)
 
 
-def fit_decay(data, t_axis, start_parameters, parameter_bounds):
+#def fit_decay(data, t_axis, start_parameters, parameter_bounds):
 
-    optimized_parameters = optimize.least_squares(
-        residuals,
-        method = 'trf',
-        ftol = 1E-15,
-        xtol = 1E-15,
-        args = (t_axis, data),
-        max_nfev = 10000,
-        verbose = True
+#    optimized_parameters = optimize.least_squares(
+#        residuals,
+#        start_parameters,
+#        method = 'trf',
+#        ftol = 1E-15,
+#        xtol = 1E-15,
+#        args = (t_axis, data),
+#        max_nfev = 10000,
+#        verbose = True
+#    )
+#
+#    return(optimized_parameters)
+
+
+def minimize_poisson_deviance(start_parameters, t, data):
+    ''' See Bajzer et al., 1991; Equation 8 '''
+    fitted = convoluted_decay(t, *start_parameters)
+    
+    deviance = 2 * np.nansum(
+        data * np.log(data / fitted) - (data - fitted)
+    )
+    
+    return(deviance)
+
+
+def fit_decay(data, t_axis, start_parameters, parameter_bounds, cutoff):
+
+    data_trimmed = data[0:cutoff],
+    t_axis_trimmed = t_axis[0:cutoff]
+
+    optimized_parameters = optimize.minimize(
+        minimize_poisson_deviance,
+        start_parameters,
+        args = (t_axis_trimmed, data_trimmed),
+        method = 'SLSQP',
+        bounds = parameter_bounds,
+        options = {
+            'maxiter': 1000,
+            'disp': False
+        }
     )
 
     return(optimized_parameters)
+
 
 def calculate_fitted_curve(t_axis, optimized_parameters):
     fitted_curve = convoluted_decay(t_axis, *optimized_parameters['x'])
     return(fitted_curve)
 
-def plot_fit(data, t_axis, optimized_parameters, scale = 'log'):
+def plot_fit(data, t_axis, optimized_parameters, cutoff, scale = 'log'):
+
+    data = data[0:(len(data) - cutoff)]
+    t_axis = t_axis[0:(len(t_axis) - cutoff)]
+
     fitted_curve = calculate_fitted_curve(t_axis, optimized_parameters)
     weighted_residuals = (fitted_curve - data) * calculate_weights(data)
+
+    reduced_chi_squares = (np.sum((data - fitted_curve)**2 / fitted_curve)) / (len(t_axis - len(optimized_parameters)))
 
     fig, ax = plt.subplots(2, 1, sharex = True)
 
@@ -154,10 +183,12 @@ def plot_fit(data, t_axis, optimized_parameters, scale = 'log'):
     ax[1].plot(t_axis, weighted_residuals)
     ax[1].set(
         xlabel = 'time [ps]',
-        ylabel = 'Weighted Residuals',
-        ylim = (min(weighted_residuals * 1.2, max(weighted_residuals) * 1.2))
+        ylabel = 'Weighted Residuals'#,
+        #ylim = (min(weighted_residuals * 1.2, max(weighted_residuals) * 1.2))
     )
     ax[1].grid()
+
+    print('Reduced Chi-Squared:', reduced_chi_squares)
 
     plt.show()
 

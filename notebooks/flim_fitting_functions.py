@@ -1,10 +1,9 @@
-
-
 import math
 from scipy.integrate import odeint
 from scipy import optimize
 import numpy as np
 import matplotlib.pyplot as plt
+from numba import jit
 
 
 
@@ -63,27 +62,32 @@ def make_time_axis(global_resolution, resolution, number_of_bins = 0):
 
     return(t_axis)
 
+@jit
 def gauss_laser(t, mu, sigma):
     y = (1 / (sigma * np.sqrt(2 * np.pi))) * np.exp(-(t - mu)**2 / (2 * sigma) **2)
     return(y)
 
+@jit
+def exp_decay(t, tau):
+    return(np.exp(-t / tau))
 
-def exp_decay(t, N, tau):
-    return(1000*N * np.exp(-t / tau))
-
+@jit
 def convoluted_decay(t, offset, amp, tau, IRF_mu, IRF_sigma, Scatter_amplitude, Scatter_mu):
     IRF = gauss_laser(t, IRF_mu, IRF_sigma)
-    scatter = 1000*Scatter_amplitude * gauss_laser(t, Scatter_mu, IRF_sigma)
+    scatter = Scatter_amplitude * gauss_laser(t, Scatter_mu, IRF_sigma)
 
-    decay = exp_decay(t, amp, tau)
+    decay = exp_decay(t, tau)
 
-    convoluted_signal = np.convolve(IRF, decay, mode = 'full')[0:len(t)]
+    convoluted_signal = np.convolve(IRF, decay)[0:len(t)]
     convoluted_signal += scatter
+
+    convoluted_signal *= 10*amp
 
     convoluted_signal += offset
 
     return(convoluted_signal)
 
+@jit
 def estimate_background(data):
     sample_index_right_cutoff = math.floor(len(data) * 0.97)
     sample_index_left_cutoff = math.floor(len(data) * 0.90)
@@ -94,13 +98,14 @@ def estimate_background(data):
 
     return(background)
 
+
 def calculate_weights(data):
     weights = np.zeros(len(data))
     weights = 1.0 / np.sqrt(data, where = (data != 0))
     weights[np.where(data == 0)] = 1.0 / np.sqrt(estimate_background(data))
     return(weights)
 
-
+@jit
 def residuals(para_est, t, data, weighted = True):
 
     if(weighted):
@@ -183,6 +188,7 @@ def plot_fit(data, t_axis, optimized_parameters, cutoff, scale = 'log'):
     )
     ax[0].grid()
     ax[0].legend(loc = 'best')
+    ax[0].text(0.75 * max(t_axis), 0.75 * max(data), 'RCS: %d'%(reduced_chi_squares))
     
     ax[1].plot(t_axis, weighted_residuals)
     ax[1].set(

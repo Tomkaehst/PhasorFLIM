@@ -18,7 +18,8 @@ def make_start_parameters(
     tau = 2500,
     IRF_mu = 1500,
     IRF_sigma = 100,
-    IRF_scatter = 50000):
+    Scatter_amplitude = 50000,
+    Scatter_mu = 1500):
 
     parameter_names = (
         'offset',
@@ -26,7 +27,8 @@ def make_start_parameters(
         'tau',
         'IRF_mu',
         'IRF_sigma',
-        'IRF_scatter'
+        'Scatter_amp',
+        'Scatter_mu'
     )
 
     start_parameters = (
@@ -35,16 +37,18 @@ def make_start_parameters(
         tau,
         IRF_mu,
         IRF_sigma,
-        IRF_scatter
+        Scatter_amplitude,
+        Scatter_mu
     )
 
     parameter_bounds = (
         [0, 10000],
-        [1, np.infty],
-        [200, 10000],
+        [0, np.infty],
         [100, 10000],
-        [20, 250],
-        [0, np.infty]
+        [100, 10000],
+        [10, 250],
+        [0, np.infty],
+        [100, 10000]
     )
 
     return(parameter_names, start_parameters, parameter_bounds)
@@ -65,11 +69,11 @@ def gauss_laser(t, mu, sigma):
 
 
 def exp_decay(t, N, tau):
-    return(N * np.exp(-t / tau))
+    return(1000*N * np.exp(-t / tau))
 
-def convoluted_decay(t, offset, amp, tau, IRF_mu, IRF_sigma, IRF_scatter):
+def convoluted_decay(t, offset, amp, tau, IRF_mu, IRF_sigma, Scatter_amplitude, Scatter_mu):
     IRF = gauss_laser(t, IRF_mu, IRF_sigma)
-    scatter = IRF * IRF_scatter
+    scatter = 1000*Scatter_amplitude * gauss_laser(t, Scatter_mu, IRF_sigma)
 
     decay = exp_decay(t, amp, tau)
 
@@ -108,20 +112,21 @@ def residuals(para_est, t, data, weighted = True):
     return(residuals)
 
 
-#def fit_decay(data, t_axis, start_parameters, parameter_bounds):
+# def fit_decay(data, t_axis, start_parameters, parameter_bounds):
 
-#    optimized_parameters = optimize.least_squares(
-#        residuals,
-#        start_parameters,
-#        method = 'trf',
-#        ftol = 1E-15,
-#        xtol = 1E-15,
-#        args = (t_axis, data),
-#        max_nfev = 10000,
-#        verbose = True
-#    )
-#
-#    return(optimized_parameters)
+#     optimized_parameters = optimize.least_squares(
+#         residuals,
+#         start_parameters,
+#         method = 'lm',
+#         ftol = 1E-25,
+#         xtol = 1E-15,
+#         args = (t_axis, data),
+#         max_nfev = 10000,
+#         #bounds = parameter_bounds,
+#         verbose = True
+#     )
+
+#     return(optimized_parameters)
 
 
 def minimize_poisson_deviance(start_parameters, t, data):
@@ -135,16 +140,15 @@ def minimize_poisson_deviance(start_parameters, t, data):
     return(deviance)
 
 
-def fit_decay(data, t_axis, start_parameters, parameter_bounds, cutoff):
-
-    data_trimmed = data[0:cutoff],
-    t_axis_trimmed = t_axis[0:cutoff]
+def fit_decay(data, t_axis, start_parameters, parameter_bounds, minimization_method = 'Nelder-Mead', cutoff = 1):
+    data_trimmed = data[0:(len(data) - cutoff)],
+    t_axis_trimmed = t_axis[0:(len(t_axis) - cutoff)]
 
     optimized_parameters = optimize.minimize(
         minimize_poisson_deviance,
         start_parameters,
         args = (t_axis_trimmed, data_trimmed),
-        method = 'SLSQP',
+        method = minimization_method,
         bounds = parameter_bounds,
         options = {
             'maxiter': 1000,

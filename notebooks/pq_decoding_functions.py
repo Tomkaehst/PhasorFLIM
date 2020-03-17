@@ -380,8 +380,50 @@ def buildFLIMArray(recordarray, channel, linesinfile, pixelsx, pixelsy, globRes,
 
         eventCounter += 1
 
-    print("Assigned photons to pixels.\n",
-          (oorPhotons / np.sum(intensityImage))*100,
-          "% of photons were out of range... Total:", oorPhotons, "of", np.sum(intensityImage), "photons.")
+    #print("Assigned photons to pixels.\n",
+    #      (oorPhotons / np.sum(intensityImage))*100,
+    #      "% of photons were out of range... Total:", oorPhotons, "of", np.sum(intensityImage), "photons.")
 
     return(flimarray, intensityImage)
+
+
+
+def make_time_axis(global_resolution, resolution, number_of_bins = 0):
+    t_end = global_resolution * 1E12
+    dt = resolution * 1E12
+
+    if(number_of_bins == 0):
+        number_of_bins = math.ceil(t_end / dt)
+
+    t_axis = np.linspace(0, t_end, number_of_bins)
+
+    return(t_axis)
+
+
+def load_flim_data(path, channel = 0, spatialBinning = 0, temporalBinning = 0):
+    '''
+    Function wrapper for readPTUData and buildFLIMarray.
+    Returns the 3D FLIM array and the intensity image of the ptu file provided with path (str).
+    '''
+    recordarray, header_info = readPTUData(path)
+    header_info['LinesInFile'] = countLines(recordarray)
+
+    flim_array, intensity_image = buildFLIMArray(
+        recordarray = recordarray,
+        channel = channel,
+        linesinfile = header_info['LinesInFile'],
+        pixelsx = header_info['PixelsX'],
+        pixelsy = header_info['PixelsY'],
+        globRes = header_info['GlobalResolution'],
+        timeRes = header_info['Resolution'],
+        spatialBinning = spatialBinning,
+        temporalBinning = temporalBinning
+    )
+
+    time_axis = make_time_axis(
+        header_info['GlobalResolution'],
+        header_info['Resolution'],
+        number_of_bins = flim_array.shape[2]
+    )
+
+    return(flim_array, intensity_image, time_axis)

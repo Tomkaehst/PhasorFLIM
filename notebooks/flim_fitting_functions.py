@@ -17,17 +17,18 @@ def make_start_parameters(
     tau = 2500,
     IRF_mu = 1500,
     IRF_sigma = 100,
-    Scatter_amplitude = 50000,
-    Scatter_mu = 1500):
+    #Scatter_amplitude = 50000,
+    #Scatter_mu = 1500):
+    ):
 
     parameter_names = (
         'offset',
         'amplitude',
         'tau',
         'IRF_mu',
-        'IRF_sigma',
-        'Scatter_amp',
-        'Scatter_mu'
+        'IRF_sigma'#,
+        #'Scatter_amp',
+        #'Scatter_mu'
     )
 
     start_parameters = (
@@ -35,9 +36,9 @@ def make_start_parameters(
         amplitude,
         tau,
         IRF_mu,
-        IRF_sigma,
-        Scatter_amplitude,
-        Scatter_mu
+        IRF_sigma#,
+        #Scatter_amplitude,
+        #Scatter_mu
     )
 
     parameter_bounds = (
@@ -45,9 +46,9 @@ def make_start_parameters(
         [0, np.infty],
         [100, 10000],
         [100, 10000],
-        [10, 250],
-        [0, np.infty],
-        [100, 10000]
+        [10, 250]#,
+        #[0, np.infty],
+        #[100, 10000]
     )
 
     return(parameter_names, start_parameters, parameter_bounds)
@@ -72,14 +73,14 @@ def exp_decay(t, tau):
     return(np.exp(-t / tau))
 
 @jit
-def convoluted_decay(t, offset, amp, tau, IRF_mu, IRF_sigma, Scatter_amplitude, Scatter_mu):
+def convoluted_decay(t, offset, amp, tau, IRF_mu, IRF_sigma):#, Scatter_amplitude, Scatter_mu):
     IRF = gauss_laser(t, IRF_mu, IRF_sigma)
-    scatter = Scatter_amplitude * gauss_laser(t, Scatter_mu, IRF_sigma)
+    #scatter = Scatter_amplitude * gauss_laser(t, Scatter_mu, IRF_sigma)
 
     decay = exp_decay(t, tau)
 
     convoluted_signal = np.convolve(IRF, decay)[0:len(t)]
-    convoluted_signal += scatter
+    #convoluted_signal += scatter
 
     convoluted_signal *= 10*amp
 

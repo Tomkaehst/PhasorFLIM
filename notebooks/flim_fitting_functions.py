@@ -189,7 +189,7 @@ def plot_fit(data, t_axis, optimized_parameters, cutoff, scale = 'log'):
     )
     ax[0].grid()
     ax[0].legend(loc = 'best')
-    ax[0].text(0.75 * max(t_axis), 0.75 * max(data), 'RCS: %d'%(reduced_chi_squares))
+    ax[0].text(0.75 * max(t_axis), 0.75 * max(data), 'RCS: %f'%(reduced_chi_squares))
     
     ax[1].plot(t_axis, weighted_residuals)
     ax[1].set(

@@ -104,15 +104,31 @@ def gauss_laser(t, mu, sigma):
     return(y)
 
 
-def interpolate_irf(time_axis, measured_irf):
+def interpolate_irf(time_axis, measured_irf, leftcutoff = 10, rightcutoff = 1000):
+
+    #background_counts = estimate_background(measured_irf) / np.sum(measured_irf)
+
+    irf_cutoff = measured_irf[leftcutoff:rightcutoff]
+    irf_cutoff = irf_cutoff / np.sum(measured_irf)
+
+    time_axis_cutoff = time_axis[leftcutoff:rightcutoff]
+
     irf_function = interpolate.interp1d(
-        x = time_axis,
-        y = measured_irf
+        x = time_axis_cutoff,
+        y = irf_cutoff,
+        bounds_error = False,
+	    fill_value = 0 #background_counts
     )
 
     irf_interpolated = irf_function(time_axis)
 
     return(irf_interpolated)
+
+
+def add_poisson_noise(data, offset):
+    decay = np.random.poisson(data, len(data))
+    decay += np.random.poisson(offset, len(decay))
+    return(decay)
 
 
 @jit
@@ -121,14 +137,14 @@ def exp_decay(t, tau):
 
 
 
-@jit
-def convoluted_decay(t, offset, amp, tau, IRF_mu, IRF_sigma, measured_irf):#, Scatter_amplitude, Scatter_mu):
+def convoluted_decay(t, offset, amp, tau, IRF_mu, IRF_sigma, measured_irf = None):#, Scatter_amplitude, Scatter_mu):
 
-    if(measured_irf):
-        IRF = interpolate_irf(t, measured_irf)
-    else:
+    if(measured_irf is None):
         IRF = gauss_laser(t, IRF_mu, IRF_sigma)
         #scatter = Scatter_amplitude * gauss_laser(t, Scatter_mu, IRF_sigma)
+    else:
+        IRF = interpolate_irf(t, measured_irf)
+
 
     decay = exp_decay(t, tau)
 
@@ -140,6 +156,8 @@ def convoluted_decay(t, offset, amp, tau, IRF_mu, IRF_sigma, measured_irf):#, Sc
     convoluted_signal += offset
 
     return(convoluted_signal)
+
+
 
 @jit
 def estimate_background(data):
@@ -189,7 +207,7 @@ def residuals(para_est, t, data, measured_irf, weighted = True):
 #     return(optimized_parameters)
 
 
-def minimize_poisson_deviance(start_parameters, t, data, measured_irf):
+def minimize_poisson_deviance(start_parameters, t, data, measured_irf = None):
     ''' See Bajzer et al., 1991; Equation 8 '''
     fitted = convoluted_decay(t, *start_parameters, measured_irf)
     
@@ -201,7 +219,7 @@ def minimize_poisson_deviance(start_parameters, t, data, measured_irf):
 
 
 
-def fit_decay(data, t_axis, start_parameters, parameter_bounds, measured_irf = False, minimization_method = 'Nelder-Mead', cutoff = 1):
+def fit_decay(data, t_axis, start_parameters, parameter_bounds, measured_irf = None, minimization_method = 'Nelder-Mead', cutoff = 1):
     data_trimmed = data[0:(len(data) - cutoff)],
     t_axis_trimmed = t_axis[0:(len(t_axis) - cutoff)]
 
@@ -221,18 +239,18 @@ def fit_decay(data, t_axis, start_parameters, parameter_bounds, measured_irf = F
 
 
 
-def calculate_fitted_curve(t_axis, optimized_parameters, measured_irf):
+def calculate_fitted_curve(t_axis, optimized_parameters, measured_irf = None):
     fitted_curve = convoluted_decay(t_axis, *optimized_parameters['x'], measured_irf)
     return(fitted_curve)
 
 
 
-def plot_fit(data, t_axis, optimized_parameters, cutoff, scale = 'log'):
+def plot_fit(data, t_axis, optimized_parameters, measured_irf = None, cutoff = 1, scale = 'log'):
 
     data = data[0:(len(data) - cutoff)]
     t_axis = t_axis[0:(len(t_axis) - cutoff)]
 
-    fitted_curve = calculate_fitted_curve(t_axis, optimized_parameters)
+    fitted_curve = calculate_fitted_curve(t_axis, optimized_parameters, measured_irf)
     weighted_residuals = (fitted_curve - data) * calculate_weights(data)
 
     reduced_chi_squares = (np.sum((data - fitted_curve)**2 / fitted_curve)) / (len(t_axis - len(optimized_parameters)))

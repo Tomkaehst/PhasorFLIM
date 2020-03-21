@@ -1,7 +1,8 @@
 import math
+import numpy as np
 from scipy.integrate import odeint
 from scipy import optimize
-import numpy as np
+from scipy import interpolate
 import matplotlib.pyplot as plt
 from numba import jit
 
@@ -17,11 +18,13 @@ def make_start_parameters(
     tau = 2500,
     IRF_mu = 1500,
     IRF_sigma = 100,
+    measured_irf = False
     #Scatter_amplitude = 50000,
     #Scatter_mu = 1500):
     ):
 
-    parameter_names = (
+    if(measured_irf):
+        parameter_names = (
         'offset',
         'amplitude',
         'tau',
@@ -29,29 +32,59 @@ def make_start_parameters(
         'IRF_sigma'#,
         #'Scatter_amp',
         #'Scatter_mu'
-    )
+        )
 
-    start_parameters = (
-        offset,
-        amplitude,
-        tau,
-        IRF_mu,
-        IRF_sigma#,
-        #Scatter_amplitude,
-        #Scatter_mu
-    )
+        start_parameters = (
+            offset,
+            amplitude,
+            tau,
+            IRF_mu,
+            IRF_sigma#,
+            #Scatter_amplitude,
+            #Scatter_mu
+        )
 
-    parameter_bounds = (
-        [0, 10000],
-        [0, np.infty],
-        [100, 10000],
-        [100, 10000],
-        [10, 250]#,
-        #[0, np.infty],
-        #[100, 10000]
-    )
+        parameter_bounds = (
+            [0, 10000],
+            [0, np.infty],
+            [100, 10000],
+            [100, 10000],
+            [10, 250]#,
+            #[0, np.infty],
+            #[100, 10000]
+        )
+    else:
+        parameter_names = (
+        'offset',
+        'amplitude',
+        'tau',
+        'IRF_mu',
+        'IRF_sigma'#,
+        #'Scatter_amp',
+        #'Scatter_mu'
+        )
 
+        start_parameters = (
+            offset,
+            amplitude,
+            tau,
+            IRF_mu,
+            IRF_sigma#,
+            #Scatter_amplitude,
+            #Scatter_mu
+        )
+
+        parameter_bounds = (
+            [0, 10000],
+            [0, np.infty],
+            [100, 10000],
+            [100, 10000],
+            [10, 250]#,
+            #[0, np.infty],
+            #[100, 10000]
+        )    
     return(parameter_names, start_parameters, parameter_bounds)
+
 
 def make_time_axis(global_resolution, resolution, number_of_bins = 0):
     t_end = global_resolution * 1E12
@@ -63,19 +96,39 @@ def make_time_axis(global_resolution, resolution, number_of_bins = 0):
 
     return(t_axis)
 
+
+
 @jit
 def gauss_laser(t, mu, sigma):
     y = (1 / (sigma * np.sqrt(2 * np.pi))) * np.exp(-(t - mu)**2 / (2 * sigma) **2)
     return(y)
 
+
+def interpolate_irf(time_axis, measured_irf):
+    irf_function = interpolate.interp1d(
+        x = time_axis,
+        y = measured_irf
+    )
+
+    irf_interpolated = irf_function(time_axis)
+
+    return(irf_interpolated)
+
+
 @jit
 def exp_decay(t, tau):
     return(np.exp(-t / tau))
 
+
+
 @jit
-def convoluted_decay(t, offset, amp, tau, IRF_mu, IRF_sigma):#, Scatter_amplitude, Scatter_mu):
-    IRF = gauss_laser(t, IRF_mu, IRF_sigma)
-    #scatter = Scatter_amplitude * gauss_laser(t, Scatter_mu, IRF_sigma)
+def convoluted_decay(t, offset, amp, tau, IRF_mu, IRF_sigma, measured_irf):#, Scatter_amplitude, Scatter_mu):
+
+    if(measured_irf):
+        IRF = interpolate_irf(t, measured_irf)
+    else:
+        IRF = gauss_laser(t, IRF_mu, IRF_sigma)
+        #scatter = Scatter_amplitude * gauss_laser(t, Scatter_mu, IRF_sigma)
 
     decay = exp_decay(t, tau)
 
@@ -106,14 +159,15 @@ def calculate_weights(data):
     weights[np.where(data == 0)] = 1.0 / np.sqrt(estimate_background(data))
     return(weights)
 
+
 @jit
-def residuals(para_est, t, data, weighted = True):
+def residuals(para_est, t, data, measured_irf, weighted = True):
 
     if(weighted):
         weights = calculate_weights(data)
-        residuals = (data - convoluted_decay(t, *para_est) ** 2) * weights
+        residuals = (data - convoluted_decay(t, *para_est, measured_irf) ** 2) * weights
     else:
-        residuals = (data - convoluted_decay(t, *para_est) ** 2)
+        residuals = (data - convoluted_decay(t, *para_est, measurued_irf) ** 2)
 
     return(residuals)
 
@@ -135,9 +189,9 @@ def residuals(para_est, t, data, weighted = True):
 #     return(optimized_parameters)
 
 
-def minimize_poisson_deviance(start_parameters, t, data):
+def minimize_poisson_deviance(start_parameters, t, data, measured_irf):
     ''' See Bajzer et al., 1991; Equation 8 '''
-    fitted = convoluted_decay(t, *start_parameters)
+    fitted = convoluted_decay(t, *start_parameters, measured_irf)
     
     deviance = 2 * np.nansum(
         data * np.log(data / fitted) - (data - fitted)
@@ -146,14 +200,15 @@ def minimize_poisson_deviance(start_parameters, t, data):
     return(deviance)
 
 
-def fit_decay(data, t_axis, start_parameters, parameter_bounds, minimization_method = 'Nelder-Mead', cutoff = 1):
+
+def fit_decay(data, t_axis, start_parameters, parameter_bounds, measured_irf = False, minimization_method = 'Nelder-Mead', cutoff = 1):
     data_trimmed = data[0:(len(data) - cutoff)],
     t_axis_trimmed = t_axis[0:(len(t_axis) - cutoff)]
 
     optimized_parameters = optimize.minimize(
         minimize_poisson_deviance,
         start_parameters,
-        args = (t_axis_trimmed, data_trimmed),
+        args = (t_axis_trimmed, data_trimmed, measured_irf),
         method = minimization_method,
         bounds = parameter_bounds,
         options = {
@@ -165,9 +220,12 @@ def fit_decay(data, t_axis, start_parameters, parameter_bounds, minimization_met
     return(optimized_parameters)
 
 
-def calculate_fitted_curve(t_axis, optimized_parameters):
-    fitted_curve = convoluted_decay(t_axis, *optimized_parameters['x'])
+
+def calculate_fitted_curve(t_axis, optimized_parameters, measured_irf):
+    fitted_curve = convoluted_decay(t_axis, *optimized_parameters['x'], measured_irf)
     return(fitted_curve)
+
+
 
 def plot_fit(data, t_axis, optimized_parameters, cutoff, scale = 'log'):
 

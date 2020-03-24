@@ -32,6 +32,7 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         self.flimObject = None
         self.ptupath = None
         self.ptuFileHistory = []
+        self.fitObject = None
 
 
         ''' GUI Actions '''
@@ -58,7 +59,7 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         )
         
         # Perform test fit
-        self.pushButton_fitSelection.pressed.connect(self.testFit)
+        self.pushButton_fitSelection.pressed.connect(self.fit_selected_decay)
 
         # Show GUI
         self.show()
@@ -68,6 +69,10 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
 
 
     def selectFile(self):
+        """
+
+        """
+
         if self.flimObject:
             self.showError('Attention', 'Previously loaded data will be overwritten!')
             self.updateLog('Overwriting previous file...')
@@ -77,8 +82,12 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         self.lineEdit_filepath.setText(self.ptupath)
         self.ptuFileHistory.append(self.ptupath)
 
+
+
     def loadPTUFile(self):
-        # Reading spatial and temporal binning factors from GUI
+        """ 
+
+        """
         spatialBinning = self.spinBox_spatialBinning.value()
         temporalBinning = self.spinBox_temporalBinning.value()
 
@@ -99,9 +108,11 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
                 y = self.flimObject.overallDecays
             )
             self.progressBar.setMaximum(1)
+            self.fitObject = fitter()
 
         else:
             self.updateLog('No file selected.')
+
 
     def showIntensityImage(self):
 
@@ -116,12 +127,15 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
 
 
     def updateLog(self, logMessage: str):
-        """Displays string on text box. Used as log for performed actions and potential errors. logMessage string is appended to list of strings in flimdata object --> logHistory
+        """
+        Displays string on text box. Used as log for performed actions and potential errors. logMessage string is appended to list of strings in flimdata object --> logHistory
         Arguments:
             logMessage {str} -- Log text to be displayed.
+
         """   
         self.logHistory.append(logMessage)
         self.logConsole.appendPlainText(self.logHistory[-1])
+
 
     def clearLog(self):
         self.logHistory = []
@@ -129,7 +143,8 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
 
 
     def showError(self, header: str, message: str):
-        """Calls a Qt5 Message Box (critical) to attract users attention.
+        """
+        Calls a Qt5 Message Box (critical) to attract users attention.
         Should be called from function, when a condition to run a certain action is not yet met, e.g. no file has been loaded etc. 
         
         Arguments:
@@ -145,7 +160,7 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
     def showSelectedDecay(self):
         if(self.flimObject):
             if(self.ROI is None):
-                self.ROI = pg.ROI(
+                self.ROI = pg.RectROI(
                     [self.flimObject.intensityImage.shape[0]/ 2, self.flimObject.intensityImage.shape[1]/ 2],
                     [20, 20]
                 )
@@ -169,14 +184,10 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
             self.showError('Selection not possible.', 'Please load a FLIM file first.')
 
 
-
-
-
-    def testFit(self):
+    def fit_selected_decay(self):
         if(self.flimObject):
-            fitObject = fitter(self.flimObject.flimarray, timeAxis = self.flimObject.timeAxis)
             self.showError('Starting fitting procedure...', 'Starting the fitting procedure. This might take a while. Application is unresponsive during fitting...')
-            testfit = fitObject.fit_summed_decay()
+            #testfit = 
 
             self.graphicsView_decay.clear()
             self.graphicsView_decay.plot(

@@ -61,8 +61,8 @@ class fitter:
 
     @staticmethod
     @njit
-    def expDecay_mono(t, N0, tau):
-        return(N0 * np.exp(-t/tau))
+    def expDecay_mono(t, tau):
+        return(np.exp(-t/tau))
 
     @staticmethod
     @njit
@@ -83,9 +83,10 @@ class fitter:
     ):
         IRF = self.gauss_laser(t, IRFmu, IRFsigma)
         IRF_scatter = IRF * scatter
-        decay = self.expDecay_mono(t, amp1, tau1)
+        decay = self.expDecay_mono(t, tau1)
 
         convolved_signal = np.convolve(IRF, decay, mode = 'full')[0:len(t)]
+        convolved_signal *= 10 * amp1
         convolved_signal += IRF_scatter
 
         convolved_signal += offset
@@ -122,7 +123,7 @@ class fitter:
 
         para_start = (
             self.estimate_background(self.overall_decay),
-            5000, # amp1
+            50000, # amp1
             2000, # tau 1
             1500, # mu
             100, # sigma
@@ -138,7 +139,7 @@ class fitter:
             20,
             0),
             (1000,
-            500000,
+            5000000,
             10000,
             10000,
             500,

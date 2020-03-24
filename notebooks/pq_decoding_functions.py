@@ -249,7 +249,7 @@ def readPTUData(path: str, makeFLIMInfo: bool = True):
             'Resolution' : header_contents['MeasDesc_Resolution'],
             'BinningFactor' : header_contents['MeasDesc_BinningFactor'],
             'SyncRate' : header_contents['TTResult_SyncRate'],
-            'NumberOfRecords' : header_contents['TTResult_NumberOfRecords']
+          '  'NumberOfRecords : header_contents['TTResult_NumberOfRecords']
         }
         
     header_contents = FLIMInfo

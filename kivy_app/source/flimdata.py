@@ -433,6 +433,27 @@ class flimdata:
 
         return(intensityImage)
 
+    def showIntensityImage(self, channel: int, color_palette: str = None, interpolation_method: str = None):
+        """[summary]
+
+        Arguments:
+            channel {int} -- [description]
+
+        Keyword Arguments:
+            color_palette {str} -- [description] (default: {None})
+            interpolation_method {str} -- [description] (default: {None})
+        """
+
+        if color_palette is None:
+            color_palette = 'gray_r'
+
+        if interpolation_method is None:
+            interpolation_method = 'bessel'
+
+        plt.imshow(self.intensityImage, cmap=color_palette,
+                   interpolation=interpolation_method)
+        plt.show()
+
     def generateNanotimeaxis(self):
         tEnd = self.FLIMInfo['GlobalResolution'] * \
             1E12  # Converting to picoseconds

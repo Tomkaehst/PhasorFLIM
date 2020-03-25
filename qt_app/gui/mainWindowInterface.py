@@ -6,6 +6,7 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
+from PyQt5.QtCore import QThread, pyqtSignal
 
 from gui.mainWindow import Ui_mainWindow
 from flimdata import flimdata
@@ -63,16 +64,15 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
 
         # Show GUI
         self.show()
-        self.updateLog('Finished initializing GUI. Ready for action...')
+        self.updateLog('Ready...')
 
 
 
 
     def selectFile(self):
         """
-
+        Created file browser for file selection and passes path to self.ptupath.
         """
-
         if self.flimObject:
             self.showError('Attention', 'Previously loaded data will be overwritten!')
             self.updateLog('Overwriting previous file...')
@@ -91,8 +91,6 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         spatialBinning = self.spinBox_spatialBinning.value()
         temporalBinning = self.spinBox_temporalBinning.value()
 
-        print(spatialBinning, temporalBinning)
-
         filepath = self.ptupath
 
         if filepath:
@@ -108,14 +106,13 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
                 y = self.flimObject.overallDecays
             )
             self.progressBar.setMaximum(1)
-            self.fitObject = fitter()
 
         else:
             self.updateLog('No file selected.')
+            self.showError('Error', 'No file selected!')
 
 
     def showIntensityImage(self):
-
         if self.flimObject is None:
             # Checking if ptu file has been loaded yet.
             self.showError('Loading Error', 'No FLIM data has been loaded yet!')
@@ -176,7 +173,8 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
                 self.graphicsView_decay.clear()
                 self.graphicsView_decay.plot(
                     x = self.flimObject.timeAxis,
-                    y = self.selectedDecay
+                    y = self.selectedDecay,
+                    pen = pg.mkPen('w', width = 2)
                 )
                 self.tabWidget_view.setCurrentIndex(1)
             
@@ -187,16 +185,20 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
     def fit_selected_decay(self):
         if(self.flimObject):
             self.showError('Starting fitting procedure...', 'Starting the fitting procedure. This might take a while. Application is unresponsive during fitting...')
-            #testfit = 
-
             self.graphicsView_decay.clear()
+
+            self.fitObject = fitter(self.flimObject.timeAxis, self.selectedDecay)
+            fit = self.fitObject.fit_decay()
+
             self.graphicsView_decay.plot(
                 x = self.flimObject.timeAxis,
-                y = self.flimObject.overallDecays
+                y = self.selectedDecay,
+                pen = pg.mkPen('w', width = 2)
             )
             self.graphicsView_decay.plot(
                 x = self.flimObject.timeAxis,
-                y = testfit
+                y = fit,
+                pen = pg.mkPen('r', width = 2)
             )
         else:
             self.showError('Fitting not possible.', 'Please load a FLIM file first.')

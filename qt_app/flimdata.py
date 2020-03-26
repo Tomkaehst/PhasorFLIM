@@ -10,18 +10,18 @@ from numba.typed import List
 
 
 class flimdata:
-    def __init__(self, filepath: str, spatialBinning: int, temporalBinning: int):
+    def __init__(self, file_path: str, spatial_binning: int, temporal_binning: int):
         """[summary]
 
         Arguments:
-            filepath {str} -- [description]
-            spatialBinning {int} -- [description]
-            temporalBinning {int} -- [description]
+            file_path {str} -- [description]
+            spatial_binning {int} -- [description]
+            temporal_binning {int} -- [description]
         """
 
-        self.filepath = filepath
-        self.spatialBinning = spatialBinning
-        self.temporalBinning = temporalBinning
+        self.file_path = file_path
+        self.spatial_binning = spatial_binning
+        self.temporal_binning = temporal_binning
 
         # Defining data types for the raw record array where ptu data stream is written in to
         self.recordarrayDataTypes = np.dtype([('record', np.uint32), ('marker', np.uint8),
@@ -29,48 +29,50 @@ class flimdata:
 
         self.FLIMInfo = None  # Quick access FLIM image infos
         self.header_contents = None  # Whole file header
-        # Bit offset of file in filepath, where TTTR records start
+        # Bit offset of file in file_path, where TTTR records start
         self.headerBitOffset = None
 
         # Reading header; do this automatically when flimdata instance is created; no great time pennalty
-        self.readPTUHeader(self.filepath)
+        self.readPTUHeader(self.file_path)
 
         # Loading photon data into recordarray
         self.recordarray = self.readPhotonData(
-            self.filepath, self.headerBitOffset, self.FLIMInfo['NumberOfRecords']
+            self.file_path, self.headerBitOffset, self.FLIMInfo['NumberOfRecords']
         )
 
         # Generating nano time axis
-        self.timeAxis = self.generateNanotimeaxis()
+        self.time_axis = self.generate_nanotime_axis()
 
         # Getting list of channels from the data
         self.FLIMInfo['availableChannels'] = self.checkChannelAvailability(
             self.recordarray)
 
         # Counting line events, requires for image reconstruction
-        self.FLIMInfo['LinesInFile'] = self.countLines(self.recordarray)
+        self.FLIMInfo['Lines_in_file'] = self.countLines(self.recordarray)
 
         # Reconstruct FLIM array for fitting
-        self.flimarray, self.intensityImage = self.reconstructFlimArray(
+        self.flimarray, self.intensity_image = self.reconstruct_flim_array(
             self.recordarray,
             channel = self.FLIMInfo['availableChannels'][0],
-            linesinfile = self.FLIMInfo['LinesInFile'],
-            pixelsx = self.FLIMInfo['PixelsX'],
-            pixelsy = self.FLIMInfo['PixelsY'],
-            globRes = self.FLIMInfo['GlobalResolution'],
-            timeRes = self.FLIMInfo['Resolution'],
-            spatialBinning = self.spatialBinning,
-            temporalBinning = self.temporalBinning
+            lines_in_file = self.FLIMInfo['Lines_in_file'],
+            pixels_x = self.FLIMInfo['PixelsX'],
+            pixels_y = self.FLIMInfo['PixelsY'],
+            global_resolution = self.FLIMInfo['GlobalResolution'],
+            time_resolution = self.FLIMInfo['Resolution'],
+            spatial_binning = self.spatial_binning,
+            temporal_binning = self.temporal_binning
         )
 
         # Generating overall decay histograms from available channels
-        self.overallDecays = self.overallDecay()
+        self.overall_decays = self.overall_decay()
 
-    def readPTUHeader(self, filepath):
+        self.selected_decay = None
+
+    def readPTUHeader(self, file_path):
         """[summary]
 
         Arguments:
-            filepath {[type]} -- [description]
+            file_path {[type]} -- [description]
         """
 
         # Setting up header and record types
@@ -90,12 +92,12 @@ class flimdata:
             0]  # Only coding for HydraHarp V2 TTTR data
 
         # Setting up file reading
-        filereadstream = open(self.filepath, 'rb')
+        filereadstream = open(self.file_path, 'rb')
 
         # Checking first 8 bytes for correct file magic
         filemagic = filereadstream.read(8).decode('utf8').strip('\0')
         if(filemagic != 'PQTTTR'):
-            print('%s is not a valid PTU file. Aborting.' % self.filepath)
+            print('%s is not a valid PTU file. Aborting.' % self.file_path)
             exit(0)
 
         # Reading Header
@@ -185,7 +187,7 @@ class flimdata:
         # - ImgHdr_PixY: How many pixels in Y?
         # - MeasDesc_GlobalResolution: time resolution of measurement
         # - HW_BaseResolution: Principal time resolution of device
-        # - MeasDesc_Resolution: TCSPC resolution, also obtained by BaseResolution * BinningFactor
+        # - MeasDesc_Resolution: TCSPC resolution, also obtained by BaseResolution * binning_factor
         # - MeasDesc_BinningFactor: Binning factor
         # - TTResult_SyncRate: Laser pulse / Sync rate of measurement
         # - TTResult_NumberOfRecords: How many 32 bit records in file?
@@ -218,11 +220,11 @@ class flimdata:
 
     # @jit(nopython = True, cache = True)
 
-    def readPhotonData(self, filepath: str, bitoffset: int, numRecords: int):
+    def readPhotonData(self, file_path: str, bitoffset: int, numRecords: int):
         """[summary]
 
         Arguments:
-            filepath {string} -- [description]
+            file_path {string} -- [description]
             bitoffset {int} -- [description]
             numRecords {int} -- [description]
         """
@@ -232,7 +234,7 @@ class flimdata:
                                dtype=self.recordarrayDataTypes)
 
         # Reading data from file into recordarray
-        with open(filepath, 'rb') as file:
+        with open(file_path, 'rb') as file:
             file.seek(bitoffset)
             recordarray[:]['record'] = np.fromfile(file, dtype=np.uint32)
             file.close()
@@ -244,14 +246,14 @@ class flimdata:
         Marker values are extracted by bitwise right shift and readout of the first 8 bits.
             First bit is special bit. If it is set, the record is not a photon event but a system event.
         '''
-        nanoMultFactor = self.FLIMInfo['Resolution'] * 1e9
-        macroMultFactor = self.FLIMInfo['GlobalResolution']
+        nano_mult_factor = self.FLIMInfo['Resolution'] * 1e9
+        macro_mult_factor = self.FLIMInfo['GlobalResolution']
 
         recordarray['marker'] = (np.right_shift(
             recordarray[:]['record'], 25) & 127)
-        recordarray[:]['nanotime'] = ((np.right_shift(recordarray[:]['record'], 10) & 32767) * nanoMultFactor).astype(np.float32)
+        recordarray[:]['nanotime'] = ((np.right_shift(recordarray[:]['record'], 10) & 32767) * nano_mult_factor).astype(np.float32)
 
-        recordarray = self.treatOverflows(recordarray, macroMultFactor)
+        recordarray = self.treat_overflows(recordarray, macro_mult_factor)
 
         return(recordarray)
 
@@ -262,7 +264,7 @@ class flimdata:
     '''
     @staticmethod
     @jit(nopython=True, cache=True)
-    def treatOverflows(recordarray: np.ndarray, macrotimefactor: float):
+    def treat_overflows(recordarray: np.ndarray, macrotimefactor: float):
         """[summary]
 
         Arguments:
@@ -294,15 +296,15 @@ class flimdata:
             recordarray {np.ndarray} -- 4 x numpy array, ['records'] - raw photon bit data; ['macrotime'] - system event time array, ['nanotime'] - nanotimes of photon events, ['marker'] - system markers
         """
 
-        numLineStart = np.sum(recordarray['marker'] == 65)
-        numLineStop = np.sum(recordarray['marker'] == 66)
+        num_line_start = np.sum(recordarray['marker'] == 65)
+        num_line_stop = np.sum(recordarray['marker'] == 66)
 
-        if(numLineStart != numLineStop):
+        if(num_line_start != num_line_stop):
             print(
                 'Number of line start and line stop markers does not match. File may be corrupted.'
             )
 
-        return(numLineStart, numLineStop)
+        return(num_line_start, num_line_stop)
 
     # @jit(nopython=True, cache=True)
     def checkChannelAvailability(self, recordarray: np.ndarray):
@@ -313,163 +315,165 @@ class flimdata:
         """
 
         # Initialized as numba.typed.List, because Python lists will be deprecated in future Numba versions
-        channelList = List()
+        channel_list = List()
 
         if(np.any(recordarray['marker'] == 0)):
-            channelList.append(0)
+            channel_list.append(0)
         if(np.any(recordarray['marker'] == 1)):
-            channelList.append(1)
+            channel_list.append(1)
         if(np.any(recordarray['marker'] == 2)):
-            channelList.append(2)
+            channel_list.append(2)
         if(np.any(recordarray['marker'] == 3)):
-            channelList.append(3)
+            channel_list.append(3)
 
-        return(channelList)
+        return(channel_list)
 
-    def generateNanotimeaxis(self):
-        tEnd = self.FLIMInfo['GlobalResolution'] * \
+    def generate_nanotime_axis(self):
+        t_end = self.FLIMInfo['GlobalResolution'] * \
             1E12  # Converting to picoseconds
         dt = self.FLIMInfo['Resolution'] * 1E12
-        nBins = math.ceil((tEnd / dt) / 2**self.temporalBinning)
-        tAxis = np.linspace(0, tEnd, nBins)
-        return(tAxis)
+        number_of_bins = math.ceil((t_end / dt) / 2**self.temporal_binning)
+        time_axis = np.linspace(0, t_end, number_of_bins)
+        return(time_axis)
 
 
 
-    def overallDecay(self):
+    def overall_decay(self):
         """[summary]
 
         Arguments:
             recordarray {np.array} -- [description]
-            channelList {List[int]} -- [description]
+            channel_list {List[int]} -- [description]
         """
 
         decay = np.sum(np.sum(self.flimarray, axis = 1), axis = 0)
 
         return(decay)
 
-
+    def sum_up_selected_decay(self, start_x, stop_x, start_y, stop_y):
+        decay = np.sum(np.sum(self.flimarray[start_x:stop_x, start_y:stop_y], axis = 0), axis = 0)
+        self.selected_decay = decay
 
 
     @staticmethod
     @jit(nopython = True)
-    def reconstructFlimArray(recordarray: np.ndarray,
+    def reconstruct_flim_array(recordarray: np.ndarray,
                              channel: int,
-                             linesinfile: int,
-                             pixelsx: int,
-                             pixelsy: int,
-                             globRes: float,
-                             timeRes: float,
-                             spatialBinning: int,
-                             temporalBinning: int):
+                             lines_in_file: int,
+                             pixels_x: int,
+                             pixels_y: int,
+                             global_resolution: float,
+                             time_resolution: float,
+                             spatial_binning: int,
+                             temporal_binning: int):
         
         '''
         buildFLIMArray(
         - recordarray: 4 x numRec NumPy array, holds raw photon data and system events
         - channel: int; which channel to reconstruct the flimarray from
-        - pixelsx: original image dimension in X, stored in FLIMInfo
-        - pixelsy: original image dimension in Y, stored in FLIMInfo
-        - globRes: global measurment of nanotime, stored in FLIMInfo, in ns, 51 ns for 20 MHz laser pulse frequency
-        - timeRes: nanotime resolution of TCSPC device, in ps
-        - spatialBinning: user-defined binning factor of image, calculated as 2**factor
-        - temporalBinning: user-defined binning factor for fluorescence decay histogram
+        - pixels_x: original image dimension in X, stored in FLIMInfo
+        - pixels_y: original image dimension in Y, stored in FLIMInfo
+        - global_resolution: global measurment of nanotime, stored in FLIMInfo, in ns, 51 ns for 20 MHz laser pulse frequency
+        - time_resolution: nanotime resolution of TCSPC device, in ps
+        - spatial_binning: user-defined binning factor of image, calculated as 2**factor
+        - temporal_binning: user-defined binning factor for fluorescence decay histogram
         )
         '''
 
-        eventCounter = 0  # Keeps track of photon / marker events while looping through data
-        lineCounter = 0  # Stores current scan line numbers
-        frameCounter = 0  # Stores current frame number
+        event_counter = 0  # Keeps track of photon / marker events while looping through data
+        line_counter = 0  # Stores current scan line numbers
+        frame_counter = 0  # Stores current frame number
         # How many frames are in the image; assume square format
 
-        framesInFile = int(linesinfile[0] / pixelsx)
+        frames_in_file = int(lines_in_file[0] / pixels_x)
         # Number of TCSPC bins based on time between pulses and TCSPC time resolution
-        decayBins = math.ceil((globRes / timeRes)/(2**temporalBinning))
-        globalResolution = globRes * 10E8  # time between pulses in ns
-        timeResolution = timeRes * 10E9  # TCSPC time resolution in ns
+        decay_bins = math.ceil((global_resolution / time_resolution)/(2**temporal_binning))
+        global_resolution = global_resolution * 10E8  # time between pulses in ns
+        time_resolution = time_resolution * 10E9  # TCSPC time resolution in ns
 
-        binningFactor = 2**spatialBinning
+        binning_factor = 2**spatial_binning
 
-        lineStart = 0
-        lineStop = 0
-        pixelTime = 0  # Tmp variable for storing time/pixel when line start and stop macro times are determined; needed to assign photons to y pixels in a line
+        line_start = 0
+        line_stop = 0
+        pixel_time = 0  # Tmp variable for storing time/pixel when line start and stop macro times are determined; needed to assign photons to y pixels in a line
 
-        # Set to True when last scan line was evaluated and frameCounter >= framesInFile
+        # Set to True when last scan line was evaluated and frame_counter >= frames_in_file
         lastLine = False
         # Set to True when line start marker is found (= 65), starts photon assignments to y-pixels in a line (x); set to False when line stop marker is found (=66)
-        lineActive = False
+        line_active = False
 
         # List storing photon macrotimes when line is active to determine y-pixel position of photon
-        tmpEvents = [np.float64(x) for x in range(0)]
+        tmp_events = [np.float64(x) for x in range(0)]
         # List storing photon nanotimes to assign to 3D-FLIM array in x-y position
-        tmpNano = [np.float64(x) for x in range(0)]
-        tmpMarker = 0  # Holds marker value for one loop iteration
-        tmpMacro = 0  # Holds macrotime value for one loop iteration
-        tmpNanotime = 0  # Holds nanotime value for one loop iteration
+        tmp_nano = [np.float64(x) for x in range(0)]
+        tmp_marker = 0  # Holds marker value for one loop iteration
+        tmp_macro = 0  # Holds macrotime value for one loop iteration
+        tmp_nanotime = 0  # Holds nanotime value for one loop iteration
         diff = 0  # Stores difference between photon macro time and line start to determine photon y-position
         # Count out-of-range photons (photons with macrotime below or above line time difference)
         #oorPhotons = 0
 
-        nPixelX = int(pixelsx / binningFactor)
-        nPixelY = int(pixelsy / binningFactor)
+        nPixelX = int(pixels_x / binning_factor)
+        nPixelY = int(pixels_y / binning_factor)
 
-        pixelIDX = 0  # Current x position in image
-        pixelIDY = 0  # Current y position in image
+        pixel_id_x = 0  # Current x position in image
+        pixel_id_y = 0  # Current y position in image
 
-        flimarray = np.zeros((nPixelX, nPixelY, decayBins), dtype=np.uint16)
-        intensityImage = np.zeros((nPixelX, nPixelY), dtype=np.uint16)
+        flimarray = np.zeros((nPixelX, nPixelY, decay_bins), dtype=np.uint16)
+        intensity_image = np.zeros((nPixelX, nPixelY), dtype=np.uint16)
 
         while(lastLine == False):
-            tmpMarker = recordarray['marker'][eventCounter]
+            tmp_marker = recordarray['marker'][event_counter]
 
-            if(tmpMarker == 65):  # Event is line start marker
-                lineActive = True  # Starting line evaluation (next while loop)
+            if(tmp_marker == 65):  # Event is line start marker
+                line_active = True  # Starting line evaluation (next while loop)
                 # Store line start time
-                lineStart = recordarray['macrotime'][eventCounter]
-                eventCounter += 1
+                line_start = recordarray['macrotime'][event_counter]
+                event_counter += 1
                 continue  # Skip this loop iteration
             
-            while(lineActive == True):
-                tmpMarker = recordarray['marker'][eventCounter]
-                tmpMacro = recordarray['macrotime'][eventCounter]
-                tmpNanotime = recordarray['nanotime'][eventCounter]
+            while(line_active == True):
+                tmp_marker = recordarray['marker'][event_counter]
+                tmp_macro = recordarray['macrotime'][event_counter]
+                tmp_nanotime = recordarray['nanotime'][event_counter]
 
-                if(tmpMarker == channel):
-                    tmpEvents.append(tmpMacro)
-                    tmpNano.append(tmpNanotime)
-                elif(tmpMarker == 66):
-                    lineActive = False
-                    lineStop = tmpMacro
-                    pixelTime = (lineStop - lineStart) / (nPixelY)
+                if(tmp_marker == channel):
+                    tmp_events.append(tmp_macro)
+                    tmp_nano.append(tmp_nanotime)
+                elif(tmp_marker == 66):
+                    line_active = False
+                    line_stop = tmp_macro
+                    pixel_time = (line_stop - line_start) / (nPixelY)
 
                     # Build intensity image and FLIM array from photon macro times
-                    for i in range(0, len(tmpEvents)):
-                        diff = tmpEvents[i] - lineStart
-                        pixelIDY = math.floor(diff / pixelTime)
-                        binID = math.floor((tmpNano[i]/globalResolution)*decayBins) - 1
+                    for i in range(0, len(tmp_events)):
+                        diff = tmp_events[i] - line_start
+                        pixel_id_y = math.floor(diff / pixel_time)
+                        bin_id = math.floor((tmp_nano[i]/global_resolution)*decay_bins) - 1
     
-                        if(pixelIDY < 0):
-                            pixelIDY = 0
-                        elif(pixelIDY > (nPixelY - 1)):
-                            pixelIDY = nPixelY - 1
+                        if(pixel_id_y < 0):
+                            pixel_id_y = 0
+                        elif(pixel_id_y > (nPixelY - 1)):
+                            pixel_id_y = nPixelY - 1
 
-                        intensityImage[math.floor(pixelIDX)][pixelIDY] += 1
-                        flimarray[math.floor(pixelIDX)][pixelIDY][binID] += 1
+                        intensity_image[math.floor(pixel_id_x)][pixel_id_y] += 1
+                        flimarray[math.floor(pixel_id_x)][pixel_id_y][bin_id] += 1
 
-                    pixelIDX += (1/binningFactor)
-                    lineCounter += 1
-                    tmpEvents = [np.float64(x) for x in range(0)]
-                    tmpNano = [np.float64(x) for x in range(0)]
+                    pixel_id_x += (1/binning_factor)
+                    line_counter += 1
+                    tmp_events = [np.float64(x) for x in range(0)]
+                    tmp_nano = [np.float64(x) for x in range(0)]
 
-                eventCounter += 1
+                event_counter += 1
 
-            if(lineCounter > (nPixelY - 1)):
-                frameCounter += 1
-                pixelIDX = 0
-                lineCounter = 0
+            if(line_counter > (nPixelY - 1)):
+                frame_counter += 1
+                pixel_id_x = 0
+                line_counter = 0
 
-            if(frameCounter >= framesInFile):
+            if(frame_counter >= frames_in_file):
                 lastLine = True
 
-            eventCounter += 1
+            event_counter += 1
 
-        return(flimarray, intensityImage)
+        return(flimarray, intensity_image)

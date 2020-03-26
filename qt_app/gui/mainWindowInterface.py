@@ -1,8 +1,5 @@
-import sys
 import pyqtgraph as pg
 import numpy as np
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
@@ -25,15 +22,14 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
 
         # Initializing ROI objects
         self.ROI = None
-        self.selectedDecay = None
 
         self.logHistory = []
 
         # Setting up flimdata class
-        self.flimObject = None
+        self.flim_object = None
         self.ptupath = None
         self.ptuFileHistory = []
-        self.fitObject = None
+        self.fit_object = None
 
 
         ''' GUI Actions '''
@@ -46,17 +42,17 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         self.pushButton_clearLog.pressed.connect(self.clearLog)
 
         # Load PTU file
-        self.pushButton_selectFile.pressed.connect(self.selectFile)
+        self.pushButton_selectFile.pressed.connect(self.select_file)
         self.pushButton_LoadPTU.pressed.connect(self.loadPTUFile)
 
         # Show intensity image
         self.pushButton_showIntensityImage.pressed.connect(
-            self.showIntensityImage
+            self.show_intensity_image
         )
 
         # Show ROI-selected decay
         self.pushButton_showSelectedDecay.pressed.connect(
-            self.showSelectedDecay
+            self.show_selected_decay
         )
         
         # Perform test fit
@@ -69,14 +65,14 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
 
 
 
-    def selectFile(self):
+    def select_file(self):
         """
         Created file browser for file selection and passes path to self.ptupath.
         """
-        if self.flimObject:
+        if self.flim_object:
             self.showError('Attention', 'Previously loaded data will be overwritten!')
             self.updateLog('Overwriting previous file...')
-            self.flimObject = None
+            self.flim_object = None
         
         self.ptupath = QFileDialog.getOpenFileName(filter='PTU Files (*.ptu)')[0]
         self.lineEdit_filepath.setText(self.ptupath)
@@ -88,22 +84,22 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         """ 
 
         """
-        spatialBinning = self.spinBox_spatialBinning.value()
-        temporalBinning = self.spinBox_temporalBinning.value()
+        spatial_binning = self.spinBox_spatialBinning.value()
+        temporal_binning = self.spinBox_temporalBinning.value()
 
         filepath = self.ptupath
 
         if filepath:
             self.progressBar.setMaximum(0) # setMaximum used, because when max and min of progress bar are equal, it shows 'busy'
-            self.flimObject = flimdata(
-                filepath, spatialBinning, temporalBinning
+            self.flim_object = flimdata(
+                filepath, spatial_binning, temporal_binning
             )
             self.ptuFileHistory.append(filepath)
             self.updateLog('Loaded' + filepath)
             self.graphicsView_decay.clear()
             self.graphicsView_decay.plot(
-                x = self.flimObject.timeAxis,
-                y = self.flimObject.overallDecays
+                x = self.flim_object.time_axis,
+                y = self.flim_object.overall_decays
             )
             self.progressBar.setMaximum(1)
 
@@ -112,12 +108,12 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
             self.showError('Error', 'No file selected!')
 
 
-    def showIntensityImage(self):
-        if self.flimObject is None:
+    def show_intensity_image(self):
+        if self.flim_object is None:
             # Checking if ptu file has been loaded yet.
             self.showError('Loading Error', 'No FLIM data has been loaded yet!')
         else:
-            self.graphicsView_intensityimage.addItem(pg.ImageItem(self.flimObject.intensityImage))
+            self.graphicsView_intensityimage.addItem(pg.ImageItem(self.flim_object.intensity_image))
             self.tabWidget_view.setCurrentIndex(0)
             
             
@@ -154,11 +150,11 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
             message
         )
 
-    def showSelectedDecay(self):
-        if(self.flimObject):
+    def show_selected_decay(self):
+        if(self.flim_object):
             if(self.ROI is None):
                 self.ROI = pg.RectROI(
-                    [self.flimObject.intensityImage.shape[0]/ 2, self.flimObject.intensityImage.shape[1]/ 2],
+                    [self.flim_object.intensity_image.shape[0]/ 2, self.flim_object.intensity_image.shape[1]/ 2],
                     [20, 20]
                 )
                 self.graphicsView_intensityimage.addItem(self.ROI)
@@ -166,14 +162,21 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
                 coordinates = self.ROI.pos()
                 size = self.ROI.size()
                 
-                self.selectedDecay = np.sum(np.sum(
-                    self.flimObject.flimarray[int(coordinates[0]):int(coordinates[0] + size[0]), int(coordinates[1]):int(coordinates[1] + size[1]), :], axis = 0
-                ), axis = 0)
+                self.flim_object.sum_up_selected_decay(
+                    start_x = int(coordinates[0]),
+                    stop_x = int(coordinates[0] + size[0]),
+                    start_y = int(coordinates[1]),
+                    stop_y = int(coordinates[1] + size[1])
+                )
+
+                #self.selectedDecay = np.sum(np.sum(
+                #    self.flim_object.flimarray[int(coordinates[0]):int(coordinates[0] + size[0]), int(coordinates[1]):int(coordinates[1] + size[1]), :], axis = 0
+                #), axis = 0)
 
                 self.graphicsView_decay.clear()
                 self.graphicsView_decay.plot(
-                    x = self.flimObject.timeAxis,
-                    y = self.selectedDecay,
+                    x = self.flim_object.time_axis,
+                    y = self.flim_object.selected_decay,
                     pen = pg.mkPen('w', width = 2)
                 )
                 self.tabWidget_view.setCurrentIndex(1)
@@ -183,22 +186,43 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
 
 
     def fit_selected_decay(self):
-        if(self.flimObject):
-            self.showError('Starting fitting procedure...', 'Starting the fitting procedure. This might take a while. Application is unresponsive during fitting...')
-            self.graphicsView_decay.clear()
 
-            self.fitObject = fitter(self.flimObject.timeAxis, self.selectedDecay)
-            fit = self.fitObject.fit_decay()
-
-            self.graphicsView_decay.plot(
-                x = self.flimObject.timeAxis,
-                y = self.selectedDecay,
-                pen = pg.mkPen('w', width = 2)
-            )
-            self.graphicsView_decay.plot(
-                x = self.flimObject.timeAxis,
-                y = fit,
-                pen = pg.mkPen('r', width = 2)
-            )
-        else:
+        if(self.flim_object is None):
             self.showError('Fitting not possible.', 'Please load a FLIM file first.')
+            return(-1)
+
+        self.showError('Starting fitting procedure...', 'Starting the fitting procedure. This might take a while. Application is unresponsive during fitting...')
+        self.fit_object = fitter(self.flim_object.time_axis, self.flim_object.selected_decay)
+        fit, parameters = self.fit_object.fit_decay()
+
+        # Plotting selected decay and the corresping fit
+        self.graphicsView_decay.clear()
+        self.graphicsView_decay.plot(
+            x = self.flim_object.time_axis,
+            y = self.flim_object.selected_decay,
+            pen = pg.mkPen('w', width = 2)
+        )
+        self.graphicsView_decay.plot(
+            x = self.flim_object.time_axis,
+            y = fit,
+            pen = pg.mkPen('r', width = 2)
+        )
+
+        if(self.fit_object.optimized_parameters['success'] == False):
+            self.showError('Warning', 'The optimizer did not report a successful fit. Please check it manually.')
+        else:
+            self.updateLog('Fit successful! \n')
+            self.show_optimized_parameters()
+
+
+    def show_optimized_parameters(self):
+        """
+
+        """
+
+        self.listWidget_fittedParameters.clear()
+        for i in range(len(self.fit_object.optimized_parameters['x'])):
+            item = QListWidgetItem('%s: %d'%(self.fit_object.parameter_names[i], self.fit_object.optimized_parameters['x'][i]))
+            self.listWidget_fittedParameters.addItem(item)
+
+        self.listWidget_fittedParameters.show()

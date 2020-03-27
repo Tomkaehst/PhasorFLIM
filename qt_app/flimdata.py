@@ -24,7 +24,7 @@ class flimdata:
         self.temporal_binning = temporal_binning
 
         # Defining data types for the raw record array where ptu data stream is written in to
-        self.recordarrayDataTypes = np.dtype([('record', np.uint32), ('marker', np.uint8),
+        self.record_array_datatypes = np.dtype([('record', np.uint32), ('marker', np.uint8),
                                               ('nanotime', np.float64), ('macrotime', np.float64)])
 
         self.FLIMInfo = None  # Quick access FLIM image infos
@@ -231,7 +231,7 @@ class flimdata:
 
         # Initializing recordarray
         recordarray = np.zeros(shape=numRecords - 1,
-                               dtype=self.recordarrayDataTypes)
+                               dtype=self.record_array_datatypes)
 
         # Reading data from file into recordarray
         with open(file_path, 'rb') as file:
@@ -398,7 +398,7 @@ class flimdata:
         pixel_time = 0  # Tmp variable for storing time/pixel when line start and stop macro times are determined; needed to assign photons to y pixels in a line
 
         # Set to True when last scan line was evaluated and frame_counter >= frames_in_file
-        lastLine = False
+        last_line = False
         # Set to True when line start marker is found (= 65), starts photon assignments to y-pixels in a line (x); set to False when line stop marker is found (=66)
         line_active = False
 
@@ -422,7 +422,7 @@ class flimdata:
         flimarray = np.zeros((nPixelX, nPixelY, decay_bins), dtype=np.uint16)
         intensity_image = np.zeros((nPixelX, nPixelY), dtype=np.uint16)
 
-        while(lastLine == False):
+        while(last_line == False):
             tmp_marker = recordarray['marker'][event_counter]
 
             if(tmp_marker == 65):  # Event is line start marker
@@ -448,7 +448,7 @@ class flimdata:
                     # Build intensity image and FLIM array from photon macro times
                     for i in range(0, len(tmp_events)):
                         diff = tmp_events[i] - line_start
-                        pixel_id_y = math.floor(diff / pixel_time)
+                        pixel_id_y = int(math.floor(diff / pixel_time))
                         bin_id = math.floor((tmp_nano[i]/global_resolution)*decay_bins) - 1
     
                         if(pixel_id_y < 0):
@@ -459,20 +459,20 @@ class flimdata:
                         intensity_image[math.floor(pixel_id_x)][pixel_id_y] += 1
                         flimarray[math.floor(pixel_id_x)][pixel_id_y][bin_id] += 1
 
-                    pixel_id_x += (1/binning_factor)
+                    pixel_id_x += 1/binning_factor
                     line_counter += 1
                     tmp_events = [np.float64(x) for x in range(0)]
                     tmp_nano = [np.float64(x) for x in range(0)]
 
                 event_counter += 1
 
-            if(line_counter > (nPixelY - 1)):
+            if(line_counter > (pixels_x - 1)):
                 frame_counter += 1
                 pixel_id_x = 0
                 line_counter = 0
 
             if(frame_counter >= frames_in_file):
-                lastLine = True
+                last_line = True
 
             event_counter += 1
 

@@ -1,15 +1,17 @@
-import numpy as np
 import math
+import numpy as np
 import scipy.optimize as optimize
 from scipy import interpolate
 from numba import njit
+import multiprocessing
+import matplotlib.pyplot as plt
 
 class fitter:
-    def __init__(self, time_axis, data, fit_settings = None):
+    def __init__(self, time_axis, data, objective_function = None, fit_settings = None):
         self.time_axis = time_axis
         self.data = data
+        self.objective_function = objective_function
         self.optimized_parameters = None
-        self.lifetime_image = None
 
         if(fit_settings is None):
             self.fit_settings = (
@@ -24,10 +26,10 @@ class fitter:
 
         self.parameter_bounds = (
             (0, np.infty),
-            (0, np.infty),
-            (0, np.infty),
-            (0, np.infty),
-            (0, np.infty)
+            (0.1, np.infty),
+            (0.1, np.infty),
+            (0.1, np.infty),
+            (0.1, np.infty)
         )
 
         self.parameter_names = (
@@ -41,12 +43,12 @@ class fitter:
 
     def estimate_background(self, data):
         '''
-        Calculates median of last 7 % of data.
+        Calculates median of last 3 % of data.
         Used for weightung of values that have 0 counts, otherwise division will
         lead to NaN.
         '''
-        sample_index_right_cutoff = math.floor(len(data) * 0.97)
-        sample_index_left_cutoff = math.floor(len(data) * 0.90)
+        sample_index_right_cutoff = math.floor(len(data) * 0.99)
+        sample_index_left_cutoff = math.floor(len(data) * 0.96)
 
         background = np.median(data[sample_index_left_cutoff : sample_index_right_cutoff])
 
@@ -147,24 +149,24 @@ class fitter:
 
     def calculate_reduced_chi_square(self):
         try:
-            fitted_curve = self.convoluted_decay(t, *self.optimized_parameters)
+            fitted_curve = self.convoluted_decay(self.time_axis, *self.optimized_parameters)
+
+        except ValueError:
+            print('Error')
+        return
             
 
     ## Objective functions
+    def minimization_least_squares(self, start_parameters, time_axis, data, measured_irf = None, weighted = False):
 
-    def minimization_least_squares(self, para_est, t, data, weighted = False):
-        """
-
-        """
-
-        fitted = self.convoluted_decay(t, *para_est)
+        fitted = self.convoluted_decay(time_axis, *start_parameters, measured_irf)
 
         if(weighted):
             weights = self.calculate_weights(data)
-            resids = ((data - fitted)**2 * weights) / data
+            resids = ((fitted - data)**2 * weights) / fitted
         else:
-            resids = ((fitted - data)**2) / data
-
+            resids = ((fitted - data)**2) / fitted
+            
         resids = np.sum(resids)
 
         return(resids)
@@ -184,28 +186,26 @@ class fitter:
 
     def fit_decay(
         self,
+        decay = None,
         measured_irf = None,
-        objective_function = None,
         minimization_method = 'SLSQP',
         cutoff = 1):
         """
 
         """
-
-        if(objective_function == 'least_squares'):
+        if(self.objective_function == 'Least Squares'):
             objective_function = self.minimization_least_squares
         else:
             objective_function = self.minimize_poisson_deviance
 
-
-        data_trimmed = self.data[0:(len(self.data) - cutoff)],
+        decay_trimmed = decay[0:(len(decay) - cutoff)],
         time_axis_trimmed = self.time_axis[0:(len(self.time_axis) - cutoff)]
 
         try:
             self.optimized_parameters = optimize.minimize(
                 objective_function,
                 self.fit_settings,
-                args = (time_axis_trimmed, data_trimmed, measured_irf),
+                args = (time_axis_trimmed, decay_trimmed, measured_irf),
                 method = minimization_method,
                 bounds = self.parameter_bounds,
                 options = {
@@ -213,11 +213,41 @@ class fitter:
                     'disp': False
                 }
             )
-        except:
+        except RuntimeWarning:
             print('\nFitting unsucessfull. See error message above!\n')
-
-        #print(self.optimized_parameters)
 
         fitted_curve = self.convoluted_decay(self.time_axis, *self.optimized_parameters['x'])
 
-        return(fitted_curve, self.optimized_parameters)
+        return(fitted_curve)
+
+    def fit_image(self, photon_threshold = 100):
+        ''' 
+
+        ''' 
+        if(len(self.data.shape) < 3):
+            raise ValueError('fit object was not initialized with a FLIM array!')
+
+        lifetime_image = np.zeros(
+            (self.data.shape[0], self.data.shape[1])
+        )
+
+        for x in range(self.data.shape[0]):
+            for y in range(self.data.shape[1]):
+                if(np.sum(self.data[x, y]) > photon_threshold):
+                    try:
+                        self.fit_decay(decay = self.data[x, y, ])
+                        lifetime_image[x, y] = self.optimized_parameters['x'][2]
+                        self.fit_settings = self.optimized_parameters['x']
+                    except RuntimeError:
+                        print('Pixel', x, y, 'could not be fitted!')
+
+            print('Fitting line', x)
+
+        plt.imshow(
+            lifetime_image,
+            'viridis',
+            vmin = 4100,
+            vmax = 900)
+        plt.colorbar()
+        plt.show()
+        self.lifetime_image = lifetime_image

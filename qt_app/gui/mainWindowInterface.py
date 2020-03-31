@@ -20,7 +20,6 @@ from fitting import fitter
 class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
 
     def __init__(self, *args, **kwargs):
-
         # Inheriting Ui_mainWindow and initializung GUI
         print('Starting GUI...')
         super(Ui_mainWindowInterface, self).__init__(*args, **kwargs)
@@ -74,6 +73,14 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
 
         # lifetime image setup
         self.pushButton_updateLifetimeImage.pressed.connect(self.show_lifetime_image)
+
+
+        # Initializing decay tab
+        self.decay_layout = pg.GraphicsLayout()
+        self.graphicsView_decay.setCentralItem(self.decay_layout)
+        self.graphicsView_decay.show()
+        self.decay_plot = self.decay_layout.addPlot(row=1, col=1)
+        self.residual_plot = self.decay_layout.addPlot(row = 2, col = 1)
 
         # Show GUI
         self.show()
@@ -245,8 +252,9 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
                 #    self.flim_object.flimarray[int(coordinates[0]):int(coordinates[0] + size[0]), int(coordinates[1]):int(coordinates[1] + size[1]), :], axis = 0
                 #), axis = 0)
 
-                self.graphicsView_decay.clear()
-                self.graphicsView_decay.plot(
+                self.decay_plot.clear()
+                self.residual_plot.clear()
+                self.decay_plot.plot(
                     x = self.flim_object.time_axis,
                     y = self.flim_object.selected_decay,
                     pen = pg.mkPen('w', width = 2)
@@ -271,19 +279,25 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
             self.comboBox_objectiveFunction.currentText()
         )
 
-        fit = self.fit_object.fit_decay(decay = self.fit_object.data)
+        fit, residuals = self.fit_object.fit_decay(decay = self.fit_object.data)
         
         # Plotting selected decay and the corresping fit
-        self.graphicsView_decay.clear()
-        self.graphicsView_decay.plot(
+        self.decay_plot.clear()
+        self.decay_plot.plot(
             x = self.flim_object.time_axis,
             y = self.flim_object.selected_decay,
             pen = pg.mkPen('w', width = 2)
         )
-        self.graphicsView_decay.plot(
+        self.decay_plot.plot(
             x = self.flim_object.time_axis,
             y = fit,
             pen = pg.mkPen('r', width = 2)
+        )
+        self.residual_plot.clear()
+        self.residual_plot.plot(
+            x = self.flim_object.time_axis,
+            y=residuals,
+            pen = pg.mkPen('w', width = 2)
         )
 
         if(self.fit_object.optimized_parameters['success'] == False):

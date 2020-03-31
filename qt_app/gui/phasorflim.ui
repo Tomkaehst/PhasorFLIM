@@ -249,7 +249,7 @@
     </widget>
     <widget class="QWidget" name="tab_setup">
      <attribute name="title">
-      <string>Setup</string>
+      <string>IRF</string>
      </attribute>
     </widget>
     <widget class="QWidget" name="tab_fitting">

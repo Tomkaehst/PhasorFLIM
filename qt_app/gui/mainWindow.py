@@ -203,7 +203,7 @@ class Ui_mainWindow(object):
         self.pushButton_selectFile.setText(_translate("mainWindow", "Select File"))
         self.pushButton_showSelectedDecay.setText(_translate("mainWindow", "Show Selected Decay"))
         self.tabWidget_menu.setTabText(self.tabWidget_menu.indexOf(self.tab_load), _translate("mainWindow", "Load"))
-        self.tabWidget_menu.setTabText(self.tabWidget_menu.indexOf(self.tab_setup), _translate("mainWindow", "Setup"))
+        self.tabWidget_menu.setTabText(self.tabWidget_menu.indexOf(self.tab_setup), _translate("mainWindow", "IRF"))
         self.pushButton_fitSelection.setText(_translate("mainWindow", "Fit Selection"))
         self.pushButton_fitImage.setText(_translate("mainWindow", "Fit Image"))
         self.label_fittedParameters.setText(_translate("mainWindow", "Fitted Parameters"))

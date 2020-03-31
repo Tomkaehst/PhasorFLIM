@@ -135,18 +135,14 @@ class fitter:
         return(convoluted_signal)
 
 
-    def residuals(self, estimated_parameters, time_axis, data, measured_irf, weighted = True):
+    def calculate_residuals(self, measured_irf = None):
         """
 
         """
-
-        if(weighted):
-            weights = self.calculate_weights(data)
-            residuals = (data - self.convoluted_decay(time_axis, *estimated_parameters, measured_irf) ** 2) * weights
-        else:
-            residuals = (data - self.convoluted_decay(time_axis, *estimated_parameters, measured_irf) ** 2)
+        residuals = ((self.convoluted_decay(self.time_axis, *self.optimized_parameters['x']) - self.data)) / np.sqrt(self.data)
 
         return(residuals)
+
 
     def calculate_reduced_chi_square(self):
         try:
@@ -158,7 +154,7 @@ class fitter:
             
 
     ## Objective functions
-    def minimization_least_squares(self, start_parameters, time_axis, data, measured_irf = None, weighted = True):
+    def minimization_least_squares(self, start_parameters, time_axis, data, measured_irf = None, weighted = False):
 
         fitted = self.convoluted_decay(time_axis, *start_parameters, measured_irf)
 
@@ -218,8 +214,9 @@ class fitter:
             print('\nFitting unsucessfull. See error message above!\n')
 
         fitted_curve = self.convoluted_decay(self.time_axis, *self.optimized_parameters['x'])
+        residuals = self.calculate_residuals()
 
-        return(fitted_curve)
+        return(fitted_curve, residuals)
 
     def fit_image(self, photon_threshold = 100):
         ''' 

@@ -1,4 +1,6 @@
+import sys
 import time
+import traceback
 import pyqtgraph as pg
 import numpy as np
 from PyQt5.QtGui import *
@@ -36,9 +38,13 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         self.ptuFileHistory = []
         self.fit_object = None
 
+        # Initialize threads
+        self.thread_pool = QThreadPool()
+        self.update_log('%d CPU threads used...'%(self.thread_pool.maxThreadCount()))
 
-        ''' GUI Actions '''
-        self.updateLog('Setting up GUI actions...')
+
+        # GUI Actions
+        self.update_log('Setting up GUI actions...')
 
         # Close application
         self.actionQuit.triggered.connect(self.close)
@@ -66,14 +72,18 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         # Fit entire image
         self.pushButton_fitImage.pressed.connect(self.fit_image)
 
+        # lifetime image setup
+        self.pushButton_updateLifetimeImage.pressed.connect(self.show_lifetime_image)
+
         # Show GUI
         self.show()
-        self.updateLog('Ready...')
+        self.update_log('Ready...')
+
 
 
 
     # GUI Management Functions
-    def updateLog(self, logMessage: str):
+    def update_log(self, logMessage: str):
         """
         Displays string on text box. Used as log for performed actions and potential errors. logMessage string is appended to list of strings in flimdata object --> logHistory
         Arguments:
@@ -89,7 +99,7 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         self.logConsole.clear()
 
 
-    def showError(self, header: str, message: str):
+    def show_error(self, header: str, message: str):
         """
         Calls a Qt5 Message Box (critical) to attract users attention.
         Should be called from function, when a condition to run a certain action is not yet met, e.g. no file has been loaded etc. 
@@ -104,19 +114,23 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
             message
         )
 
-    def start_progressbar(self):
-        self.thread = Threading()
-        self.thread.progressbar_value.connect(self.set_progressbar_value)
-        self.thread.start()
-
     def set_progressbar_value(self, value):
-        self.progressBar.setMaximum(value)
+        self.progressBar.setValue(value)
+
+
+
+    def print_output(self, message):
+        '''
+        Generic function that prints any message to console.
+        '''
+        print(message)
 
 
 
     def show_optimized_parameters(self):
         """
-
+        Displays fitted parameters from selected decay fit
+        to list widget in fit tab.
         """
         if(self.fit_object.optimized_parameters):
             self.listWidget_fittedParameters.clear()
@@ -126,7 +140,7 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
 
             self.listWidget_fittedParameters.show()
         else:
-            self.showError('No Fit', 'No fit present!')
+            self.show_error('No Fit', 'No fit present!')
 
 
     # Analysis related functions
@@ -136,8 +150,8 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         Created file browser for file selection and passes path to self.ptupath.
         """
         if self.flim_object:
-            self.showError('Attention', 'Previously loaded data will be overwritten!')
-            self.updateLog('Overwriting previous file...')
+            self.show_error('Attention', 'Previously loaded data will be overwritten!')
+            self.update_log('Overwriting previous file...')
             self.flim_object = None
             self.fit_object = None
             self.ROI = None
@@ -152,33 +166,37 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         """ 
 
         """
-        self.start_progressbar()
         spatial_binning = self.spinBox_spatialBinning.value()
         temporal_binning = self.spinBox_temporalBinning.value()
+        channel = self.spinBox_channel.value()
 
         filepath = self.ptupath
 
         if filepath:
             try:
                 self.flim_object = flimdata(
-                    filepath, spatial_binning, temporal_binning
+                    filepath,
+                    channel,
+                    spatial_binning,
+                    temporal_binning
                 )
             except:
-                self.showError('File Loading Error', 'File could not be loaded. Check file integrity!')
+                self.show_error('File Loading Error', 'File could not be loaded. Check file integrity!')
                 return(-1)
 
             self.ptuFileHistory.append(filepath)
-            self.updateLog('Loaded' + filepath)
-            self.graphicsView_decay.clear()
-            self.graphicsView_decay.plot(
-                x = self.flim_object.time_axis,
-                y = self.flim_object.overall_decays
-            )
-
+            self.update_log('Loaded' + filepath)
         else:
-            self.set_progressbar_busy(False)
-            self.updateLog('No file selected.')
-            self.showError('Error', 'No file selected!')
+            self.update_log('No file selected.')
+            self.show_error('Error', 'No file selected!')
+
+    def loadPTUFile_thread(self):
+        thread = Thread(self.loadPTUFile)
+        thread.thread_signals.thread_result.connect(self.print_output)
+        thread.thread_signals.thread_finished.connect(self.print_output)
+        thread.thread_signals.thread_progress.connect(self.set_progressbar_value)
+
+        self.thread_pool.start(thread)
 
 
     def show_intensity_image(self):
@@ -189,11 +207,12 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         if(self.flim_object):
             intensity_image = pg.ImageItem(self.flim_object.intensity_image)
             self.graphicsView_intensityimage.addItem(intensity_image)
+            self.graphicsView_intensityimage.setRange(
+                QRect(0, 0, self.flim_object.intensity_image.shape[0], self.flim_object.intensity_image.shape[1])
+            )
             self.tabWidget_view.setCurrentIndex(0)
-            plt.imshow(self.flim_object.intensity_image)
-            plt.show()
         else:
-            self.showError('Loading Error', 'No FLIM data has been loaded yet!')
+            self.show_error('Loading Error', 'No FLIM data has been loaded yet!')
             
 
     def show_selected_decay(self):
@@ -235,16 +254,16 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
                 self.tabWidget_view.setCurrentIndex(1)
             
         else:
-            self.showError('Selection not possible.', 'Please load a FLIM file first.')
+            self.show_error('Selection not possible.', 'Please load a FLIM file first.')
 
 
     def fit_selected_decay(self):
 
         if(self.flim_object is None):
-            self.showError('Fitting not possible.', 'Please load a FLIM file first.')
+            self.show_error('Fitting not possible.', 'Please load a FLIM file first.')
             return(-1)
 
-        #self.showError('Starting fitting procedure...', 'Starting the fitting procedure. This might take a while. Application is unresponsive during fitting...')
+        #self.show_error('Starting fitting procedure...', 'Starting the fitting procedure. This might take a while. Application is unresponsive during fitting...')
 
         self.fit_object = fitter(
             self.flim_object.time_axis,
@@ -268,9 +287,9 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         )
 
         if(self.fit_object.optimized_parameters['success'] == False):
-            self.showError('Warning', 'The optimizer did not report a successful fit. Please check it manually.')
+            self.show_error('Warning', 'The optimizer did not report a successful fit. Please check it manually.')
         else:
-            self.updateLog('Fit successful! \n')
+            self.update_log('Fit successful! \n')
             self.show_optimized_parameters()
 
 
@@ -280,14 +299,79 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
             self.flim_object.flimarray
         )
 
-        self.fit_object.fit_image(photon_threshold = 100)
+        self.fit_object.fit_image(photon_threshold=self.spinBox_photonThreshold.value())
+        self.show_lifetime_image()
 
-        self.graphicsView_lifetimeimage.addItem(pg.ImageItem(self.fit_object.lifetime_image))
+    def show_lifetime_image(self):
+
+        colored_image = pg.ImageItem()
+        colored_image.setImage(
+            self.fit_object.lifetime_image
+        )
+        
+        color_positions = np.array([0.0, 0.33, 0.66, 1.0])
+        color = np.array([[0, 0, 0, 255], [255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255]], dtype=np.ubyte)
+        colormap = pg.ColorMap(
+            color_positions,
+            color
+        )
+        lut = colormap.getLookupTable(0, 1, 256)
+        colored_image.setLookupTable(lut)
+        colored_image.setLevels([
+            self.spinBox_lifetimeLower.value(),
+            self.spinBox_lifetimeUpper.value()
+        ])
+
+        self.graphicsView_lifetimeimage.addItem(colored_image)
+        self.graphicsView_lifetimeimage.setRange(
+                QRect(
+                    0,
+                    0,
+                    self.flim_object.intensity_image.shape[0],
+                    self.flim_object.intensity_image.shape[1])
+            )
+        self.tabWidget_view.setCurrentIndex(2)
 
 
-class Threading(QThread):
-    progressbar_value = pyqtSignal(int)
 
+
+
+
+
+
+
+
+
+
+class Thread(QRunnable):
+
+    def __init__(self, function, *args, **kwargs):
+        super(Thread, self).__init__()
+
+        self.function = function
+        self.args = args
+        self.kwargs = kwargs
+        self.thread_signals = ThreadSignals()
+
+        self.kwargs['progress_callback'] = self.thread_signals.thread_progress
+
+    @pyqtSlot()
     def run(self):
-        counter = 0
-        self.progressbar_value.emit(counter)
+        try:
+            result = self.function(*self.args, **self.kwargs)
+        except:
+            traceback.print_exc()
+            exctype, value = sys.exc_info()[:2]
+            self.thread_signals.thread_error.emit((exctype, value, traceback.format_exc()))
+        else:
+            self.thread_signals.thread_result.emit(result)
+        finally:
+            self.thread_signals.thread_finished.emit()
+
+
+
+class ThreadSignals(QObject):
+    thread_finished = pyqtSignal()
+    thread_error = pyqtSignal(tuple)
+    thread_result = pyqtSignal(object)
+    thread_progress = pyqtSignal(int)

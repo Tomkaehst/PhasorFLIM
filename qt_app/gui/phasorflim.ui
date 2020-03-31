@@ -87,7 +87,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>2</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="tab_load">
      <attribute name="title">
@@ -260,7 +260,7 @@
       <property name="geometry">
        <rect>
         <x>20</x>
-        <y>40</y>
+        <y>150</y>
         <width>101</width>
         <height>25</height>
        </rect>
@@ -273,7 +273,7 @@
       <property name="geometry">
        <rect>
         <x>20</x>
-        <y>80</y>
+        <y>180</y>
         <width>101</width>
         <height>25</height>
        </rect>
@@ -318,11 +318,11 @@
        <enum>Qt::Horizontal</enum>
       </property>
      </widget>
-     <widget class="QLabel" name="label_fittedParameters_2">
+     <widget class="QLabel" name="label_objective">
       <property name="geometry">
        <rect>
-        <x>30</x>
-        <y>120</y>
+        <x>20</x>
+        <y>10</y>
         <width>71</width>
         <height>17</height>
        </rect>
@@ -334,9 +334,9 @@
      <widget class="QComboBox" name="comboBox_objectiveFunction">
       <property name="geometry">
        <rect>
-        <x>120</x>
-        <y>120</y>
-        <width>161</width>
+        <x>10</x>
+        <y>30</y>
+        <width>151</width>
         <height>25</height>
        </rect>
       </property>
@@ -350,6 +350,92 @@
         <string>Least Squares</string>
        </property>
       </item>
+     </widget>
+     <widget class="QLabel" name="label_photonThreshold">
+      <property name="geometry">
+       <rect>
+        <x>170</x>
+        <y>10</y>
+        <width>121</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Photon Threshold</string>
+      </property>
+     </widget>
+     <widget class="QSpinBox" name="spinBox_photonThreshold">
+      <property name="geometry">
+       <rect>
+        <x>180</x>
+        <y>30</y>
+        <width>111</width>
+        <height>26</height>
+       </rect>
+      </property>
+      <property name="maximum">
+       <number>5000</number>
+      </property>
+      <property name="singleStep">
+       <number>50</number>
+      </property>
+      <property name="stepType">
+       <enum>QAbstractSpinBox::DefaultStepType</enum>
+      </property>
+      <property name="value">
+       <number>500</number>
+      </property>
+     </widget>
+     <widget class="QSpinBox" name="spinBox_lifetimeLower">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>250</y>
+        <width>81</width>
+        <height>26</height>
+       </rect>
+      </property>
+      <property name="maximum">
+       <number>10000</number>
+      </property>
+      <property name="singleStep">
+       <number>100</number>
+      </property>
+      <property name="value">
+       <number>2000</number>
+      </property>
+     </widget>
+     <widget class="QSpinBox" name="spinBox_lifetimeUpper">
+      <property name="geometry">
+       <rect>
+        <x>110</x>
+        <y>250</y>
+        <width>81</width>
+        <height>26</height>
+       </rect>
+      </property>
+      <property name="maximum">
+       <number>10000</number>
+      </property>
+      <property name="singleStep">
+       <number>100</number>
+      </property>
+      <property name="value">
+       <number>3000</number>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="pushButton_updateLifetimeImage">
+      <property name="geometry">
+       <rect>
+        <x>210</x>
+        <y>250</y>
+        <width>71</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Update</string>
+      </property>
      </widget>
     </widget>
     <widget class="QWidget" name="tab_output">
@@ -427,13 +513,13 @@
      <attribute name="title">
       <string>Lifetime Image</string>
      </attribute>
-     <widget class="ImageView" name="graphicsView_lifetimeimage">
+     <widget class="GraphicsView" name="graphicsView_lifetimeimage">
       <property name="geometry">
        <rect>
         <x>0</x>
         <y>0</y>
         <width>841</width>
-        <height>711</height>
+        <height>721</height>
        </rect>
       </property>
      </widget>
@@ -465,11 +551,6 @@
   </action>
  </widget>
  <customwidgets>
-  <customwidget>
-   <class>ImageView</class>
-   <extends>QGraphicsView</extends>
-   <header>pyqtgraph</header>
-  </customwidget>
   <customwidget>
    <class>PlotWidget</class>
    <extends>QGraphicsView</extends>

@@ -10,7 +10,7 @@ from numba.typed import List
 
 
 class flimdata:
-    def __init__(self, file_path: str, spatial_binning: int, temporal_binning: int):
+    def __init__(self, file_path: str, channel: int, spatial_binning: int, temporal_binning: int):
         """[summary]
 
         Arguments:
@@ -45,7 +45,13 @@ class flimdata:
 
         # Getting list of channels from the data
         self.FLIMInfo['availableChannels'] = self.checkChannelAvailability(
-            self.recordarray)
+            self.recordarray
+        )
+
+        if (channel is None):
+            self.selected_channel = self.FLIMInfo['availableChannels'][0]
+        else:
+            self.selected_channel = channel
 
         # Counting line events, requires for image reconstruction
         self.FLIMInfo['Lines_in_file'] = self.countLines(self.recordarray)
@@ -53,7 +59,7 @@ class flimdata:
         # Reconstruct FLIM array for fitting
         self.flimarray, self.intensity_image = self.reconstruct_flim_array(
             self.recordarray,
-            channel = self.FLIMInfo['availableChannels'][0],
+            channel = self.selected_channel,
             lines_in_file = self.FLIMInfo['Lines_in_file'],
             pixels_x = self.FLIMInfo['PixelsX'],
             pixels_y = self.FLIMInfo['PixelsY'],

@@ -12,6 +12,7 @@ class fitter:
         self.data = data
         self.objective_function = objective_function
         self.optimized_parameters = None
+        self.lifetime_image = None
 
         if(fit_settings is None):
             self.fit_settings = (
@@ -157,15 +158,15 @@ class fitter:
             
 
     ## Objective functions
-    def minimization_least_squares(self, start_parameters, time_axis, data, measured_irf = None, weighted = False):
+    def minimization_least_squares(self, start_parameters, time_axis, data, measured_irf = None, weighted = True):
 
         fitted = self.convoluted_decay(time_axis, *start_parameters, measured_irf)
 
         if(weighted):
             weights = self.calculate_weights(data)
-            resids = ((fitted - data)**2 * weights) / fitted
+            resids = ((data - fitted)**2 * weights) / fitted
         else:
-            resids = ((fitted - data)**2) / fitted
+            resids = ((data - fitted)**2) / fitted
             
         resids = np.sum(resids)
 
@@ -246,8 +247,8 @@ class fitter:
         plt.imshow(
             lifetime_image,
             'viridis',
-            vmin = 4100,
-            vmax = 900)
+            vmin = np.max(lifetime_image) - 500,
+            vmax = np.max(lifetime_image) + 100)
         plt.colorbar()
         plt.show()
         self.lifetime_image = lifetime_image

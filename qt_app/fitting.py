@@ -3,8 +3,7 @@ import numpy as np
 import scipy.optimize as optimize
 from scipy import interpolate
 from numba import njit
-import multiprocessing
-import matplotlib.pyplot as plt
+import multiprocessing as mp
 
 class fitter:
     def __init__(self, time_axis, data, objective_function = None, fit_settings = None):
@@ -225,27 +224,54 @@ class fitter:
         if(len(self.data.shape) < 3):
             raise ValueError('fit object was not initialized with a FLIM array!')
 
-        lifetime_image = np.zeros(
-            (self.data.shape[0], self.data.shape[1])
-        )
+        # Initialzing flat array for optimized values
+        lifetime_image = np.zeros((self.data.shape[0] + self.data.shape[1]))
 
-        for x in range(self.data.shape[0]):
-            for y in range(self.data.shape[1]):
-                if(np.sum(self.data[x, y]) > photon_threshold):
-                    try:
-                        self.fit_decay(decay = self.data[x, y, ])
-                        lifetime_image[x, y] = self.optimized_parameters['x'][2]
-                        self.fit_settings = self.optimized_parameters['x']
-                    except RuntimeError:
-                        print('Pixel', x, y, 'could not be fitted!')
+        # Flatten data array to map cores to pixels
+        self.data = self.data.flatten()
+        self.data = mp.Array('f', self.data)
 
-            print('Fitting line', x)
 
-        plt.imshow(
-            lifetime_image,
-            'viridis',
-            vmin = np.max(lifetime_image) - 500,
-            vmax = np.max(lifetime_image) + 100)
-        plt.colorbar()
-        plt.show()
-        self.lifetime_image = lifetime_image
+        #print('Fitting line', x)
+
+        #self.lifetime_image = lifetime_image
+
+
+    def apply_function_multiprocessing(args):
+        data, function, kwargs = args
+
+
+
+
+
+    # def fit_image(self, photon_threshold = 100):
+    #     ''' 
+
+    #     ''' 
+    #     if(len(self.data.shape) < 3):
+    #         raise ValueError('fit object was not initialized with a FLIM array!')
+
+    #     lifetime_image = np.zeros(
+    #         (self.data.shape[0], self.data.shape[1])
+    #     )
+
+    #     for x in range(self.data.shape[0]):
+    #         for y in range(self.data.shape[1]):
+    #             if(np.sum(self.data[x, y]) > photon_threshold):
+    #                 try:
+    #                     self.fit_decay(decay = self.data[x, y, ])
+    #                     lifetime_image[x, y] = self.optimized_parameters['x'][2]
+    #                     self.fit_settings = self.optimized_parameters['x']
+    #                 except RuntimeError:
+    #                     print('Pixel', x, y, 'could not be fitted!')
+
+    #         print('Fitting line', x)
+
+    #     plt.imshow(
+    #         lifetime_image,
+    #         'viridis',
+    #         vmin = np.max(lifetime_image) - 500,
+    #         vmax = np.max(lifetime_image) + 100)
+    #     plt.colorbar()
+    #     plt.show()
+    #     self.lifetime_image = lifetime_image

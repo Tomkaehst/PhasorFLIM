@@ -39,7 +39,7 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
 
         # Initialize threads
         self.thread_pool = QThreadPool()
-        self.update_log('%d CPU threads used...'%(self.thread_pool.maxThreadCount()))
+        self.update_log('%d CPU cores used...'%(self.thread_pool.maxThreadCount()))
 
 
         # GUI Actions
@@ -314,7 +314,7 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         )
 
         self.fit_object.fit_image(photon_threshold=self.spinBox_photonThreshold.value())
-        self.show_lifetime_image()
+        #self.show_lifetime_image()
 
     def show_lifetime_image(self):
 

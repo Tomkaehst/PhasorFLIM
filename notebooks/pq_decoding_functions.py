@@ -190,22 +190,45 @@ def readPTUData(path: str, makeFLIMInfo: bool = True):
     #print('Finished decoding header.')
 
     # Copying header info into FLIMInfo dict
-    FLIMInfo = {
-        'Filename' : header_contents['$Filename'],
-        'Comment': header_contents['$Comment'],
-        'RecordType' : header_contents['TTResultFormat_TTTRRecType'],
-        'BitsPerRecord' : header_contents['TTResultFormat_BitsPerRecord'],
-        'PixelResolution' : header_contents['$ReqHdr_SpatialResolution'],
-        'PixelsX' : header_contents['ImgHdr_PixX'],
-        'PixelsY' : header_contents['ImgHdr_PixY'],
-        'GlobalResolution' : header_contents['MeasDesc_GlobalResolution'],
-        'BaseResolution' : header_contents['HW_BaseResolution'],
-        'Resolution' : header_contents['MeasDesc_Resolution'],
-        'BinningFactor' : header_contents['MeasDesc_BinningFactor'],
-        'SyncRate' : header_contents['TTResult_SyncRate'],
-        'NumberOfRecords' : header_contents['TTResult_NumberOfRecords']
-    }
+    if(makeFLIMInfo == False):
+        FLIMInfo = {
+            #'Filename' : header_contents['$Filename'],
+            #'Comment': header_contents['$Comment'],
+            'RecordType' : header_contents['TTResultFormat_TTTRRecType'],
+            'BitsPerRecord' : header_contents['TTResultFormat_BitsPerRecord'],
+            #'PixelResolution' : header_contents['$ReqHdr_SpatialResolution'],
+            'PixelsX' : header_contents['ImgHdr_PixX'],
+            'PixelsY' : header_contents['ImgHdr_PixY'],
+            'GlobalResolution' : header_contents['MeasDesc_GlobalResolution'],
+            'BaseResolution' : header_contents['HW_BaseResolution'],
+            'Resolution' : header_contents['MeasDesc_Resolution'],
+            'BinningFactor' : header_contents['MeasDesc_BinningFactor'],
+            'SyncRate' : header_contents['TTResult_SyncRate'],
+            'NumberOfRecords': header_contents['TTResult_NumberOfRecords'],
+            'LineStart': header_contents['ImgHdr_LineStart'],
+            'LineStop': header_contents['ImgHdr_LineStop']
+        }
+    else:
+        FLIMInfo = {
+            'Filename' : header_contents['$Filename'],
+            'Comment': header_contents['$Comment'],
+            'RecordType' : header_contents['TTResultFormat_TTTRRecType'],
+            'BitsPerRecord' : header_contents['TTResultFormat_BitsPerRecord'],
+            'PixelResolution' : header_contents['$ReqHdr_SpatialResolution'],
+            'PixelsX' : header_contents['ImgHdr_PixX'],
+            'PixelsY' : header_contents['ImgHdr_PixY'],
+            'GlobalResolution' : header_contents['MeasDesc_GlobalResolution'],
+            'BaseResolution' : header_contents['HW_BaseResolution'],
+            'Resolution' : header_contents['MeasDesc_Resolution'],
+            'BinningFactor' : header_contents['MeasDesc_BinningFactor'],
+            'SyncRate' : header_contents['TTResult_SyncRate'],
+            'NumberOfRecords': header_contents['TTResult_NumberOfRecords'],
+            'LineStart': header_contents['ImgHdr_LineStart'],
+            'LineStop': header_contents['ImgHdr_LineStop']
+        }
+        
 
+    #print(FLIMInfo['LineStart'], FLIMInfo['LineStop'])
     # Closing read stream
     ptureadstream.close()
 
@@ -234,24 +257,6 @@ def readPTUData(path: str, makeFLIMInfo: bool = True):
     # Recover macro times using treatOverflows()
     recordarray = treatOverflows(recordarray, macroMultFactor)
 
-    
-    if(makeFLIMInfo == True):
-        FLIMInfo = {
-            'Filename' : header_contents['$Filename'],
-            'Comment': header_contents['$Comment'],
-            'RecordType' : header_contents['TTResultFormat_TTTRRecType'],
-            'BitsPerRecord' : header_contents['TTResultFormat_BitsPerRecord'],
-            'PixelResolution' : header_contents['$ReqHdr_SpatialResolution'],
-            'PixelsX' : header_contents['ImgHdr_PixX'],
-            'PixelsY' : header_contents['ImgHdr_PixY'],
-            'GlobalResolution' : header_contents['MeasDesc_GlobalResolution'],
-            'BaseResolution' : header_contents['HW_BaseResolution'],
-            'Resolution' : header_contents['MeasDesc_Resolution'],
-            'BinningFactor' : header_contents['MeasDesc_BinningFactor'],
-            'SyncRate' : header_contents['TTResult_SyncRate'],
-            'NumberOfRecords' : header_contents['TTResult_NumberOfRecords']
-        }
-        
     header_contents = FLIMInfo
 
     #macrotimes = np.array(recordarray['macrotime'], dtype = np.float32)
@@ -283,7 +288,8 @@ def buildFLIMArray(recordarray, channel, linesinfile, pixelsx, pixelsy, globRes,
     lineCounter = 0  # Stores current scan line numbers
     frameCounter = 0  # Stores current frame number
     # How many frames are in the image; assume square format
-    framesInFile = linesinfile / pixelsx
+    framesInFile = math.floor(linesinfile / pixelsx)
+
     # Number of TCSPC bins based on time between pulses and TCSPC time resolution
     decayBins = math.ceil((globRes / timeRes)/(2**temporalBinning))
     globalResolution = globRes * 10E8  # time between pulses in ns
@@ -370,12 +376,12 @@ def buildFLIMArray(recordarray, channel, linesinfile, pixelsx, pixelsy, globRes,
 
             eventCounter += 1
 
-        if(lineCounter > (pixelsx - 1)):
+        if (lineCounter > (pixelsx - 1)):
             frameCounter = frameCounter + 1
             pixelIDX = 0
             lineCounter = 0
 
-        if(frameCounter >= framesInFile):
+        if(frameCounter >= framesInFile or eventCounter >= len(recordarray['marker'])):
             lastLine = True
 
         eventCounter += 1
@@ -400,12 +406,12 @@ def make_time_axis(global_resolution, resolution, number_of_bins = 0):
     return(t_axis)
 
 
-def load_flim_data(path, channel = 0, spatialBinning = 0, temporalBinning = 0):
+def load_flim_data(path, channel = 0, spatialBinning = 0, temporalBinning = 0, makeFLIMInfo = True):
     '''
     Function wrapper for readPTUData and buildFLIMarray.
     Returns the 3D FLIM array and the intensity image of the ptu file provided with path (str).
     '''
-    recordarray, header_info = readPTUData(path)
+    recordarray, header_info = readPTUData(path, makeFLIMInfo = makeFLIMInfo)
     header_info['LinesInFile'] = countLines(recordarray)
 
     flim_array, intensity_image = buildFLIMArray(

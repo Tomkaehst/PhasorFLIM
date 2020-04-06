@@ -12,8 +12,11 @@ import matplotlib.pyplot as plt
 
 from gui.mainWindow import Ui_mainWindow
 from flimdata import flimdata
+from irf import IRF
 from fitting import fitter
 
+
+pg.setConfigOptions(antialias =  True)
 
 
 
@@ -33,7 +36,9 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
 
         # Setting up flimdata class
         self.flim_object = None
+        self.irf_object = None
         self.ptupath = None
+        self.irfpath = None
         self.ptuFileHistory = []
         self.fit_object = None
 
@@ -54,6 +59,10 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         # Load PTU file
         self.pushButton_selectFile.pressed.connect(self.select_file)
         self.pushButton_LoadPTU.pressed.connect(self.loadPTUFile)
+
+        # IRF
+        self.pushButton_loadIRF.pressed.connect(self.load_irf)
+        self.pushButton_showIRF.pressed.connect(self.show_irf)
 
         # Show intensity image
         self.pushButton_showIntensityImage.pressed.connect(
@@ -204,6 +213,36 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         thread.thread_signals.thread_progress.connect(self.set_progressbar_value)
 
         self.thread_pool.start(thread)
+
+
+    def load_irf(self):
+        if (self.irf_object is not None):
+            self.show_error('Attention', 'IRF will be overwritten!')
+
+        self.irfpath = QFileDialog.getOpenFileName(filter='PTU Files (*.ptu)')[0]
+        self.lineEdit_filePathIRF.setText(self.irfpath)
+
+        self.irf_object = IRF(
+            self.irfpath,
+            channel = 0
+        )
+            
+
+    def show_irf(self):
+        if (self.irf_object is None):
+            self.show_error('Attention', 'No IRF has been loaded!')
+            return ()
+            
+        self.decay_plot.clear()
+        self.residual_plot.clear()
+        self.decay_plot.plot(
+            x = self.irf_object.time_axis,
+            y = self.irf_object.overall_decays,
+            pen = pg.mkPen('w', width = 2)
+        )
+        self.tabWidget_view.setCurrentIndex(1)
+        
+
 
 
     def show_intensity_image(self):

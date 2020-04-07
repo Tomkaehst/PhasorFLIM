@@ -16,7 +16,7 @@ from irf import IRF
 from fitting import fitter
 
 
-pg.setConfigOptions(antialias =  True)
+#pg.setConfigOptions(antialias =  True)
 
 
 
@@ -250,7 +250,8 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         Displays intensity image of PTU file, if a flim data object is present.
         Otherwise, error message will be shown to user.
         '''
-        if(self.flim_object):
+        if (self.flim_object):
+            #self.graphicsView_intensityimage.clear()
             intensity_image = pg.ImageItem(self.flim_object.intensity_image)
             self.graphicsView_intensityimage.addItem(intensity_image)
             self.graphicsView_intensityimage.setRange(

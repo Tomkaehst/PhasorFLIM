@@ -319,7 +319,15 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
             self.comboBox_objectiveFunction.currentText()
         )
 
-        fit, residuals = self.fit_object.fit_decay(decay = self.fit_object.data)
+        if(self.irf_object):
+            fit, residuals = self.fit_object.fit_decay(
+                decay=self.fit_object.data,
+                measured_irf=self.irf_object.irf
+            )
+        else:
+            fit, residuals = self.fit_object.fit_decay(
+                decay=self.fit_object.data
+            )
         
         # Plotting selected decay and the corresping fit
         self.decay_plot.clear()

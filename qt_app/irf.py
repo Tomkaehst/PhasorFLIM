@@ -1,3 +1,5 @@
+import numpy as np
+
 from flimdata import flimdata
 
 class IRF(flimdata):
@@ -21,6 +23,12 @@ class IRF(flimdata):
         del self.flimarray
 
 
-    def cut_irf(self, left_cutoff: int, right_cutoff: int, background: int):
-        self.irf = self.overall_decays[left_cutoff, right_cutoff]
+    def cut_irf(self, left_cutoff: int = 0, right_cutoff: int = 0):
+        self.irf = self.overall_decays[int(left_cutoff):int(right_cutoff)]
 
+    def estimate_background(self):
+        pass
+
+    def set_background(self, value):
+        self.irf -= value
+        #self.irf = np.where(self.irf < 0, self.irf)

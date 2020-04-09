@@ -58,16 +58,12 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
 
         # Load PTU file
         self.pushButton_selectFile.pressed.connect(self.select_file)
-        self.pushButton_LoadPTU.pressed.connect(self.loadPTUFile)
+        self.pushButton_LoadPTU.pressed.connect(self.load_ptu_file)
 
         # IRF
         self.pushButton_loadIRF.pressed.connect(self.load_irf)
         self.pushButton_showIRF.pressed.connect(self.show_irf)
-
-        # Show intensity image
-        self.pushButton_showIntensityImage.pressed.connect(
-            self.show_intensity_image
-        )
+        self.pushButton_correctIRF.pressed.connect(self.correct_irf)
 
         # Show ROI-selected decay
         self.pushButton_showSelectedDecay.pressed.connect(
@@ -178,7 +174,7 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
 
 
 
-    def loadPTUFile(self):
+    def load_ptu_file(self):
         """ 
 
         """
@@ -196,6 +192,17 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
                     spatial_binning,
                     temporal_binning
                 )
+                if (self.flim_object):
+                    #self.graphicsView_intensityimage.clear()
+                    intensity_image = pg.ImageItem(self.flim_object.intensity_image)
+                    self.graphicsView_intensityimage.addItem(intensity_image)
+                    self.graphicsView_intensityimage.setRange(
+                    QRect(0, 0, self.flim_object.intensity_image.shape[0], self.flim_object.intensity_image.shape[1])
+                    )
+                    self.tabWidget_view.setCurrentIndex(0)
+                else:
+                    self.show_error('Loading Error', 'No FLIM data has been loaded yet!')
+                
             except:
                 self.show_error('File Loading Error', 'File could not be loaded. Check file integrity!')
                 return(-1)
@@ -206,8 +213,8 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
             self.update_log('No file selected.')
             self.show_error('Error', 'No file selected!')
 
-    def loadPTUFile_thread(self):
-        thread = Thread(self.loadPTUFile)
+    def load_ptu_file_thread(self):
+        thread = Thread(self.load_ptu_file)
         thread.thread_signals.thread_result.connect(self.print_output)
         thread.thread_signals.thread_finished.connect(self.print_output)
         thread.thread_signals.thread_progress.connect(self.set_progressbar_value)
@@ -243,6 +250,18 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         self.tabWidget_view.setCurrentIndex(1)
         
 
+    def correct_irf(self):
+        if (self.irf_object):
+            self.irf_object.set_background(
+                self.spinBox_IRFBackground.value()
+                )
+            self.irf_object.cut_irf(
+                self.spinBox_irfLeftCut.value(),
+                self.spinBox_irfRightCut.value()
+            )
+        else:
+            self.show_error('Attention', 'No IRF has been loaded yet!')
+        
 
 
     def show_intensity_image(self):

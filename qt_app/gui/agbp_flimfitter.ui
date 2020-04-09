@@ -70,6 +70,16 @@
          </rect>
         </property>
         <layout class="QFormLayout" name="formLayout">
+         <item row="0" column="0" colspan="2">
+          <widget class="QLineEdit" name="lineEdit_filepath"/>
+         </item>
+         <item row="1" column="0">
+          <widget class="QPushButton" name="pushButton_selectFile">
+           <property name="text">
+            <string>Select File</string>
+           </property>
+          </widget>
+         </item>
          <item row="3" column="0">
           <widget class="QLabel" name="label_channel">
            <property name="text">
@@ -127,20 +137,13 @@
           </widget>
          </item>
          <item row="8" column="0">
-          <widget class="QPushButton" name="pushButton_showIntensityImage">
-           <property name="text">
-            <string>Show Intensity Image</string>
-           </property>
-          </widget>
-         </item>
-         <item row="9" column="0">
           <widget class="QPushButton" name="pushButton_showSelectedDecay">
            <property name="text">
             <string>Show Selected Decay</string>
            </property>
           </widget>
          </item>
-         <item row="10" column="0">
+         <item row="9" column="0">
           <spacer name="verticalSpacer">
            <property name="orientation">
             <enum>Qt::Vertical</enum>
@@ -152,16 +155,6 @@
             </size>
            </property>
           </spacer>
-         </item>
-         <item row="1" column="0">
-          <widget class="QPushButton" name="pushButton_selectFile">
-           <property name="text">
-            <string>Select File</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="0" colspan="2">
-          <widget class="QLineEdit" name="lineEdit_filepath"/>
          </item>
         </layout>
        </widget>
@@ -235,33 +228,64 @@
          </rect>
         </property>
         <layout class="QFormLayout" name="formLayout_2">
-         <item row="0" column="0" colspan="2">
-          <widget class="QLineEdit" name="lineEdit_filePathIRF"/>
-         </item>
-         <item row="1" column="1">
+         <item row="2" column="1">
           <widget class="QPushButton" name="pushButton_loadIRF">
            <property name="text">
             <string>Load IRF File</string>
            </property>
           </widget>
          </item>
-         <item row="2" column="1">
+         <item row="3" column="1">
           <widget class="QPushButton" name="pushButton_showIRF">
            <property name="text">
             <string>Show IRF</string>
            </property>
           </widget>
          </item>
-         <item row="3" column="1">
-          <widget class="QSpinBox" name="spinBox_irfLeftCut"/>
-         </item>
-         <item row="4" column="1">
+         <item row="6" column="1">
           <widget class="QSpinBox" name="spinBox_irfRightCut"/>
          </item>
          <item row="5" column="1">
-          <widget class="QPushButton" name="pushButton_cutIRF">
+          <widget class="QSpinBox" name="spinBox_irfLeftCut"/>
+         </item>
+         <item row="8" column="1">
+          <widget class="QSpinBox" name="spinBox_IRFBackground"/>
+         </item>
+         <item row="5" column="0">
+          <widget class="QLabel" name="label_IRFleftCutoff">
            <property name="text">
-            <string>Cut IRF</string>
+            <string>Left Cutoff</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="0">
+          <widget class="QLabel" name="label_IRFrightCutoff">
+           <property name="text">
+            <string>Right Cutoff</string>
+           </property>
+          </widget>
+         </item>
+         <item row="8" column="0">
+          <widget class="QLabel" name="label_IRFBackground">
+           <property name="text">
+            <string>Background</string>
+           </property>
+          </widget>
+         </item>
+         <item row="9" column="1">
+          <widget class="QPushButton" name="pushButton_correctIRF">
+           <property name="text">
+            <string>Correct IRF</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QLineEdit" name="lineEdit_filePathIRF"/>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_IRFPath">
+           <property name="text">
+            <string>Path</string>
            </property>
           </widget>
          </item>
@@ -464,7 +488,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget_view">
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab_intensityimage">
        <attribute name="title">
@@ -556,7 +580,6 @@
   </customwidget>
  </customwidgets>
  <tabstops>
-  <tabstop>pushButton_showIntensityImage</tabstop>
   <tabstop>spinBox_temporalBinning</tabstop>
   <tabstop>spinBox_spatialBinning</tabstop>
   <tabstop>pushButton_LoadPTU</tabstop>

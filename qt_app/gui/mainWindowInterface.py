@@ -44,7 +44,7 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
 
         # Initialize threads
         self.thread_pool = QThreadPool()
-        self.update_log('%d CPU cores used...'%(self.thread_pool.maxThreadCount()))
+        self.update_log('%d CPU cores detected...'%(self.thread_pool.maxThreadCount()))
 
 
         # GUI Actions
@@ -64,6 +64,7 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         self.pushButton_loadIRF.pressed.connect(self.load_irf)
         self.pushButton_showIRF.pressed.connect(self.show_irf)
         self.pushButton_correctIRF.pressed.connect(self.correct_irf)
+        self.pushButton_resetIRF.pressed.connect(self.reset_irf)
 
         # Show ROI-selected decay
         self.pushButton_showSelectedDecay.pressed.connect(
@@ -233,6 +234,7 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
             self.irfpath,
             channel = 0
         )
+        self.show_irf()
             
 
     def show_irf(self):
@@ -243,8 +245,8 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         self.decay_plot.clear()
         self.residual_plot.clear()
         self.decay_plot.plot(
-            x = self.irf_object.time_axis,
-            y = self.irf_object.overall_decays,
+            x = self.irf_object.irf_time_axis,
+            y = self.irf_object.irf,
             pen = pg.mkPen('w', width = 2)
         )
         self.tabWidget_view.setCurrentIndex(1)
@@ -259,6 +261,14 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
                 self.spinBox_irfLeftCut.value(),
                 self.spinBox_irfRightCut.value()
             )
+            self.show_irf()
+        else:
+            self.show_error('Attention', 'No IRF has been loaded yet!')
+
+    def reset_irf(self):
+        if (self.irf_object):
+            self.irf_object.reset_irf()
+            self.show_irf()
         else:
             self.show_error('Attention', 'No IRF has been loaded yet!')
         

@@ -243,13 +243,28 @@
           </widget>
          </item>
          <item row="6" column="1">
-          <widget class="QSpinBox" name="spinBox_irfRightCut"/>
+          <widget class="QSpinBox" name="spinBox_irfRightCut">
+           <property name="maximum">
+            <number>10000</number>
+           </property>
+           <property name="value">
+            <number>3000</number>
+           </property>
+          </widget>
          </item>
          <item row="5" column="1">
-          <widget class="QSpinBox" name="spinBox_irfLeftCut"/>
+          <widget class="QSpinBox" name="spinBox_irfLeftCut">
+           <property name="maximum">
+            <number>10000</number>
+           </property>
+          </widget>
          </item>
          <item row="8" column="1">
-          <widget class="QSpinBox" name="spinBox_IRFBackground"/>
+          <widget class="QSpinBox" name="spinBox_IRFBackground">
+           <property name="maximum">
+            <number>100000</number>
+           </property>
+          </widget>
          </item>
          <item row="5" column="0">
           <widget class="QLabel" name="label_IRFleftCutoff">
@@ -272,13 +287,6 @@
            </property>
           </widget>
          </item>
-         <item row="9" column="1">
-          <widget class="QPushButton" name="pushButton_correctIRF">
-           <property name="text">
-            <string>Correct IRF</string>
-           </property>
-          </widget>
-         </item>
          <item row="1" column="1">
           <widget class="QLineEdit" name="lineEdit_filePathIRF"/>
          </item>
@@ -286,6 +294,20 @@
           <widget class="QLabel" name="label_IRFPath">
            <property name="text">
             <string>Path</string>
+           </property>
+          </widget>
+         </item>
+         <item row="10" column="1">
+          <widget class="QPushButton" name="pushButton_correctIRF">
+           <property name="text">
+            <string>Correct IRF</string>
+           </property>
+          </widget>
+         </item>
+         <item row="10" column="0">
+          <widget class="QPushButton" name="pushButton_resetIRF">
+           <property name="text">
+            <string>Reset IRF</string>
            </property>
           </widget>
          </item>

@@ -25,11 +25,11 @@ class fitter:
             self.fit_settings = fit_settings
 
         self.parameter_bounds = (
-            (0, np.infty),
-            (0.1, np.infty),
-            (0.1, np.infty),
-            (0.1, np.infty),
-            (0.1, np.infty)
+            (0, np.infty),  # Offset
+            (0.01, np.infty),# Amplitide
+            (1, np.infty),# Tau
+            (-np.infty, np.infty),# IRF Mu
+            (0.01, np.infty) # IRF sigma
         )
 
         self.parameter_names = (
@@ -84,26 +84,33 @@ class fitter:
         return(gauss)
 
 
-    def interpolate_irf(self, time_axis, measured_irf, leftcutoff = 100, rightcutoff = 1000):
-        """
+    # def interpolate_irf(self, time_axis, measured_irf):
+    #     """
 
-        """
+    #     """
 
-        irf_cutoff = measured_irf[leftcutoff:rightcutoff]
-        irf_cutoff = irf_cutoff / np.sum(measured_irf)
+    #     irf_function = interpolate.interp1d(
+    #         x = time_axis,
+    #         y = measured_irf,
+    #         bounds_error = False,
+    #         fill_value = 0 # background_counts
+    #     )
 
-        time_axis_cutoff = time_axis[leftcutoff:rightcutoff]
+    #     irf_interpolated = irf_function(time_axis)
 
-        irf_function = interpolate.interp1d(
-            x = time_axis_cutoff,
-            y = irf_cutoff,
-            bounds_error = False,
-            fill_value = 0 # background_counts
-        )
+    #     return(irf_interpolated)
 
-        irf_interpolated = irf_function(time_axis)
+    #@staticmethod
+    #@njit
+    # def process_irf(IRF, time_axis, shift, background = 0):
+    #     '''
+    #     Processing IRF based on current model parameters: IRF_mu = shift, ...
+    #     '''
+    #     irf = IRF
+    #     irf_time_axis = time_axis - np.max(time_axis)
+    #     np.add(irf_time_axis, shift)
 
-        return(irf_interpolated)
+    #     return(irf, irf_time_axis)
 
 
     def add_poisson_noise(self, data, offset):
@@ -115,7 +122,7 @@ class fitter:
         decay += np.random.poisson(offset, len(decay))
         return(decay)
 
-    def convoluted_decay(self, time_axis, offset, amp, tau, IRF_mu, IRF_sigma, measured_irf = None):
+    def convoluted_decay(self, time_axis, offset, amp, tau, IRF_mu, IRF_sigma, measured_irf = None ):
         """
 
         """
@@ -123,7 +130,7 @@ class fitter:
         if(measured_irf is None):
             IRF = self.gauss_laser(time_axis, IRF_mu, IRF_sigma)
         else:
-            IRF = self.interpolate_irf(time_axis, measured_irf)
+           IRF = np.roll(measured_irf, int(IRF_mu))
 
         decay = self.exp_decay_mono(time_axis, tau)
 
@@ -138,7 +145,7 @@ class fitter:
         """
 
         """
-        residuals = ((self.convoluted_decay(self.time_axis, *self.optimized_parameters['x']) - self.data)) / np.sqrt(self.data)
+        residuals = ((self.convoluted_decay(self.time_axis, *self.optimized_parameters['x'], measured_irf) - self.data)) / np.sqrt(self.data)
 
         return(residuals)
 
@@ -183,7 +190,7 @@ class fitter:
     def fit_decay(
         self,
         decay = None,
-        measured_irf = None,
+        measured_irf=None,
         minimization_method = 'SLSQP',
         cutoff = 1):
         """

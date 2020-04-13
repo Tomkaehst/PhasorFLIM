@@ -254,9 +254,9 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
 
     def correct_irf(self):
         if (self.irf_object):
-            self.irf_object.set_background(
-                self.spinBox_IRFBackground.value()
-                )
+            # self.irf_object.set_background(
+            #     self.spinBox_IRFBackground.value()
+            #     )
             self.irf_object.cut_irf(
                 self.spinBox_irfLeftCut.value(),
                 self.spinBox_irfRightCut.value()
@@ -348,7 +348,8 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
             self.comboBox_objectiveFunction.currentText()
         )
 
-        if(self.irf_object):
+        if (self.irf_object):
+            #self.fit_object.get_irf_shift(self.irf_object.irf)
             fit, residuals = self.fit_object.fit_decay(
                 decay=self.fit_object.data,
                 measured_irf=self.irf_object.irf

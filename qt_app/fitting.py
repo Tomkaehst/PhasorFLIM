@@ -29,7 +29,7 @@ class fitter:
             (0.01, np.infty),# Amplitide
             (1, np.infty),# Tau
             (-np.infty, np.infty),# IRF Mu
-            (0.01, np.infty) # IRF sigma
+            (0.01, np.infty)  # IRF sigma
         )
 
         self.parameter_names = (
@@ -112,6 +112,47 @@ class fitter:
 
     #     return(irf, irf_time_axis)
 
+    @staticmethod
+    def shift_irf(shift, measured_irf):
+        '''
+        Shift measured IRF on time axis by rolling array.
+        '''
+        shifted_irf = np.roll(measured_irf, int(shift))
+        
+        return(shifted_irf)
+
+
+    def get_irf_shift(self, measured_irf):
+        '''
+        Get best shift of *measured* IRF by brute-forcing.
+        IRF shift of measured IRF cannot be optimized together with
+        other model parameters using classic minimization algorithms,
+        because shift is done with integer stepping.
+        Brute-forcing best shift here and writing result
+        into self.fit_setting[3]
+        '''
+
+        brute_range = (
+            (self.fit_settings[0] - 1, self.fit_settings[0]),
+            (self.fit_settings[1] - 1, self.fit_settings[1]),
+            (self.fit_settings[2] - 1, self.fit_settings[2]),
+            (-1000, 1000),
+            (self.fit_settings[4] - 1, self.fit_settings[4])
+        )
+
+        fitted_shift = optimize.brute(
+            func = self.minimize_poisson_deviance,
+            ranges = brute_range,
+            args=(self.time_axis, self.data, measured_irf),
+            Ns = (1, 1, 1, 2000, 1)
+        )
+
+        print(fitted_shift)
+        
+
+        return(0)
+
+
 
     def add_poisson_noise(self, data, offset):
         """
@@ -130,7 +171,7 @@ class fitter:
         if(measured_irf is None):
             IRF = self.gauss_laser(time_axis, IRF_mu, IRF_sigma)
         else:
-           IRF = np.roll(measured_irf, int(IRF_mu))
+           IRF = np.roll(measured_irf, int(IRF_mu)) #self.shift_irf(measured_irf, IRF_mu)
 
         decay = self.exp_decay_mono(time_axis, tau)
 
@@ -191,7 +232,7 @@ class fitter:
         self,
         decay = None,
         measured_irf=None,
-        minimization_method = 'SLSQP',
+        minimization_method = 'L-BFGS-B',
         cutoff = 1):
         """
 
@@ -213,7 +254,14 @@ class fitter:
                 bounds = self.parameter_bounds,
                 options = {
                     'maxiter': 1000,
-                    'disp': False
+                    'disp': False,
+                    'eps': [
+                        0.1,
+                        0.1,
+                        0.1,
+                        5,
+                        0.1
+                    ]
                 }
             )
         except RuntimeWarning:
@@ -244,41 +292,5 @@ class fitter:
         #self.lifetime_image = lifetime_image
 
 
-    def apply_function_multiprocessing(args):
-        data, function, kwargs = args
-
-
-
-
-
-    # def fit_image(self, photon_threshold = 100):
-    #     ''' 
-
-    #     ''' 
-    #     if(len(self.data.shape) < 3):
-    #         raise ValueError('fit object was not initialized with a FLIM array!')
-
-    #     lifetime_image = np.zeros(
-    #         (self.data.shape[0], self.data.shape[1])
-    #     )
-
-    #     for x in range(self.data.shape[0]):
-    #         for y in range(self.data.shape[1]):
-    #             if(np.sum(self.data[x, y]) > photon_threshold):
-    #                 try:
-    #                     self.fit_decay(decay = self.data[x, y, ])
-    #                     lifetime_image[x, y] = self.optimized_parameters['x'][2]
-    #                     self.fit_settings = self.optimized_parameters['x']
-    #                 except RuntimeError:
-    #                     print('Pixel', x, y, 'could not be fitted!')
-
-    #         print('Fitting line', x)
-
-    #     plt.imshow(
-    #         lifetime_image,
-    #         'viridis',
-    #         vmin = np.max(lifetime_image) - 500,
-    #         vmax = np.max(lifetime_image) + 100)
-    #     plt.colorbar()
-    #     plt.show()
-    #     self.lifetime_image = lifetime_image
+    def apply_function_multiprocessing(self, args):
+        pass

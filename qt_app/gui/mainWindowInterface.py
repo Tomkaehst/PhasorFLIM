@@ -390,6 +390,7 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
                     measured_irf = self.irf_object.fitted_irf # Pass n-component Gauss curve parameters to fit object
                 )
             except:
+                raise 'Fitting decay with measured IRF not successful!'
                 self.show_error('Attention', 'IRF fit has not been done yet!')
         else:
             fit, residuals = self.fit_object.fit_decay(
@@ -408,6 +409,17 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
             y = fit,
             pen = pg.mkPen('r', width = 2)
         )
+
+        if (self.fit_object.IRF_fitted_parameters.any()):
+            self.decay_plot.plot(
+                x=self.flim_object.time_axis,
+                y=self.fit_object.gauss_laser_multiple_terms(
+                    self.flim_object.time_axis,
+                    shift_parameters = [self.fit_object.optimized_parameters['x'][3]]
+                ),
+                pen = pg.mkPen('b', width = 1)
+            )
+
         self.residual_plot.clear()
         self.residual_plot.plot(
             x = self.flim_object.time_axis,

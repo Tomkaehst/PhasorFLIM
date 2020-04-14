@@ -10,17 +10,22 @@ class fitter:
         self.time_axis = time_axis
         self.data = data
         self.objective_function = objective_function
+        self.irf = self.gauss_laser
         self.optimized_parameters = None
         self.lifetime_image = None
 
-        if(fit_settings is None):
-            self.fit_settings = (
+        if (fit_settings is None):
+            self.decay_parameters = (
                 1,
                 np.amax(self.data),
-                2500,
+                2500
+            )
+            self.IRF_parameters = (
                 2000,
                 60
             )
+            self.fit_settings = self.decay_parameters + self.IRF_parameters
+
         else:
             self.fit_settings = fit_settings
 
@@ -81,7 +86,10 @@ class fitter:
 
         """
         gauss = (1/(sigma*np.sqrt(2*np.pi))) * np.exp(-(t - mu)**2/(2*sigma)**2)
-        return(gauss)
+        return (gauss)
+        
+    def gauss_laser_multiple_terms(t, parameters):
+        
 
 
     # def interpolate_irf(self, time_axis, measured_irf):
@@ -112,6 +120,7 @@ class fitter:
 
     #     return(irf, irf_time_axis)
 
+
     @staticmethod
     def shift_irf(shift, measured_irf):
         '''
@@ -132,38 +141,6 @@ class fitter:
 
 
 
-    def get_irf_shift(self, measured_irf):
-        '''
-        Get best shift of *measured* IRF by brute-forcing.
-        IRF shift of measured IRF cannot be optimized together with
-        other model parameters using classic minimization algorithms,
-        because shift is done with integer stepping.
-        Brute-forcing best shift here and writing result
-        into self.fit_setting[3]
-        '''
-
-        brute_range = (
-            (self.fit_settings[0] - 1, self.fit_settings[0]),
-            (self.fit_settings[1] - 1, self.fit_settings[1]),
-            (self.fit_settings[2] - 1, self.fit_settings[2]),
-            (-1000, 1000),
-            (self.fit_settings[4] - 1, self.fit_settings[4])
-        )
-
-        fitted_shift = optimize.brute(
-            func = self.minimize_poisson_deviance,
-            ranges = brute_range,
-            args=(self.time_axis, self.data, measured_irf),
-            Ns = (1, 1, 1, 2000, 1)
-        )
-
-        print(fitted_shift)
-        
-
-        return(0)
-
-
-
     def add_poisson_noise(self, data, offset):
         """
 
@@ -173,18 +150,17 @@ class fitter:
         decay += np.random.poisson(offset, len(decay))
         return(decay)
 
-    def convoluted_decay(self, time_axis, offset, amp, tau, IRF_mu, IRF_sigma, measured_irf = None ):
+
+    def convoluted_decay(self, time_axis, parameters, measured_irf = None ):
         """
 
         """
 
-        # ! Rewrite this, so that checking for measured IRF happens in fit_decay()
-        if(measured_irf is None):
-            IRF = self.gauss_laser(time_axis, IRF_mu, IRF_sigma)
-        else:
-           IRF = np.roll(measured_irf, int(IRF_mu)) #self.shift_irf(measured_irf, IRF_mu)
+        offset, amp, tau = parameters[0:3]
+        IRF_parameters = parameters[3:len(parameters)]
 
         decay = self.exp_decay_mono(time_axis, tau)
+        IRF = self.IRF(time_axis, *IRF_parameters)
 
         convoluted_signal = np.convolve(IRF, decay)[0:len(time_axis)]
         convoluted_signal *= 10*amp
@@ -197,14 +173,14 @@ class fitter:
         """
 
         """
-        residuals = ((self.convoluted_decay(self.time_axis, *self.optimized_parameters['x'], measured_irf) - self.data)) / np.sqrt(self.data)
+        residuals = ((self.convoluted_decay(self.time_axis, self.optimized_parameters['x'], measured_irf) - self.data)) / np.sqrt(self.data)
 
         return(residuals)
 
 
     def calculate_reduced_chi_square(self):
         try:
-            fitted_curve = self.convoluted_decay(self.time_axis, *self.optimized_parameters)
+            fitted_curve = self.convoluted_decay(self.time_axis, self.optimized_parameters)
 
         except ValueError:
             print('Error')
@@ -214,7 +190,7 @@ class fitter:
     ## Objective functions
     def minimization_least_squares(self, start_parameters, time_axis, data, measured_irf = None, weighted = False):
 
-        fitted = self.convoluted_decay(time_axis, *start_parameters, measured_irf)
+        fitted = self.convoluted_decay(time_axis, start_parameters, measured_irf)
 
         if(weighted):
             weights = self.calculate_weights(data)
@@ -231,7 +207,7 @@ class fitter:
         From Bajzer et al., 1991
         """
 
-        fitted = self.convoluted_decay(time_axis, *start_parameters, measured_irf)
+        fitted = self.convoluted_decay(time_axis, start_parameters, measured_irf)
         with np.errstate(divide = 'ignore'):
             deviance = 2 * np.nansum(
                 data * np.log(data / fitted) - (data - fitted)
@@ -248,14 +224,26 @@ class fitter:
         """
 
         """
+
+        # Selecting objective function
         if(self.objective_function == 'Least Squares'):
             objective_function = self.minimization_least_squares
         else:
             objective_function = self.minimize_poisson_deviance
 
+
+        # Check if measured IRF has been defined
+        if (measured_irf is None):
+            self.IRF = self.gauss_laser
+        else:
+            self.IRF = measured_irf
+            serf.fit_settings
+
+        # Trim data according to user-set cutoffs
         decay_trimmed = decay[0:(len(decay) - cutoff)],
         time_axis_trimmed = self.time_axis[0:(len(self.time_axis) - cutoff)]
 
+        # Perform fit while catching Runtime Errors
         try:
             self.optimized_parameters = optimize.minimize(
                 objective_function,
@@ -265,23 +253,19 @@ class fitter:
                 bounds = self.parameter_bounds,
                 options = {
                     'maxiter': 1000,
-                    'disp': False,
-                    'eps': [
-                        0.1,
-                        0.1,
-                        0.1,
-                        5,
-                        0.1
-                    ]
+                    'disp': False
                 }
             )
         except RuntimeWarning:
             print('\nFitting unsucessfull. See error message above!\n')
 
-        fitted_curve = self.convoluted_decay(self.time_axis, *self.optimized_parameters['x'])
+        # Calculate fit with optimized parameters and weigted residuals
+        fitted_curve = self.convoluted_decay(self.time_axis, self.optimized_parameters['x'])
         residuals = self.calculate_residuals()
 
         return(fitted_curve, residuals)
+
+
 
     def fit_image(self, photon_threshold = 100):
         ''' 

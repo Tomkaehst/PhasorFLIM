@@ -46,10 +46,6 @@ class IRF(flimdata):
             0,
             50,
             0,
-            50,
-            0,
-            50,
-            0,
             50
         ]
 
@@ -115,9 +111,7 @@ class IRF(flimdata):
             (1 / (parameters[2] * np.sqrt(2 * np.pi))) * np.exp(-((t - parameters[1]) - parameters[0])** 2 / (2 * parameters[2])** 2) + \
             (1 / (parameters[4] * np.sqrt(2 * np.pi))) * np.exp(-((t - parameters[3]) - parameters[0])** 2 / (2 * parameters[4])** 2) + \
             (1 / (parameters[6] * np.sqrt(2 * np.pi))) * np.exp(-((t - parameters[5]) - parameters[0])** 2 / (2 * parameters[6])** 2) + \
-            (1 / (parameters[8] * np.sqrt(2 * np.pi))) * np.exp(-((t - parameters[7]) - parameters[0])** 2 / (2 * parameters[8])** 2) + \
-            (1 / (parameters[10] * np.sqrt(2 * np.pi))) * np.exp(-((t - parameters[9]) - parameters[0])** 2 / (2 * parameters[10])** 2) + \
-            (1 / (parameters[12] * np.sqrt(2 * np.pi))) * np.exp(-((t - parameters[11]) - parameters[0])** 2 / (2 * parameters[12])** 2)
+            (1 / (parameters[8] * np.sqrt(2 * np.pi))) * np.exp(-((t - parameters[7]) - parameters[0])** 2 / (2 * parameters[8])** 2)
 
         out = out / np.sum(out)
 

@@ -107,6 +107,8 @@ class IRF(flimdata):
         ...
         '''
 
+
+        # ! Rewrite this like fitting.gauss_laser_multiple_terms!!!
         out = \
             (1 / (parameters[2] * np.sqrt(2 * np.pi))) * np.exp(-((t - parameters[1]) - parameters[0])** 2 / (2 * parameters[2])** 2) + \
             (1 / (parameters[4] * np.sqrt(2 * np.pi))) * np.exp(-((t - parameters[3]) - parameters[0])** 2 / (2 * parameters[4])** 2) + \

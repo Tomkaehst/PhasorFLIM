@@ -122,6 +122,16 @@ class fitter:
         return(shifted_irf)
 
 
+    def shift_irf_2(self, irf_shift):
+
+        # 1. Find IRF maximum peak: either max peak or where user defined left cut
+        # 2. Shift IRF to left side of array -> np.roll
+        # 3. Interpolate processed IRF 
+        # 4. 
+        pass
+
+
+
     def get_irf_shift(self, measured_irf):
         '''
         Get best shift of *measured* IRF by brute-forcing.
@@ -168,6 +178,7 @@ class fitter:
 
         """
 
+        # ! Rewrite this, so that checking for measured IRF happens in fit_decay()
         if(measured_irf is None):
             IRF = self.gauss_laser(time_axis, IRF_mu, IRF_sigma)
         else:

@@ -65,6 +65,7 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         self.pushButton_showIRF.pressed.connect(self.show_irf)
         self.pushButton_correctIRF.pressed.connect(self.correct_irf)
         self.pushButton_resetIRF.pressed.connect(self.reset_irf)
+        self.pushButton_fitIRF.pressed.connect(self.fit_irf)
 
         # Show ROI-selected decay
         self.pushButton_showSelectedDecay.pressed.connect(
@@ -252,6 +253,8 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         self.tabWidget_view.setCurrentIndex(1)
         
 
+
+
     def correct_irf(self):
         if (self.irf_object):
             # self.irf_object.set_background(
@@ -265,13 +268,45 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         else:
             self.show_error('Attention', 'No IRF has been loaded yet!')
 
+
+
     def reset_irf(self):
         if (self.irf_object):
             self.irf_object.reset_irf()
             self.show_irf()
         else:
             self.show_error('Attention', 'No IRF has been loaded yet!')
+
+
+
+    def fit_irf(self):
+        if(self.irf_object):
+            fitted_irf = self.irf_object.fit_irf_as_gauss()
+        else:
+            self.show_error('Attention', 'No IRF has been loaded yet!')
+            return (0)
+            
+        self.decay_plot.clear()
+        self.residual_plot.clear()
         
+        self.decay_plot.plot(
+            x = self.irf_object.time_axis,
+            y = self.irf_object.irf,
+            pen = pg.mkPen('w', width = 2)
+        )
+        self.decay_plot.plot(
+            x = self.irf_object.time_axis,
+            y = fitted_irf,
+            pen = pg.mkPen('r', width = 2)
+        )
+
+        self.residual_plot.plot(
+            x = self.irf_object.time_axis,
+            y = (self.irf_object.irf - fitted_irf),
+            pen = pg.mkPen('w', width = 2)
+        )
+        self.tabWidget_view.setCurrentIndex(1)
+
 
 
     def show_intensity_image(self):
@@ -349,11 +384,13 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         )
 
         if (self.irf_object):
-            #self.fit_object.get_irf_shift(self.irf_object.irf)
-            fit, residuals = self.fit_object.fit_decay(
-                decay=self.fit_object.data,
-                measured_irf=self.irf_object.irf
-            )
+            try:
+                fit, residuals = self.fit_object.fit_decay(
+                    decay = self.fit_object.data,
+                    measured_irf = self.irf_object.fitted_irf # Pass n-component Gauss curve parameters to fit object
+                )
+            except:
+                self.show_error('Attention', 'IRF fit has not been done yet!')
         else:
             fit, residuals = self.fit_object.fit_decay(
                 decay=self.fit_object.data

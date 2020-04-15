@@ -3,6 +3,7 @@ import numpy as np
 import scipy.optimize as optimize
 from scipy import interpolate
 from numba import njit
+import matplotlib.pyplot as plt
 import multiprocessing as mp
 
 class fitter:
@@ -10,7 +11,8 @@ class fitter:
         self.time_axis = time_axis
         self.data = data
         self.objective_function = objective_function
-        self.irf = self.gauss_laser
+        self.irf_data = None
+        self.irf_function = self.gauss_laser
         self.optimized_parameters = None
         self.lifetime_image = None
 
@@ -21,8 +23,8 @@ class fitter:
                 2500
             )
             self.IRF_parameters = (
-                5000,
-                100
+                1500,
+                30
             )
             self.IRF_fitted_parameters = None # Will hold fitted IRF parameters, if they're passed to self.fit_decay(measured_irf)
             
@@ -37,7 +39,7 @@ class fitter:
             (0.01, np.infty),# Amplitide
             (100, 10000),# Tau
             (0, np.infty),# IRF Mu
-            (0.1, 1000)  # IRF sigma
+            (0.1, 500)  # IRF sigma
         )
 
         self.parameter_names = (
@@ -94,6 +96,34 @@ class fitter:
 
         gauss = (1/(sigma*np.sqrt(2*np.pi))) * np.exp(-(t - mu)**2/(2*sigma)**2)
         return (gauss)
+
+
+    def IRF_dirac_convolution(self, time_axis, shift_parameters = None):
+        '''
+        Calculate convolution of measured IRF and Gauss curve with 
+        smallest possible sigma to approximate Dirac delta function.
+        ---
+        Arguments:
+            - time_axis: np.ndarray containing time axis of decay
+            - shift_parameters: tuple with IRF_mu and IRF_sigma, only IRF_mu used for shifting
+            - irf: np.ndarray containing standardized irf from irf object (irf.py)
+        '''
+
+        dirac = np.zeros_like(time_axis)
+        output = np.zeros_like(time_axis)
+
+        irf_shift = shift_parameters[0]
+        pulse_width = (time_axis[1] - time_axis[0]) / 5
+
+        dirac = (1/(pulse_width*np.sqrt(2*np.pi))) * np.exp(-(time_axis - irf_shift)**2/(2*pulse_width)**2)
+        dirac /= np.max(dirac)
+
+        output = np.convolve(dirac, self.IRF_data)[0:len(time_axis)]
+
+        plt.plot(time_axis, output)
+        plt.show()
+
+        return(output)
         
 
 
@@ -201,10 +231,10 @@ class fitter:
         IRF_parameters = parameters[3:len(parameters)]
 
         decay = self.exp_decay_mono(time_axis, tau)
-        IRF = self.IRF(time_axis, IRF_parameters)
+        IRF = self.irf_function(time_axis, IRF_parameters)
 
         convoluted_signal = np.convolve(IRF, decay)[0:len(time_axis)]
-        convoluted_signal *= amp
+        convoluted_signal *= 10 * amp
         convoluted_signal += offset
 
         return(convoluted_signal)
@@ -261,8 +291,9 @@ class fitter:
     def fit_decay(
         self,
         decay = None,
-        measured_irf=None, # Cary over fitted IRF parameters from irf.fitted_irf to re-generate IRF numerically
-        minimization_method = 'L-BFGS-B',
+        measured_irf = None, # Cary over fitted IRF parameters from irf.fitted_irf to re-generate IRF numerically
+        irf_fitted_parameters = None,
+        minimization_method = 'SLSQP',
         cutoff = 1):
         """
 
@@ -278,10 +309,17 @@ class fitter:
         # Check if measured IRF has been defined
         if (measured_irf is None):
             # Pass standard Gauss function as IRF approximation
-            self.IRF = self.gauss_laser
-        else:
-            self.IRF = self.gauss_laser_multiple_terms
-            self.IRF_fitted_parameters = measured_irf
+            self.irf_function = self.gauss_laser
+            print('Gauss used for IRF.')
+        elif(measured_irf is not None):
+            if(irf_fitted_parameters is not None):
+                self.irf_function = self.gauss_laser_multiple_terms
+                self.IRF_fitted_parameters = irf_fitted_parameters
+                print('Fitted n-terms Gauss used for IRF.')
+            else:
+                self.irf_function = self.IRF_dirac_convolution
+                self.IRF_data = measured_irf
+                print('Measured IRF used.')
 
         # Trim data according to user-set cutoffs
         decay_trimmed = decay[0:(len(decay) - cutoff)],
@@ -297,7 +335,8 @@ class fitter:
                 bounds = self.parameter_bounds,
                 options = {
                     'maxiter': 1000,
-                    'disp': False
+                    'disp': False,
+
                 }
             )
         except RuntimeWarning:

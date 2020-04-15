@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtCore import QThread, pyqtSignal
 import matplotlib.pyplot as plt
+import csv
 
 
 from gui.mainWindow import Ui_mainWindow
@@ -41,6 +42,10 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         self.irfpath = None
         self.ptuFileHistory = []
         self.fit_object = None
+
+        # Some storage here for simple fit curve and residuals
+        self.fitted_curve = None
+        self.residuals = None
 
         # Initialize threads
         self.thread_pool = QThreadPool()
@@ -87,7 +92,12 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         self.graphicsView_decay.setCentralItem(self.decay_layout)
         self.graphicsView_decay.show()
         self.decay_plot = self.decay_layout.addPlot(row=1, col=1)
-        self.residual_plot = self.decay_layout.addPlot(row = 2, col = 1)
+        self.residual_plot = self.decay_layout.addPlot(row=2, col=1)
+        
+
+        # Output functions
+        self.pushButton_saveFitResults.pressed.connect(self.write_parameters_to_disk)
+        self.pushButton_savePlot.pressed.connect(self.save_plot_to_disk)
 
         # Show GUI
         self.show()
@@ -257,9 +267,9 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
 
     def correct_irf(self):
         if (self.irf_object):
-            # self.irf_object.set_background(
-            #     self.spinBox_IRFBackground.value()
-            #     )
+            self.irf_object.set_background(
+                 self.spinBox_IRFBackground.value()
+            )
             self.irf_object.cut_irf(
                 self.spinBox_irfLeftCut.value(),
                 self.spinBox_irfRightCut.value()
@@ -386,25 +396,27 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         if (self.irf_object):
             if(self.checkBox_useFittedIRF.isChecked()):
                 try:
-                    fit, residuals = self.fit_object.fit_decay(
+                    self.fitted_curve, self.residuals = self.fit_object.fit_decay(
                         decay = self.fit_object.data,
                         measured_irf = self.irf_object.irf,
                         irf_fitted_parameters = self.irf_object.fitted_irf
                     )
                 except:
                     self.show_error('Attention', 'IRF fit has not been done yet!')
+                    return(0)
 
             else:
                 try:
-                    fit, residuals = self.fit_object.fit_decay(
+                    self.fitted_curve, self.residuals = self.fit_object.fit_decay(
                         decay = self.fit_object.data,
                         measured_irf = self.irf_object.irf
                     )
 
                 except:
                     self.show_error('Attention', 'IRF fit has not been done yet!')
+                    return(0)
         else:
-            fit, residuals = self.fit_object.fit_decay(
+            self.fitted_curve, self.residuals = self.fit_object.fit_decay(
                 decay=self.fit_object.data
             )
         
@@ -417,14 +429,14 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         )
         self.decay_plot.plot(
             x = self.flim_object.time_axis,
-            y = fit,
+            y = self.fitted_curve,
             pen = pg.mkPen('r', width = 2)
         )
 
         self.residual_plot.clear()
         self.residual_plot.plot(
             x = self.flim_object.time_axis,
-            y=residuals,
+            y = self.residuals,
             pen = pg.mkPen('w', width = 2)
         )
 
@@ -473,6 +485,72 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
                     self.flim_object.intensity_image.shape[1])
             )
         self.tabWidget_view.setCurrentIndex(2)
+
+
+    def save_plot_to_disk(self):
+        
+        if (self.fitted_curve.any() and self.residuals.any()):
+            
+            save_path = QFileDialog.getSaveFileName(
+                self,
+                'Save Plot...'
+            )
+
+            save_path = str(save_path[0] + '.png')
+
+            plt.plot(self.flim_object.time_axis, self.fitted_curve, 'r-')
+            plt.plot(self.flim_object.time_axis, self.flim_object.selected_decay, 'b.')
+            plt.yscale('log')
+            plt.savefig(
+                save_path,
+                dpi=350,
+                format = 'png'
+            )
+            plt.close()
+
+
+    # Output functions
+
+    def write_parameters_to_disk(self):
+        '''
+        Write fitted parameters to csv file together with header information.
+        '''
+        try:
+            save_path = QFileDialog.getSaveFileName(
+                self,
+                'Save Fit Results...'
+            )
+
+            save_path = str(save_path[0] + '.csv')
+
+            with open(save_path, 'w') as file:
+                writer = csv.writer(file)
+
+                for i in range(len(self.fit_object.optimized_parameters['x'])):
+                    writer.writerow([
+                    self.fit_object.parameter_names[i],
+                    self.fit_object.optimized_parameters['x'][i]
+                    
+                    ])
+
+                writer.writerow(['---'])
+
+                writer.writerow([
+                    'Header'
+                ])
+
+                for header_element in self.flim_object.header_contents:
+                    writer.writerow([
+                        header_element,
+                        self.flim_object.header_contents[header_element]
+                    ])
+
+        except:
+            self.show_error('No Fit', 'No fitted parameters available!')
+
+        return(0)
+            
+
 
 
 

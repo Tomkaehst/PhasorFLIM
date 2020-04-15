@@ -18,13 +18,13 @@ class fitter:
 
         if (fit_settings is None):
             self.decay_parameters = (
-                1,
-                np.amax(self.data),
-                2500
+                5, # Offset
+                np.amax(self.data), # Amplitude
+                2500 # tau
             )
             self.IRF_parameters = (
-                1500,
-                30
+                self.time_axis[np.argmax(self.data)], # IRF Shift, pre-set to time of max peak
+                40 # IRF sigma
             )
             self.IRF_fitted_parameters = None # Will hold fitted IRF parameters, if they're passed to self.fit_decay(measured_irf)
             
@@ -37,9 +37,9 @@ class fitter:
         self.parameter_bounds = (
             (0, np.infty),  # Offset
             (0.01, np.infty),# Amplitide
-            (100, 10000),# Tau
-            (0, np.infty),# IRF Mu
-            (0.1, 500)  # IRF sigma
+            (50, 10000),  # Tau
+            (0, self.time_axis[-1]),# IRF Mu, upper bound is max of time axis
+            (0.01, np.infty)  # IRF amplitude
         )
 
         self.parameter_names = (
@@ -47,7 +47,7 @@ class fitter:
             'amplitude',
             'tau',
             'IRF_mu',
-            'IRF_sigma'
+            'IRF_sigma',
         )
 
 
@@ -113,15 +113,15 @@ class fitter:
         output = np.zeros_like(time_axis)
 
         irf_shift = shift_parameters[0]
-        pulse_width = (time_axis[1] - time_axis[0]) / 5
+        pulse_width = (time_axis[1] - time_axis[0]) / 6
 
         dirac = (1/(pulse_width*np.sqrt(2*np.pi))) * np.exp(-(time_axis - irf_shift)**2/(2*pulse_width)**2)
         dirac /= np.max(dirac)
 
-        output = np.convolve(dirac, self.IRF_data)[0:len(time_axis)]
+        output = np.convolve(dirac, self.irf_data)[0:len(time_axis)]
 
-        plt.plot(time_axis, output)
-        plt.show()
+        # plt.plot(time_axis, output)
+        # plt.show()
 
         return(output)
         
@@ -163,45 +163,6 @@ class fitter:
         return(output)
 
 
-    # def interpolate_irf(self, time_axis, measured_irf):
-    #     """
-
-    #     """
-
-    #     irf_function = interpolate.interp1d(
-    #         x = time_axis,
-    #         y = measured_irf,
-    #         bounds_error = False,
-    #         fill_value = 0 # background_counts
-    #     )
-
-    #     irf_interpolated = irf_function(time_axis)
-
-    #     return(irf_interpolated)
-
-    #@staticmethod
-    #@njit
-    # def process_irf(IRF, time_axis, shift, background = 0):
-    #     '''
-    #     Processing IRF based on current model parameters: IRF_mu = shift, ...
-    #     '''
-    #     irf = IRF
-    #     irf_time_axis = time_axis - np.max(time_axis)
-    #     np.add(irf_time_axis, shift)
-
-    #     return(irf, irf_time_axis)
-
-
-    @staticmethod
-    def shift_irf(shift, measured_irf):
-        '''
-        Shift measured IRF on time axis by rolling array.
-        '''
-        shifted_irf = np.roll(measured_irf, int(shift))
-        
-        return(shifted_irf)
-
-
     def shift_irf_2(self, irf_shift):
 
         # 1. Find IRF maximum peak: either max peak or where user defined left cut
@@ -211,24 +172,13 @@ class fitter:
         pass
 
 
-
-    def add_poisson_noise(self, data, offset):
-        """
-
-        """
-
-        decay = np.random.poisson(data, len(data))
-        decay += np.random.poisson(offset, len(decay))
-        return(decay)
-
-
     def convoluted_decay(self, time_axis, parameters):
         """
 
         """
 
-        offset, amp, tau = parameters[0:3]
-        IRF_parameters = parameters[3:len(parameters)]
+        offset, amp, tau = parameters[0:len(self.decay_parameters)]
+        IRF_parameters = parameters[len(self.decay_parameters):len(parameters)]
 
         decay = self.exp_decay_mono(time_axis, tau)
         IRF = self.irf_function(time_axis, IRF_parameters)
@@ -268,9 +218,11 @@ class fitter:
 
         if(weighted):
             weights = self.calculate_weights(data)
-            resids = ((data - fitted)**2 * weights) / fitted
+            with np.errstate(divide = 'ignore'):
+                resids = ((data - fitted)**2 * weights) / fitted
         else:
-            resids = ((data - fitted)**2) / fitted
+            with np.errstate(divide = 'ignore'):
+                resids = ((data - fitted)**2) / fitted
             
         resids = np.sum(resids)
 
@@ -285,6 +237,9 @@ class fitter:
             deviance = 2 * np.nansum(
                 data * np.log(data / fitted) - (data - fitted)
             )
+        
+        #deviance = np.sum(deviance)
+
         return(deviance)
 
 
@@ -318,7 +273,7 @@ class fitter:
                 print('Fitted n-terms Gauss used for IRF.')
             else:
                 self.irf_function = self.IRF_dirac_convolution
-                self.IRF_data = measured_irf
+                self.irf_data = measured_irf
                 print('Measured IRF used.')
 
         # Trim data according to user-set cutoffs
@@ -334,9 +289,8 @@ class fitter:
                 method = minimization_method,
                 bounds = self.parameter_bounds,
                 options = {
-                    'maxiter': 1000,
-                    'disp': False,
-
+                    'maxiter': 2000,
+                    'disp': False
                 }
             )
         except RuntimeWarning:

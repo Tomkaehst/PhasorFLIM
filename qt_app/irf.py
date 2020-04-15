@@ -28,9 +28,9 @@ class IRF(flimdata):
             temporal_binning = self.temporal_binning
         )
 
-        self.irf = self.overall_decays
+        self.irf = np.zeros(self.overall_decays.shape, dtype=np.float64)
+        self.irf += self.overall_decays
         self.irf_time_axis = self.time_axis
-        self.standardize_irf()
 
         del self.flimarray
 
@@ -50,7 +50,8 @@ class IRF(flimdata):
         ]
 
     def reset_irf(self):
-        self.irf = self.overall_decays
+        self.irf = np.zeros(self.overall_decays.shape, dtype=np.float64)
+        self.irf += self.overall_decays
         self.irf_time_axis = self.time_axis
 
     def standardize_irf(self):
@@ -70,17 +71,15 @@ class IRF(flimdata):
         Thus, np.zeros() array is initialized and the trimmed
         IRF is added to the zeros array.
         '''
-        self.irf = self.overall_decays
         self.irf[0:left_cutoff] = 0
         self.irf[right_cutoff:self.irf.shape[0]] = 0
-        self.standardize_irf()
 
     def estimate_background(self):
         pass
 
     def set_background(self, value):
-        self.irf -= int(value)
-        self.irf = np.where(self.irf < 0, 0, self.irf)
+        self.irf -= value
+        self.irf[np.where(self.irf < 0)] = 0
         self.standardize_irf()
 
 
@@ -121,6 +120,8 @@ class IRF(flimdata):
         
     
     def fit_irf_as_gauss(self):
+
+        self.standardize_irf()
 
         try:
             optimized_parameters = optimize.curve_fit(

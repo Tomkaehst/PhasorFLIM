@@ -7,9 +7,17 @@ import matplotlib.pyplot as plt
 import multiprocessing as mp
 
 class fitter:
-    def __init__(self, time_axis, data, objective_function = None, fit_settings = None):
+    def __init__(self,
+        time_axis,
+        data,
+        number_of_exponentials = 1,
+        objective_function = None,
+        fit_settings = None
+        ):
+
         self.time_axis = time_axis
         self.data = data
+        self.number_of_exponentials = number_of_exponentials
         self.objective_function = objective_function
         self.irf_data = None
         self.irf_function = self.gauss_laser
@@ -17,38 +25,84 @@ class fitter:
         self.lifetime_image = None
 
         if (fit_settings is None):
-            self.decay_parameters = (
-                5, # Offset
-                np.amax(self.data), # Amplitude
-                2500 # tau
-            )
-            self.IRF_parameters = (
-                self.time_axis[np.argmax(self.data)], # IRF Shift, pre-set to time of max peak
-                40 # IRF sigma
-            )
-            self.IRF_fitted_parameters = None # Will hold fitted IRF parameters, if they're passed to self.fit_decay(measured_irf)
+            self.decay_parameters,\
+            self.irf_parameters,\
+            self.parameter_names, \
+            self.parameter_bounds = self.build_parameter_tuple()
             
             # Combining decay parameters and IRF parameters into one tuple
-            self.fit_settings = self.decay_parameters + self.IRF_parameters
+            self.fit_settings = self.decay_parameters + self.irf_parameters
+
+            print(self.fit_settings)
+            print(self.parameter_names)
 
         else:
             self.fit_settings = fit_settings
 
-        self.parameter_bounds = (
-            (0, np.infty),  # Offset
-            (0.01, np.infty),# Amplitide
-            (50, 10000),  # Tau
-            (0, self.time_axis[-1]),# IRF Mu, upper bound is max of time axis
-            (0.01, np.infty)  # IRF amplitude
-        )
 
-        self.parameter_names = (
-            'offset',
-            'amplitude',
-            'tau',
-            'IRF_mu',
-            'IRF_sigma',
-        )
+
+    def build_parameter_tuple(self):
+        '''
+        Builds set of model parameters based on user-chosen number
+        of exponential components.
+        ------
+        self.number_of_exponentials decides about number of
+        exponential decay terms used in model for data fitting.
+        Structure of parameters
+        decay_parameters: contains model paramters
+            [0]: offset
+            [1]: amplitude first component
+            [2]: tau first component
+            [3]: amplitude second component
+            [4]: tau second component
+            ...
+        parameter_bounds: bounds for each paramters
+        in decay_parameters
+        parameter_names: parameter names for display
+        irf_parameters: 
+            [0]: IRF shift in ps
+            [1]: IRF sigma, only used with guessed IRF
+
+        In order to pass parameters to the optimizer 
+        (self.fit_decay), decay_parameters and irf_parameters
+        have to be combined (using '+') (we need length
+        of individual sets to properly work with them
+        in model function etc.).
+        '''
+
+        decay_parameters = [
+            2 # Offset
+        ]
+
+        parameter_names = [
+            'offset'
+        ]
+
+        parameter_bounds = [
+             (0, np.infty)
+        ]
+
+        for n in range(self.number_of_exponentials):
+            decay_parameters.append(1000) # Add amplitude
+            decay_parameters.append(2000) # Add tau
+
+            parameter_names.append('amp' + str(n))
+            parameter_names.append('tau' + str(n))
+
+            parameter_bounds.append((0, np.infty))
+            parameter_bounds.append((10, 10000))
+
+        irf_parameters = [
+            2000, # IRF shift
+            50 # IRF sigma
+        ]
+        
+        parameter_names.append('IRF_shift')
+        parameter_names.append('IRF_sigma')
+
+        return(decay_parameters, irf_parameters, parameter_names, parameter_bounds)
+
+            
 
 
     def estimate_background(self, data):
@@ -76,17 +130,28 @@ class fitter:
 
         return(weights)
 
-    @staticmethod
-    @njit
-    def exp_decay_mono(t, tau):
-        """
 
-        """
-        return(np.exp(-t/tau))
 
     @staticmethod
     @njit
-    def gauss_laser(t, parameters):
+    def exp_decay_mono(time_axis, parameters):
+        """
+
+        """
+
+        output = np.zeros(time_axis.shape, dtype = np.float64)
+
+        for n in range(1, parameters, 2):
+            output += (10 * parameters[n] * np.exp(-(time_axis) / parameters[n + 1]))
+
+        output += parameters[0]
+
+        return(output)
+
+
+    @staticmethod
+    @njit
+    def gauss_laser(time_axis, irf, parameters):
         """
         Calculate Gauss curve using mu (=mean) and sigma (= std. dev.)
         """
@@ -94,55 +159,55 @@ class fitter:
         mu = parameters[0]
         sigma = parameters[1]
 
-        gauss = (1/(sigma*np.sqrt(2*np.pi))) * np.exp(-(t - mu)**2/(2*sigma)**2)
+        gauss = (1/(sigma*np.sqrt(2*np.pi))) * np.exp(-(time_axis - mu)**2/(2*sigma)**2)
         return (gauss)
 
 
-    def IRF_gauss_convolution(self, time_axis, shift_parameters = None):
+    # def IRF_gauss_convolution(self, time_axis, irf, shift_parameters = None):
+    #     '''
+    #     Calculate convolution of measured IRF and Gauss curve with 
+    #     smallest possible sigma to approximate Dirac delta function.
+    #     ---
+    #     Arguments:
+    #         - time_axis: np.ndarray containing time axis of decay
+    #         - shift_parameters: tuple with IRF_mu and IRF_sigma, only IRF_mu used for shifting
+    #         - irf: np.ndarray containing standardized irf from irf object (irf.py)
+    #     '''
+
+    #     dirac = np.zeros(time_axis.shape, dtype = np.float64)
+    #     output = np.zeros(time_axis.shape, dtype = np.float64)
+
+    #     irf_shift = shift_parameters[0]
+    #     pulse_width = (time_axis[1] - time_axis[0]) / 5
+
+    #     dirac = (1/(pulse_width*np.sqrt(2*np.pi))) * np.exp(-(time_axis - irf_shift)**2/(2*pulse_width)**2)
+    #     dirac /= np.max(dirac)
+
+    #     output = np.convolve(dirac, irf)[0:len(time_axis)]
+
+    #     return(output)
+
+
+    @staticmethod
+    @njit
+    def IRF_delta_sifting(time_axis, irf, shift_parameters = None):
         '''
-        Calculate convolution of measured IRF and Gauss curve with 
-        smallest possible sigma to approximate Dirac delta function.
-        ---
+        Shift measured IRF on time axis using delta pulse sifting property
+        -----
         Arguments:
-            - time_axis: np.ndarray containing time axis of decay
-            - shift_parameters: tuple with IRF_mu and IRF_sigma, only IRF_mu used for shifting
-            - irf: np.ndarray containing standardized irf from irf object (irf.py)
+            - time_axis
         '''
-
-        dirac = np.zeros(time_axis.shape, dtype = np.float64)
-        output = np.zeros(time_axis.shape, dtype = np.float64)
-
-        irf_shift = shift_parameters[0]
-        pulse_width = (time_axis[1] - time_axis[0]) / 5
-
-        dirac = (1/(pulse_width*np.sqrt(2*np.pi))) * np.exp(-(time_axis - irf_shift)**2/(2*pulse_width)**2)
-        dirac /= np.max(dirac)
-
-        output = np.convolve(dirac, self.irf_data)[0:len(time_axis)]
-
-        plt.plot(time_axis, output)
-        plt.show()
-
-        return(output)
-
-
-    def IRF_delta_sifting(self, time_axis, shift_parameters = None):
-
-        print(shift_parameters)
 
         bin_width = time_axis[1] - time_axis[0]
         irf_shift = shift_parameters[0]
         bin_shift_int = (irf_shift / bin_width)
         bin_shift_fraction = (irf_shift % bin_width) / bin_width
 
-        delta_pulse = np.zeros(self.data.shape, dtype = np.float64)
+        delta_pulse = np.zeros(irf.shape, dtype = np.float64)
         delta_pulse[int(bin_shift_int)] = 1 - bin_shift_fraction
         delta_pulse[int(bin_shift_int + 1)] = bin_shift_fraction
 
-        output = np.convolve(delta_pulse, self.irf_data)[0:len(time_axis)]
-
-        plt.plot(output)
-        plt.show()
+        output = np.convolve(delta_pulse, irf)[0:len(time_axis)]
 
         output /= np.sum(output)
 
@@ -152,7 +217,7 @@ class fitter:
         
 
 
-    def gauss_laser_multiple_terms(self, t, shift_parameters=None):
+    def gauss_laser_multiple_terms(self, time_axis, irf, shift_parameters = None):
         '''
         Generated sum of n Gauss curves.
         -------
@@ -175,26 +240,17 @@ class fitter:
         and gauss_laser_multiple_terms cannot be garantueed.
         '''
         
-        output = np.zeros_like(t)
+        output = np.zeros(time_axis.shape, dtype = np.float64)
 
         parameters = self.IRF_fitted_parameters
         irf_shift = shift_parameters[0]
 
         for i in range(1, len(parameters), 2):
-            output += (1 / (parameters[i + 1] * np.sqrt(2 * np.pi))) * np.exp(-((t - parameters[i]) - irf_shift)** 2 / (2 * parameters[i + 1])** 2)
+            output += (1 / (parameters[i + 1] * np.sqrt(2 * np.pi))) * np.exp(-((time_axis - parameters[i]) - irf_shift)** 2 / (2 * parameters[i + 1])** 2)
 
         output = output / np.max(output)
 
         return(output)
-
-
-    def shift_irf_2(self, irf_shift):
-
-        # 1. Find IRF maximum peak: either max peak or where user defined left cut
-        # 2. Shift IRF to left side of array -> np.roll
-        # 3. Interpolate processed IRF 
-        # 4. 
-        pass
 
 
     def convoluted_decay(self, time_axis, parameters):
@@ -202,15 +258,13 @@ class fitter:
 
         """
 
-        offset, amp, tau = parameters[0:len(self.decay_parameters)]
-        IRF_parameters = parameters[len(self.decay_parameters):len(parameters)]
+        decay_parameters = parameters[0:(len(parameters) - len(self.irf_parameters))]
+        irf_parameters = parameters[(len(parameters) - len(self.irf_parameters)):len(parameters)]
 
-        decay = self.exp_decay_mono(time_axis, tau)
-        IRF = self.irf_function(time_axis, IRF_parameters)
+        decay = self.exp_decay_mono(time_axis, decay_parameters)
+        IRF = self.irf_function(time_axis, self.irf_data, irf_parameters)
 
         convoluted_signal = np.convolve(IRF, decay)[0:len(time_axis)]
-        convoluted_signal *= 10 * amp
-        convoluted_signal += offset
 
         return(convoluted_signal)
 
@@ -297,8 +351,8 @@ class fitter:
                 self.IRF_fitted_parameters = irf_fitted_parameters
                 print('Fitted n-terms Gauss used for IRF.')
             else:
-                self.irf_function = self.IRF_gauss_convolution # Toms version
-                #self.irf_function = self.IRF_delta_sifting # Christophs version
+                #self.irf_function = self.IRF_gauss_convolution # Toms version
+                self.irf_function = self.IRF_delta_sifting # Christophs version
                 self.irf_data = measured_irf
                 print('Measured IRF used.')
 
@@ -320,7 +374,7 @@ class fitter:
                 }
             )
         except RuntimeWarning:
-            print('\nFitting unsucessfull. See error message above!\n')
+            print('\nFitting unsucessful. See error message above!\n')
 
         # Calculate fit with optimized parameters and weigted residuals
         fitted_curve = self.convoluted_decay(self.time_axis, self.optimized_parameters['x'])

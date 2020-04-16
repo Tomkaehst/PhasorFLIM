@@ -267,6 +267,7 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
 
     def correct_irf(self):
         if (self.irf_object):
+            self.irf_object.reset_irf()
             self.irf_object.set_background(
                  self.spinBox_IRFBackground.value()
             )
@@ -274,6 +275,7 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
                 self.spinBox_irfLeftCut.value(),
                 self.spinBox_irfRightCut.value()
             )
+            self.irf_object.standardize_irf()
             self.show_irf()
         else:
             self.show_error('Attention', 'No IRF has been loaded yet!')
@@ -388,9 +390,10 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         #self.show_error('Starting fitting procedure...', 'Starting the fitting procedure. This might take a while. Application is unresponsive during fitting...')
 
         self.fit_object = fitter(
-            self.flim_object.time_axis,
-            self.flim_object.selected_decay,
-            self.comboBox_objectiveFunction.currentText()
+            time_axis = self.flim_object.time_axis,
+            data = self.flim_object.selected_decay,
+            number_of_exponentials = self.spinBox_noExp.value(),
+            objective_function = self.comboBox_objectiveFunction.currentText()
         )
 
         if (self.irf_object):

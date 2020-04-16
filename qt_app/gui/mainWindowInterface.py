@@ -1,6 +1,7 @@
 import sys
 import time
 import traceback
+import csv
 import pyqtgraph as pg
 import numpy as np
 from PyQt5.QtGui import *
@@ -8,13 +9,12 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtCore import QThread, pyqtSignal
 import matplotlib.pyplot as plt
-import csv
-
 
 from gui.mainWindow import Ui_mainWindow
 from flimdata import flimdata
 from irf import IRF
 from fitting import fitter
+from settings import settings
 
 
 #pg.setConfigOptions(antialias =  True)
@@ -103,6 +103,8 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         self.show()
         self.update_log('Ready...')
 
+        self.save_application_settings()
+
 
 
 
@@ -161,6 +163,10 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
             for i in range(len(self.fit_object.optimized_parameters['x'])):
                 item = QListWidgetItem('%s: %d'%(self.fit_object.parameter_names[i], self.fit_object.optimized_parameters['x'][i]))
                 self.listWidget_fittedParameters.addItem(item)
+
+            # Calculate reduced chi-square
+            item = QListWidgetItem('%s: %f' % ('Red. ChiSq.', self.fit_object.calculate_reduced_chi_square()))
+            self.listWidget_fittedParameters.addItem(item)
 
             self.listWidget_fittedParameters.show()
         else:
@@ -552,6 +558,12 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
             plt.close()            
         except:
             self.show_error('No Fit', 'No fitted curve available.')
+
+
+    # Save application states
+    def save_application_settings(self):
+        application_state = settings(self)
+
 
 
 

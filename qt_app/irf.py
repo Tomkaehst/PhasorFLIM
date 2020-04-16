@@ -16,6 +16,8 @@ class IRF(flimdata):
     '''
     def __init__(self, file_path: str, channel: int):
 
+        self.is_loaded_irf = False
+
         self.file_path = file_path
         self.channel = channel
         self.spatial_binning = 5
@@ -139,4 +141,11 @@ class IRF(flimdata):
             *self.fitted_irf
         )
 
-        return(fitted_irf)
+        return (fitted_irf)
+        
+
+    def save_irf(self):
+        pass
+
+    def load_irf(self):
+        pass

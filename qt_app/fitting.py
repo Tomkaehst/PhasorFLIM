@@ -1,10 +1,25 @@
+# AGBP FLIM Fitter --- Class: fitter
+'''
+Class Description: fitter()
+---------
+
+
+
+Authors: Tom Kache & Christoph Biskup, University Hospital Jena
+April 2020
+'''
+
+
 import math
+import random
 import numpy as np
 import scipy.optimize as optimize
-from scipy import interpolate
 from numba import njit
 import matplotlib.pyplot as plt
 import multiprocessing as mp
+
+
+
 
 class fitter:
     def __init__(self,
@@ -32,10 +47,6 @@ class fitter:
             
             # Combining decay parameters and IRF parameters into one tuple
             self.fit_settings = self.decay_parameters + self.irf_parameters
-
-            print(self.fit_settings)
-            print(self.parameter_names)
-
         else:
             self.fit_settings = fit_settings
 
@@ -83,20 +94,27 @@ class fitter:
         ]
 
         for n in range(self.number_of_exponentials):
-            decay_parameters.append(1000) # Add amplitude
-            decay_parameters.append(2000) # Add tau
+            # Add model parameters for n-th decay component
+            decay_parameters.append(random.randint(100, np.max(self.data))) # Randomizing initial amplitude of component
+            decay_parameters.append(random.randint(10, 10000)) # Randomizing initial tau value
 
-            parameter_names.append('amp' + str(n))
-            parameter_names.append('tau' + str(n))
+            # Add parameter name for n-th decay component
+            parameter_names.append('amp' + str(n + 1))
+            parameter_names.append('tau' + str(n + 1))
 
+            # Add bounds for n-th decay component
             parameter_bounds.append((0, np.infty))
             parameter_bounds.append((10, 10000))
 
+        # Parameters for Gauss curve approximated IRF
         irf_parameters = [
             2000, # IRF shift
             50 # IRF sigma
         ]
-        
+
+        # Bounds and paramter names for approximated IRF paramters
+        parameter_bounds.append((0, self.time_axis[-1]))
+        parameter_bounds.append((10, 500))
         parameter_names.append('IRF_shift')
         parameter_names.append('IRF_sigma')
 
@@ -136,15 +154,12 @@ class fitter:
     @njit
     def exp_decay_mono(time_axis, parameters):
         """
-
+        n-Exponential decay function
         """
+        output = np.zeros(time_axis.shape, dtype=np.float64)
 
-        output = np.zeros(time_axis.shape, dtype = np.float64)
-
-        for n in range(1, parameters, 2):
+        for n in range(1, len(parameters), 2):
             output += (10 * parameters[n] * np.exp(-(time_axis) / parameters[n + 1]))
-
-        output += parameters[0]
 
         return(output)
 
@@ -159,33 +174,9 @@ class fitter:
         mu = parameters[0]
         sigma = parameters[1]
 
-        gauss = (1/(sigma*np.sqrt(2*np.pi))) * np.exp(-(time_axis - mu)**2/(2*sigma)**2)
+        gauss = (1 / (sigma * np.sqrt(2 * np.pi))) * np.exp(-(time_axis - mu)** 2 / (2 * sigma)** 2)
+        
         return (gauss)
-
-
-    # def IRF_gauss_convolution(self, time_axis, irf, shift_parameters = None):
-    #     '''
-    #     Calculate convolution of measured IRF and Gauss curve with 
-    #     smallest possible sigma to approximate Dirac delta function.
-    #     ---
-    #     Arguments:
-    #         - time_axis: np.ndarray containing time axis of decay
-    #         - shift_parameters: tuple with IRF_mu and IRF_sigma, only IRF_mu used for shifting
-    #         - irf: np.ndarray containing standardized irf from irf object (irf.py)
-    #     '''
-
-    #     dirac = np.zeros(time_axis.shape, dtype = np.float64)
-    #     output = np.zeros(time_axis.shape, dtype = np.float64)
-
-    #     irf_shift = shift_parameters[0]
-    #     pulse_width = (time_axis[1] - time_axis[0]) / 5
-
-    #     dirac = (1/(pulse_width*np.sqrt(2*np.pi))) * np.exp(-(time_axis - irf_shift)**2/(2*pulse_width)**2)
-    #     dirac /= np.max(dirac)
-
-    #     output = np.convolve(dirac, irf)[0:len(time_axis)]
-
-    #     return(output)
 
 
     @staticmethod
@@ -197,7 +188,6 @@ class fitter:
         Arguments:
             - time_axis
         '''
-
         bin_width = time_axis[1] - time_axis[0]
         irf_shift = shift_parameters[0]
         bin_shift_int = (irf_shift / bin_width)
@@ -265,6 +255,7 @@ class fitter:
         IRF = self.irf_function(time_axis, self.irf_data, irf_parameters)
 
         convoluted_signal = np.convolve(IRF, decay)[0:len(time_axis)]
+        convoluted_signal += parameters[0]
 
         return(convoluted_signal)
 
@@ -283,12 +274,15 @@ class fitter:
         Calculate reduced chi-square based on decay data and fitted model.
         '''
         try:
-            fitted_curve = self.convoluted_decay(self.time_axis, self.optimized_parameters)
+            fitted_curve = self.convoluted_decay(self.time_axis, self.optimized_parameters['x'])
+            reduced_chi_square = np.sum(((self.data - fitted_curve)**2 / fitted_curve) / (len(self.data) - len(self.fit_settings) - 1))
 
         except ValueError:
             print('Error occured while calculating reduced chi-square')
-        return
-            
+
+        return(reduced_chi_square)
+
+
 
     ## Objective functions
     def minimization_least_squares(self, start_parameters, time_axis, data, weighted = False):
@@ -344,17 +338,14 @@ class fitter:
         if (measured_irf is None):
             # Pass standard Gauss function as IRF approximation
             self.irf_function = self.gauss_laser
-            print('Gauss used for IRF.')
         elif(measured_irf is not None):
             if(irf_fitted_parameters is not None):
                 self.irf_function = self.gauss_laser_multiple_terms
                 self.IRF_fitted_parameters = irf_fitted_parameters
-                print('Fitted n-terms Gauss used for IRF.')
             else:
                 #self.irf_function = self.IRF_gauss_convolution # Toms version
                 self.irf_function = self.IRF_delta_sifting # Christophs version
                 self.irf_data = measured_irf
-                print('Measured IRF used.')
 
         # Trim data according to user-set cutoffs
         decay_trimmed = decay[0:(len(decay) - cutoff)],

@@ -74,13 +74,9 @@ class IRF(flimdata):
         self.irf[0:left_cutoff] = 0
         self.irf[right_cutoff:self.irf.shape[0]] = 0
 
-    def estimate_background(self):
-        pass
-
     def set_background(self, value):
         self.irf -= value
         self.irf[np.where(self.irf < 0)] = 0
-        self.standardize_irf()
 
 
 

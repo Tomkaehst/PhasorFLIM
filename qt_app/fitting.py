@@ -98,7 +98,7 @@ class fitter:
         return (gauss)
 
 
-    def IRF_dirac_convolution(self, time_axis, shift_parameters = None):
+    def IRF_gauss_convolution(self, time_axis, shift_parameters = None):
         '''
         Calculate convolution of measured IRF and Gauss curve with 
         smallest possible sigma to approximate Dirac delta function.
@@ -109,21 +109,46 @@ class fitter:
             - irf: np.ndarray containing standardized irf from irf object (irf.py)
         '''
 
-        dirac = np.zeros_like(time_axis)
-        output = np.zeros_like(time_axis)
+        dirac = np.zeros(time_axis.shape, dtype = np.float64)
+        output = np.zeros(time_axis.shape, dtype = np.float64)
 
         irf_shift = shift_parameters[0]
-        pulse_width = (time_axis[1] - time_axis[0]) / 6
+        pulse_width = (time_axis[1] - time_axis[0]) / 5
 
         dirac = (1/(pulse_width*np.sqrt(2*np.pi))) * np.exp(-(time_axis - irf_shift)**2/(2*pulse_width)**2)
         dirac /= np.max(dirac)
 
         output = np.convolve(dirac, self.irf_data)[0:len(time_axis)]
 
-        # plt.plot(time_axis, output)
-        # plt.show()
+        plt.plot(time_axis, output)
+        plt.show()
 
         return(output)
+
+
+    def IRF_delta_sifting(self, time_axis, shift_parameters = None):
+
+        print(shift_parameters)
+
+        bin_width = time_axis[1] - time_axis[0]
+        irf_shift = shift_parameters[0]
+        bin_shift_int = (irf_shift / bin_width)
+        bin_shift_fraction = (irf_shift % bin_width) / bin_width
+
+        delta_pulse = np.zeros(self.data.shape, dtype = np.float64)
+        delta_pulse[int(bin_shift_int)] = 1 - bin_shift_fraction
+        delta_pulse[int(bin_shift_int + 1)] = bin_shift_fraction
+
+        output = np.convolve(delta_pulse, self.irf_data)[0:len(time_axis)]
+
+        plt.plot(output)
+        plt.show()
+
+        output /= np.sum(output)
+
+        return(output)
+
+
         
 
 
@@ -272,7 +297,8 @@ class fitter:
                 self.IRF_fitted_parameters = irf_fitted_parameters
                 print('Fitted n-terms Gauss used for IRF.')
             else:
-                self.irf_function = self.IRF_dirac_convolution
+                self.irf_function = self.IRF_gauss_convolution # Toms version
+                #self.irf_function = self.IRF_delta_sifting # Christophs version
                 self.irf_data = measured_irf
                 print('Measured IRF used.')
 

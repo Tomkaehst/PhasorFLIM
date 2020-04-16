@@ -487,28 +487,6 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         self.tabWidget_view.setCurrentIndex(2)
 
 
-    def save_plot_to_disk(self):
-        
-        if (self.fitted_curve.any() and self.residuals.any()):
-            
-            save_path = QFileDialog.getSaveFileName(
-                self,
-                'Save Plot...'
-            )
-
-            save_path = str(save_path[0] + '.png')
-
-            plt.plot(self.flim_object.time_axis, self.fitted_curve, 'r-')
-            plt.plot(self.flim_object.time_axis, self.flim_object.selected_decay, 'b.')
-            plt.yscale('log')
-            plt.savefig(
-                save_path,
-                dpi=350,
-                format = 'png'
-            )
-            plt.close()
-
-
     # Output functions
 
     def write_parameters_to_disk(self):
@@ -548,8 +526,29 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         except:
             self.show_error('No Fit', 'No fitted parameters available!')
 
-        return(0)
+
+
+    def save_plot_to_disk(self):
             
+        try:
+            save_path = QFileDialog.getSaveFileName(
+                self,
+                'Save Plot...'
+            )
+
+            save_path = str(save_path[0] + '.png')
+
+            plt.plot(self.flim_object.time_axis, self.flim_object.selected_decay, 'b.')
+            plt.plot(self.flim_object.time_axis, self.fitted_curve, 'r-')
+            plt.yscale('log')
+            plt.savefig(
+                save_path,
+                dpi=350,
+                format = 'png'
+            )
+            plt.close()            
+        except:
+            self.show_error('No Fit', 'No fitted curve available.')
 
 
 

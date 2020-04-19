@@ -1,0 +1,42 @@
+# AGBP FLIM Fitter - Fluorescence Decay Analysis Software
+
+## Project Description
+
+<center><i></i>Written by Tom Kache & Christoph Biskup, Biomolecular Photonics Group, University Hospital Jena</i></center>
+
+<center><b>Current Verion:</b> 0.0.2, April 18th 2020</center>
+
+The AGBP FLIM Fitter software is a Python and Qt5-based application, that allows reading and working with TTTR data from the PicoQuant HydraHarp V2. The software is optimized to be used with the Leica TCS SP8 microscope at the Biomolecular Photonics Group at the University Hospital Jena.
+
+## Usage
+
+
+## Development Road Map & To Do List
+
+### Milestones
+- [ ] Multi threading and multi processing
+    - Currently, the GUI is blocked when calculations are performed. This may confuse the user and might lead to frustration as no cues are given by the software of what is currently being done in the background. This can be achieved by using Python's ```threading``` or ```PyQT5.QThread```.
+
+
+
+### To Do
+
+- [x] Show some information in header of selected `.ptu` file before user loads data into memory
+  - [x] User comments should be visible before loading the entire file
+  - [x] Show image dimensions from file header
+  - Implemented on April 18th 2020
+
+- [ ] Implement class or function to save and load application settings
+  	- Settings like the IRF function used for analysis, user-defined settings for the parameter optimization algorithms, etc. should be saved in a read-able format (e.g. gathering settings from `UI_mainWindow` class, `flimdata` class, and `irf` class and writing them into structured file)
+
+- [ ] Improve output functionalities
+  - [ ] Include option to write selected fluorescence decay, the calculated fit curve, and residuals to CSV output
+    - Allows user to re-plot own their own later
+  - [ ] Include information about IRF used in a particular fit in CSV output file
+
+- [ ] Allow user to set parameter guesses
+
+
+## Bug Reports
+
+- [ ] IRF shifting parameter is not varied with measured IRF (April 18th 2020)

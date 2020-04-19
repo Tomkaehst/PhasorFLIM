@@ -10,13 +10,14 @@ from numba.typed import List
 
 
 class flimdata:
-    def __init__(self, file_path: str, channel: int, spatial_binning: int, temporal_binning: int):
+    def __init__(self, file_path: str, channel: int, spatial_binning: int, temporal_binning: int, fast_load: bool = True):
         """[summary]
 
         Arguments:
             file_path {str} -- [description]
             spatial_binning {int} -- [description]
             temporal_binning {int} -- [description]
+            fast_load {bool} -- Fast loading of ptu file and generation of FLIM array, if true.
         """
 
         self.file_path = file_path
@@ -32,47 +33,50 @@ class flimdata:
         # Bit offset of file in file_path, where TTTR records start
         self.headerBitOffset = None
 
+
+
         # Reading header; do this automatically when flimdata instance is created; no great time pennalty
         self.readPTUHeader(self.file_path)
 
-        # Loading photon data into recordarray
-        self.recordarray = self.readPhotonData(
-            self.file_path, self.headerBitOffset, self.FLIMInfo['NumberOfRecords']
-        )
+        if (fast_load is True):
+            self.readPTUHeader(self.file_path)
+            # Loading photon data into recordarray
+            self.recordarray = self.readPhotonData(
+                self.file_path, self.headerBitOffset, self.FLIMInfo['NumberOfRecords']
+            )
+            # Generating nano tim(se axis
+            self.time_axis = self.generate_nanotime_axis()
+            # Getting list of channels from the data
+            self.FLIMInfo['availableChannels'] = self.checkChannelAvailability(self.recordarray)
 
-        # Generating nano time axis
-        self.time_axis = self.generate_nanotime_axis()
+            if (channel is None):
+                self.selected_channel = self.FLIMInfo['availableChannels'][0]
+            else:
+                self.selected_channel = channel
 
-        # Getting list of channels from the data
-        self.FLIMInfo['availableChannels'] = self.checkChannelAvailability(
-            self.recordarray
-        )
+            # Counting line events, requires for image reconstruction
+            self.FLIMInfo['Lines_in_file'] = self.countLines(self.recordarray)
 
-        if (channel is None):
-            self.selected_channel = self.FLIMInfo['availableChannels'][0]
-        else:
-            self.selected_channel = channel
+            # Reconstruct FLIM array for fitting
+            self.flimarray, self.intensity_image = self.reconstruct_flim_array(
+                self.recordarray,
+                channel = self.selected_channel,
+                lines_in_file = self.FLIMInfo['Lines_in_file'],
+                pixels_x = self.FLIMInfo['PixelsX'],
+                pixels_y = self.FLIMInfo['PixelsY'],
+                global_resolution = self.FLIMInfo['GlobalResolution'],
+                time_resolution = self.FLIMInfo['Resolution'],
+                spatial_binning = self.spatial_binning,
+                temporal_binning = self.temporal_binning
+            )
 
-        # Counting line events, requires for image reconstruction
-        self.FLIMInfo['Lines_in_file'] = self.countLines(self.recordarray)
+            # Generating overall decay histograms from available channels
+            self.overall_decays = self.overall_decay()
 
-        # Reconstruct FLIM array for fitting
-        self.flimarray, self.intensity_image = self.reconstruct_flim_array(
-            self.recordarray,
-            channel = self.selected_channel,
-            lines_in_file = self.FLIMInfo['Lines_in_file'],
-            pixels_x = self.FLIMInfo['PixelsX'],
-            pixels_y = self.FLIMInfo['PixelsY'],
-            global_resolution = self.FLIMInfo['GlobalResolution'],
-            time_resolution = self.FLIMInfo['Resolution'],
-            spatial_binning = self.spatial_binning,
-            temporal_binning = self.temporal_binning
-        )
+            self.selected_decay = None
 
-        # Generating overall decay histograms from available channels
-        self.overall_decays = self.overall_decay()
 
-        self.selected_decay = None
+
 
     def readPTUHeader(self, file_path):
         """[summary]

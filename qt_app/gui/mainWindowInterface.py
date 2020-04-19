@@ -173,7 +173,33 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
             self.show_error('No Fit', 'No fit present!')
 
 
-    # Analysis related functions
+
+    def peak_at_header(self):
+        if (self.ptupath):
+            tmp = flimdata(
+                file_path=self.ptupath,
+                channel = 0,
+                spatial_binning = 4,
+                temporal_binning = 5,
+                fast_load = False
+            )
+
+            self.listWidget_headerPeak.clear()
+
+            for entry in tmp.FLIMInfo:
+                item = QListWidgetItem(
+                    '%s: %s' % (entry, tmp.FLIMInfo[entry])
+                )
+                self.listWidget_headerPeak.addItem(item)
+
+            self.listWidget_headerPeak.show()
+
+            del tmp
+            
+        else:
+            self.show_error('No File Selected', 'You have not selected a .ptu file yet!')
+
+
 
     def select_file(self):
         """
@@ -189,6 +215,7 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         self.ptupath = QFileDialog.getOpenFileName(filter='PTU Files (*.ptu)')[0]
         self.lineEdit_filepath.setText(self.ptupath)
         self.ptuFileHistory.append(self.ptupath)
+        self.peak_at_header()
 
 
 
@@ -208,7 +235,8 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
                     filepath,
                     channel,
                     spatial_binning,
-                    temporal_binning
+                    temporal_binning,
+                    fast_load = True
                 )
                 if (self.flim_object):
                     #self.graphicsView_intensityimage.clear()
@@ -230,6 +258,8 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         else:
             self.update_log('No file selected.')
             self.show_error('Error', 'No file selected!')
+
+
 
     def load_ptu_file_thread(self):
         thread = Thread(self.load_ptu_file)

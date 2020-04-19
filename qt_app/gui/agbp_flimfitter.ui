@@ -66,7 +66,7 @@
           <x>0</x>
           <y>10</y>
           <width>311</width>
-          <height>389</height>
+          <height>231</height>
          </rect>
         </property>
         <layout class="QFormLayout" name="formLayout">
@@ -143,19 +143,6 @@
            </property>
           </widget>
          </item>
-         <item row="9" column="0">
-          <spacer name="verticalSpacer">
-           <property name="orientation">
-            <enum>Qt::Vertical</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>20</width>
-             <height>40</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
         </layout>
        </widget>
        <widget class="QLabel" name="label_LogConsole">
@@ -174,8 +161,8 @@
        <widget class="QProgressBar" name="progressBar">
         <property name="geometry">
          <rect>
-          <x>20</x>
-          <y>440</y>
+          <x>30</x>
+          <y>490</y>
           <width>251</width>
           <height>25</height>
          </rect>
@@ -211,6 +198,29 @@
           <horstretch>100</horstretch>
           <verstretch>100</verstretch>
          </sizepolicy>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_headerPeak">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>250</y>
+          <width>111</width>
+          <height>17</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Header Content</string>
+        </property>
+       </widget>
+       <widget class="QListWidget" name="listWidget_headerPeak">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>270</y>
+          <width>311</width>
+          <height>211</height>
+         </rect>
         </property>
        </widget>
       </widget>
@@ -481,7 +491,7 @@
          <rect>
           <x>0</x>
           <y>10</y>
-          <width>321</width>
+          <width>311</width>
           <height>201</height>
          </rect>
         </property>
@@ -695,9 +705,43 @@
   </customwidget>
  </customwidgets>
  <tabstops>
-  <tabstop>spinBox_temporalBinning</tabstop>
+  <tabstop>lineEdit_filepath</tabstop>
+  <tabstop>pushButton_selectFile</tabstop>
+  <tabstop>spinBox_channel</tabstop>
   <tabstop>spinBox_spatialBinning</tabstop>
+  <tabstop>spinBox_temporalBinning</tabstop>
   <tabstop>pushButton_LoadPTU</tabstop>
+  <tabstop>pushButton_showSelectedDecay</tabstop>
+  <tabstop>tabWidget_menu</tabstop>
+  <tabstop>lineEdit_filePathIRF</tabstop>
+  <tabstop>pushButton_loadIRF</tabstop>
+  <tabstop>pushButton_showIRF</tabstop>
+  <tabstop>spinBox_irfLeftCut</tabstop>
+  <tabstop>spinBox_irfRightCut</tabstop>
+  <tabstop>spinBox_IRFBackground</tabstop>
+  <tabstop>pushButton_correctIRF</tabstop>
+  <tabstop>pushButton_fitIRF</tabstop>
+  <tabstop>checkBox_useFittedIRF</tabstop>
+  <tabstop>pushButton_resetIRF</tabstop>
+  <tabstop>comboBox_objectiveFunction</tabstop>
+  <tabstop>spinBox_noExp</tabstop>
+  <tabstop>pushButton_fitSelection</tabstop>
+  <tabstop>listWidget_fittedParameters</tabstop>
+  <tabstop>pushButton_fitImage</tabstop>
+  <tabstop>spinBox_photonThreshold</tabstop>
+  <tabstop>spinBox_lifetimeLower</tabstop>
+  <tabstop>spinBox_lifetimeUpper</tabstop>
+  <tabstop>pushButton_updateLifetimeImage</tabstop>
+  <tabstop>pushButton_saveFitResults</tabstop>
+  <tabstop>spinBox_plotHeight</tabstop>
+  <tabstop>spinBox_plotWidth</tabstop>
+  <tabstop>pushButton_savePlot</tabstop>
+  <tabstop>logConsole</tabstop>
+  <tabstop>pushButton_clearLog</tabstop>
+  <tabstop>tabWidget_view</tabstop>
+  <tabstop>graphicsView_intensityimage</tabstop>
+  <tabstop>graphicsView_decay</tabstop>
+  <tabstop>graphicsView_lifetimeimage</tabstop>
  </tabstops>
  <resources/>
  <connections/>

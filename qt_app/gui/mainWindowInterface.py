@@ -571,21 +571,38 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
             
         try:
             save_path = QFileDialog.getSaveFileName(
-                self,
+             self,
                 'Save Plot...'
             )
 
             save_path = str(save_path[0] + '.png')
 
-            plt.plot(self.flim_object.time_axis, self.flim_object.selected_decay, 'b.')
-            plt.plot(self.flim_object.time_axis, self.fitted_curve, 'r-')
-            plt.yscale('log')
+            # Create matplotlib subplots object
+            fig, ax = plt.subplots(2, 1, sharex = True)
+
+            # Plot selected data and fitted model
+            ax[0].plot(self.flim_object.time_axis, self.flim_object.selected_decay, 'b.')
+            ax[0].plot(self.flim_object.time_axis, self.fitted_curve, 'r-')
+            ax[0].set(
+                yscale = 'log',
+                ylabel = 'Counts'
+            )
+
+            # Plot residuals and label x axis
+            ax[1].plot(self.flim_object.time_axis, self.residuals, 'b-')
+            ax[1].set(
+                ylabel = 'Residuals',
+                xlabel = 'time [ps]'
+            )
+
+        #Save plot to disk as png
             plt.savefig(
                 save_path,
-                dpi=350,
+                dpi = 500,
                 format = 'png'
             )
             plt.close()            
+
         except:
             self.show_error('No Fit', 'No fitted curve available.')
 

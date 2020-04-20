@@ -30,13 +30,18 @@ The AGBP FLIM Fitter software is a Python and Qt5-based application, that allows
   	- Settings like the IRF function used for analysis, user-defined settings for the parameter optimization algorithms, etc. should be saved in a read-able format (e.g. gathering settings from `UI_mainWindow` class, `flimdata` class, and `irf` class and writing them into structured file)
 
 - [ ] Improve output functionalities
+  - [x] Include plot of residuals
   - [ ] Include option to write selected fluorescence decay, the calculated fit curve, and residuals to CSV output
     - Allows user to re-plot own their own later
   - [ ] Include information about IRF used in a particular fit in CSV output file
+  - [ ] Intensity image
 
 - [ ] Allow user to set parameter guesses
+- [ ] Remove IRF fitting functions
+- [ ] Add option to chose between using Gauss approximated IRF and measured IRF once IRF has been loaded
 
 
 ## Bug Reports
 
 - [ ] IRF shifting parameter is not varied with measured IRF (April 18th 2020)
+- [ ] Additional ROI added sometimes, when new file is loaded and 'Show Selected Decay' is clicked (April 20th 2020)

@@ -95,7 +95,7 @@ class fitter:
 
         for n in range(self.number_of_exponentials):
             # Add model parameters for n-th decay component
-            decay_parameters.append(random.randint(100, np.max(self.data))) # Randomizing initial amplitude of component
+            decay_parameters.append(random.randint(100, np.amax(self.data))) # Randomizing initial amplitude of component
             decay_parameters.append(random.randint(10, 10000)) # Randomizing initial tau value
 
             # Add parameter name for n-th decay component
@@ -113,7 +113,7 @@ class fitter:
         ]
 
         # Bounds and paramter names for approximated IRF paramters
-        parameter_bounds.append((0, self.time_axis[-1]))
+        parameter_bounds.append((-1000, self.time_axis[-1]))
         parameter_bounds.append((10, 500))
         parameter_names.append('IRF_shift')
         parameter_names.append('IRF_sigma')
@@ -304,14 +304,16 @@ class fitter:
     def minimize_poisson_deviance(self, start_parameters, time_axis, data):
         """
         From Bajzer et al., 1991
+
+        Also see https://www.phys.ufl.edu/courses/phy4803L/group_I/gamma_gamma/poisson.pdf
         """
         fitted = self.convoluted_decay(time_axis, start_parameters)
-        with np.errstate(divide = 'ignore'):
-            deviance = 2 * np.nansum(
-                data * np.log(data / fitted) - (data - fitted)
-            )
-        
-        #deviance = np.sum(deviance)
+        # deviance = 2 * (
+        #     (data * np.log(data / fitted)) - (data - fitted)
+        # )
+        deviance = 2 * np.nansum(
+            fitted - data * np.log(fitted)
+        )
 
         return(deviance)
 

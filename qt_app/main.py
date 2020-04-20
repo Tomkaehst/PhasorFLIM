@@ -10,5 +10,5 @@ if(__name__ == '__main__'):
 
     window = Ui_mainWindowInterface()
 
-    print('Executing Qt5 App...')
+    print('Executing Q5 App...')
     app.exec_()

@@ -361,7 +361,8 @@ class fitter:
                 bounds = self.parameter_bounds,
                 options = {
                     'maxiter': 2000,
-                    'disp': False
+                    'disp': False,
+                    'eps': 0.5
                 }
             )
         except RuntimeWarning:

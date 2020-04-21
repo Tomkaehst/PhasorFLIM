@@ -21,6 +21,8 @@ The AGBP FLIM Fitter software is a Python and Qt5-based application, that allows
 
 ### To Do
 
+- [ ] Add algorithm for sinusodial correction (see Jupyter notebook)
+
 - [x] Show some information in header of selected `.ptu` file before user loads data into memory
   - [x] User comments should be visible before loading the entire file
   - [x] Show image dimensions from file header

@@ -96,7 +96,7 @@ class fitter:
         for n in range(self.number_of_exponentials):
             # Add model parameters for n-th decay component
             decay_parameters.append(random.randint(100, np.amax(self.data))) # Randomizing initial amplitude of component
-            decay_parameters.append(random.randint(10, 10000)) # Randomizing initial tau value
+            decay_parameters.append(random.randint(1000, 4000)) # Randomizing initial tau value
 
             # Add parameter name for n-th decay component
             parameter_names.append('amp' + str(n + 1))
@@ -113,8 +113,8 @@ class fitter:
         ]
 
         # Bounds and paramter names for approximated IRF paramters
-        parameter_bounds.append((-1000, self.time_axis[-1]))
-        parameter_bounds.append((10, 500))
+        parameter_bounds.append((-self.time_axis.shape[0], self.time_axis.shape[0]))
+        parameter_bounds.append((10, 250))
         parameter_names.append('IRF_shift')
         parameter_names.append('IRF_sigma')
 
@@ -364,7 +364,7 @@ class fitter:
                 options = {
                     'maxiter': 2000,
                     'disp': False,
-                    'eps': 0.5
+                    'eps': 0.5E-8
                 }
             )
         except RuntimeWarning:
@@ -373,6 +373,8 @@ class fitter:
         # Calculate fit with optimized parameters and weigted residuals
         fitted_curve = self.convoluted_decay(self.time_axis, self.optimized_parameters['x'])
         residuals = self.calculate_residuals()
+
+        print(self.optimized_parameters)
 
         return(fitted_curve, residuals)
 

@@ -212,7 +212,6 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
             self.update_log('Overwriting previous file...')
             self.flim_object = None
             self.fit_object = None
-            self.ROI = None
         
         self.ptupath = QFileDialog.getOpenFileName(filter='PTU Files (*.ptu)')[0]
         self.lineEdit_filepath.setText(self.ptupath)
@@ -361,6 +360,14 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
                 )
                 self.graphicsView_intensityimage.addItem(self.ROI)
             else:
+                # Remove old ROI and add new one; otherwise ROIs overlap
+                self.graphicsView_intensityimage.removeItem(self.ROI)
+                self.ROI = pg.RectROI(
+                    [self.flim_object.intensity_image.shape[0]/ 2, self.flim_object.intensity_image.shape[1]/ 2],
+                    [20, 20]
+                )
+                self.graphicsView_intensityimage.addItem(self.ROI)
+
                 coordinates = self.ROI.pos()
                 size = self.ROI.size()
                 
@@ -403,28 +410,16 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
             objective_function = self.comboBox_objectiveFunction.currentText()
         )
 
-        if (self.irf_object):
-            if(self.checkBox_useFittedIRF.isChecked()):
-                try:
-                    self.fitted_curve, self.residuals = self.fit_object.fit_decay(
-                        decay = self.fit_object.data,
-                        measured_irf = self.irf_object.irf,
-                        irf_fitted_parameters = self.irf_object.fitted_irf
-                    )
-                except:
-                    self.show_error('Attention', 'IRF fit has not been done yet!')
-                    return(0)
+        if (self.irf_object and self.checkBox_measuredIRFFit.isChecked()):
+            try:
+                self.fitted_curve, self.residuals = self.fit_object.fit_decay(
+                    decay = self.fit_object.data,
+                    measured_irf = self.irf_object.irf
+                )
 
-            else:
-                try:
-                    self.fitted_curve, self.residuals = self.fit_object.fit_decay(
-                        decay = self.fit_object.data,
-                        measured_irf = self.irf_object.irf
-                    )
-
-                except:
-                    self.show_error('Attention', 'IRF fit has not been done yet!')
-                    return(0)
+            except:
+                self.show_error('Attention', 'IRF fit has not been done yet!')
+                return(0)
         else:
             self.fitted_curve, self.residuals = self.fit_object.fit_decay(
                 decay=self.fit_object.data

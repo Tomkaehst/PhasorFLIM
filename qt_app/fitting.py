@@ -321,7 +321,7 @@ class fitter:
                 options = {
                     'maxiter': 2000,
                     'disp': False,
-                    'eps': 0.5E-8
+                    'eps': 0.5E-2
                 }
             )
         except RuntimeWarning:

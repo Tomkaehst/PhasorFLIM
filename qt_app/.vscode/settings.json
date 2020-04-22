@@ -1,5 +1,5 @@
 {
-    "python.pythonPath": "/home/agbp/anaconda3/bin/python",
+    "python.pythonPath": "/home/tom/anaconda3/envs/fenicsproject/bin/python",
     "python.linting.pylintEnabled": true,
     "python.linting.enabled": true
 }

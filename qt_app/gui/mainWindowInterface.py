@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtCore import QThread, pyqtSignal
 import matplotlib.pyplot as plt
+from PIL import Image
 
 from gui.mainWindow import Ui_mainWindow
 from flimdata import flimdata
@@ -70,7 +71,6 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         self.pushButton_showIRF.pressed.connect(self.show_irf)
         self.pushButton_correctIRF.pressed.connect(self.correct_irf)
         self.pushButton_resetIRF.pressed.connect(self.reset_irf)
-        self.pushButton_fitIRF.pressed.connect(self.fit_irf)
 
         # Show ROI-selected decay
         self.pushButton_showSelectedDecay.pressed.connect(
@@ -98,6 +98,8 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         # Output functions
         self.pushButton_saveFitResults.pressed.connect(self.write_parameters_to_disk)
         self.pushButton_savePlot.pressed.connect(self.save_plot_to_disk)
+        self.pushButton_saveDecay.pressed.connect(self.save_decay_to_disk)
+        self.pushButton_saveImage.pressed.connect(self.save_intensity_image_to_disk)
 
         # Show GUI
         self.show()
@@ -218,7 +220,6 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         self.peak_at_header()
 
 
-
     def load_ptu_file(self):
         """ 
 
@@ -324,36 +325,6 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
             self.show_irf()
         else:
             self.show_error('Attention', 'No IRF has been loaded yet!')
-
-
-
-    def fit_irf(self):
-        if(self.irf_object):
-            fitted_irf = self.irf_object.fit_irf_as_gauss()
-        else:
-            self.show_error('Attention', 'No IRF has been loaded yet!')
-            return (0)
-            
-        self.decay_plot.clear()
-        self.residual_plot.clear()
-        
-        self.decay_plot.plot(
-            x = self.irf_object.time_axis,
-            y = self.irf_object.irf,
-            pen = pg.mkPen('w', width = 2)
-        )
-        self.decay_plot.plot(
-            x = self.irf_object.time_axis,
-            y = fitted_irf,
-            pen = pg.mkPen('r', width = 2)
-        )
-
-        self.residual_plot.plot(
-            x = self.irf_object.time_axis,
-            y = (self.irf_object.irf - fitted_irf),
-            pen = pg.mkPen('w', width = 2)
-        )
-        self.tabWidget_view.setCurrentIndex(1)
 
 
 
@@ -565,44 +536,82 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         except:
             self.show_error('No Fit', 'No fitted parameters available!')
 
+    def save_decay_to_disk(self):
+        try:
+            save_path = QFileDialog.getSaveFileName(
+                self,
+                'Save Decay...'
+            )
+
+            save_path = str(save_path[0] + '.csv')
+
+            with open(save_path, 'w') as file:
+
+                writer = csv.writer(file)
+
+                writer.writerow([
+                    'File:',
+                    self.flim_object.FLIMInfo['Filename']
+                ])
+
+                writer.writerow([
+                        'Time Axis [ps]',
+                        'Decay Data [Counts]',
+                        'Fitted Curve',
+                        'Residuals'
+                    ])
+
+                for i in range(len(self.fit_object.time_axis)):
+                    writer.writerow([
+                        self.fit_object.time_axis[i],
+                        self.fit_object.data[i],
+                        self.fitted_curve[i],
+                        self.residuals[i]
+                    ])
+
+        except Exception as exp:
+            print(exp)
+            self.show_error('No fit', 'No fitted curve available!')
+                
+            
+
+    def save_intensity_image_to_disk(self):
+        try:
+            save_path = QFileDialog.getSaveFileName(
+                self,
+                'Save Intensity Image...'
+            )
+
+            save_path = str(save_path[0] + '.png')
+
+            image = Image.fromarray(self.flim_object.intensity_image)
+            image.save(save_path)
+
+        except Exception as e:
+            print(e)
+            self.show_error('Intensity Image coult not be saved.', 'No intensity image available.')
+
 
 
     def save_plot_to_disk(self):
             
         try:
             save_path = QFileDialog.getSaveFileName(
-             self,
+                self,
                 'Save Plot...'
             )
 
             save_path = str(save_path[0] + '.png')
 
-            # Create matplotlib subplots object
-            fig, ax = plt.subplots(2, 1, sharex = True)
-
-            # Plot selected data and fitted model
-            ax[0].plot(self.flim_object.time_axis, self.flim_object.selected_decay, 'b.')
-            ax[0].plot(self.flim_object.time_axis, self.fitted_curve, 'r-')
-            ax[0].set(
-                yscale = 'log',
-                ylabel = 'Counts'
-            )
-
-            # Plot residuals and label x axis
-            ax[1].plot(self.flim_object.time_axis, self.residuals, 'b-')
-            ax[1].set(
-                ylabel = 'Residuals',
-                xlabel = 'time [ps]'
-            )
-
-        #Save plot to disk as png
+            plt.plot(self.flim_object.time_axis, self.flim_object.selected_decay, 'b.')
+            plt.plot(self.flim_object.time_axis, self.fitted_curve, 'r-')
+            plt.yscale('log')
             plt.savefig(
                 save_path,
-                dpi = 500,
+                dpi=350,
                 format = 'png'
             )
             plt.close()            
-
         except:
             self.show_error('No Fit', 'No fitted curve available.')
 

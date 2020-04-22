@@ -16,7 +16,8 @@ The AGBP FLIM Fitter software is a Python and Qt5-based application, that allows
 ### Milestones
 - [ ] Multi threading and multi processing
     - Currently, the GUI is blocked when calculations are performed. This may confuse the user and might lead to frustration as no cues are given by the software of what is currently being done in the background. This can be achieved by using Python's ```threading``` or ```PyQT5.QThread```.
-
+- [ ] Implement class or function to save and load application settings
+  	- Settings like the IRF function used for analysis, user-defined settings for the parameter optimization algorithms, etc. should be saved in a read-able format (e.g. gathering settings from `UI_mainWindow` class, `flimdata` class, and `irf` class and writing them into structured file)
 
 
 ### To Do
@@ -28,15 +29,12 @@ The AGBP FLIM Fitter software is a Python and Qt5-based application, that allows
   - [x] Show image dimensions from file header
   - Implemented on April 18th 2020
 
-- [ ] Implement class or function to save and load application settings
-  	- Settings like the IRF function used for analysis, user-defined settings for the parameter optimization algorithms, etc. should be saved in a read-able format (e.g. gathering settings from `UI_mainWindow` class, `flimdata` class, and `irf` class and writing them into structured file)
-
 - [ ] Improve output functionalities
   - [x] Include plot of residuals
-  - [ ] Include option to write selected fluorescence decay, the calculated fit curve, and residuals to CSV output
+  - [x] Include option to write selected fluorescence decay, the calculated fit curve, and residuals to CSV output
     - Allows user to re-plot own their own later
   - [ ] Include information about IRF used in a particular fit in CSV output file
-  - [ ] Intensity image
+  - [x] Intensity image
 
 - [ ] Allow user to set parameter guesses
 - [ ] Remove IRF fitting functions

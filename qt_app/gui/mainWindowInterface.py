@@ -186,15 +186,10 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
                 fast_load = False
             )
 
-            self.listWidget_headerPeak.clear()
+            self.headerPeak.clear()
 
             for entry in tmp.FLIMInfo:
-                item = QListWidgetItem(
-                    '%s: %s' % (entry, tmp.FLIMInfo[entry])
-                )
-                self.listWidget_headerPeak.addItem(item)
-
-            self.listWidget_headerPeak.show()
+                self.headerPeak.appendPlainText(str(tmp.FLIMInfo[entry]))
 
             del tmp
             

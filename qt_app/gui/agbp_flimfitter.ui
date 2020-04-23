@@ -145,83 +145,58 @@
          </item>
         </layout>
        </widget>
-       <widget class="QLabel" name="label_LogConsole">
+       <widget class="QWidget" name="gridLayoutWidget">
         <property name="geometry">
          <rect>
           <x>0</x>
-          <y>570</y>
-          <width>84</width>
-          <height>17</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Log Console</string>
-        </property>
-       </widget>
-       <widget class="QProgressBar" name="progressBar">
-        <property name="geometry">
-         <rect>
-          <x>30</x>
-          <y>530</y>
-          <width>251</width>
-          <height>25</height>
-         </rect>
-        </property>
-        <property name="value">
-         <number>0</number>
-        </property>
-       </widget>
-       <widget class="QPushButton" name="pushButton_clearLog">
-        <property name="geometry">
-         <rect>
-          <x>230</x>
-          <y>560</y>
-          <width>80</width>
-          <height>25</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Clear Log</string>
-        </property>
-       </widget>
-       <widget class="QPlainTextEdit" name="logConsole">
-        <property name="geometry">
-         <rect>
-          <x>0</x>
-          <y>590</y>
+          <y>240</y>
           <width>311</width>
-          <height>91</height>
+          <height>441</height>
          </rect>
         </property>
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
-          <horstretch>100</horstretch>
-          <verstretch>100</verstretch>
-         </sizepolicy>
-        </property>
-       </widget>
-       <widget class="QLabel" name="label_headerPeak">
-        <property name="geometry">
-         <rect>
-          <x>0</x>
-          <y>250</y>
-          <width>111</width>
-          <height>17</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Header Content</string>
-        </property>
-       </widget>
-       <widget class="QListWidget" name="listWidget_headerPeak">
-        <property name="geometry">
-         <rect>
-          <x>0</x>
-          <y>270</y>
-          <width>311</width>
-          <height>251</height>
-         </rect>
-        </property>
+        <layout class="QGridLayout" name="gridLayout_4">
+         <item row="4" column="0">
+          <widget class="QLabel" name="label_LogConsole">
+           <property name="text">
+            <string>Log Console</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QProgressBar" name="progressBar">
+           <property name="value">
+            <number>0</number>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QPlainTextEdit" name="headerPeak"/>
+         </item>
+         <item row="6" column="0">
+          <widget class="QPlainTextEdit" name="logConsole">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
+             <horstretch>100</horstretch>
+             <verstretch>100</verstretch>
+            </sizepolicy>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="0">
+          <widget class="QPushButton" name="pushButton_clearLog">
+           <property name="text">
+            <string>Clear Log</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_headerPeak">
+           <property name="text">
+            <string>Header Content</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </widget>
       </widget>
       <widget class="QWidget" name="tab_irf">

@@ -4,11 +4,17 @@
 
 <center><i></i>Written by Tom Kache & Christoph Biskup, Biomolecular Photonics Group, University Hospital Jena</i></center>
 
-<center><b>Current Verion:</b> 0.0.2, April 18th 2020</center>
+<center><b>Current Verion:</b> 0.5.0, April 23rd 2020</center>
 
 The AGBP FLIM Fitter software is a Python and Qt5-based application, that allows reading and working with TTTR data from the PicoQuant HydraHarp V2. The software is optimized to be used with the Leica TCS SP8 microscope at the Biomolecular Photonics Group at the University Hospital Jena.
 
 ## Usage
+
+##### 1. Loading PicoQuant PTU Files
+
+
+
+
 
 
 ## Development Road Map & To Do List
@@ -24,12 +30,10 @@ The AGBP FLIM Fitter software is a Python and Qt5-based application, that allows
 ### To Do
 
 - [ ] Add algorithm for sinusodial correction (see Jupyter notebook)
-
 - [x] Show some information in header of selected `.ptu` file before user loads data into memory
   - [x] User comments should be visible before loading the entire file
   - [x] Show image dimensions from file header
   - Implemented on April 18th 2020
-
 - [ ] Improve output functionalities
   - [x] Include plot of residuals
   - [x] Include option to write selected fluorescence decay, the calculated fit curve, and residuals to CSV output
@@ -37,13 +41,17 @@ The AGBP FLIM Fitter software is a Python and Qt5-based application, that allows
     - Implemented on April 22 2020
   - [ ] Include information about IRF used in a particular fit in CSV output file
   - [x] Intensity image - Implemented on April 22nd 2020
-
 - [ ] Allow user to set parameter guesses
 - [x] Remove IRF fitting functions
-- [ ] Add option to chose between using Gauss approximated IRF and measured IRF once IRF has been loaded
+- [x] Add option to chose between using Gauss approximated IRF and measured IRF once IRF has been loaded
+
+  - Implemented on April 18th 2020
 
 
 ## Bug Reports
 
 - [ ] IRF shifting parameter is not varied with measured IRF (April 18th 2020)
+
+  ​	- Resolved on April 22nd 2020, Jacobian step size in `scipy.optimize.minimize` not optimal!
+
 - [ ] Additional ROI added sometimes, when new file is loaded and 'Show Selected Decay' is clicked (April 20th 2020)

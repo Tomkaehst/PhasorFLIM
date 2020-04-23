@@ -189,6 +189,7 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
             self.headerPeak.clear()
 
             for entry in tmp.FLIMInfo:
+                self.headerPeak.appendPlainText(str(entry))
                 self.headerPeak.appendPlainText(str(tmp.FLIMInfo[entry]))
 
             del tmp

@@ -321,7 +321,7 @@ class fitter:
                 options = {
                     'maxiter': 2000,
                     'disp': False,
-                    'eps': 0.5E-2
+                    'eps': 1E-5
                 }
             )
         except RuntimeWarning:
@@ -330,8 +330,6 @@ class fitter:
         # Calculate fit with optimized parameters and weigted residuals
         fitted_curve = self.convoluted_decay(self.time_axis, self.optimized_parameters['x'])
         residuals = self.calculate_residuals()
-
-        print(self.optimized_parameters)
 
         return(fitted_curve, residuals)
 

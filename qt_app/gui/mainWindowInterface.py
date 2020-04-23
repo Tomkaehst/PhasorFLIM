@@ -594,9 +594,26 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
 
             save_path = str(save_path[0] + '.png')
 
-            plt.plot(self.flim_object.time_axis, self.flim_object.selected_decay, 'b.')
-            plt.plot(self.flim_object.time_axis, self.fitted_curve, 'r-')
-            plt.yscale('log')
+            fig, ax = plt.subplots(
+                nrows=2,
+                ncols=1,
+                figsize=(self.spinBox_plotWidth.value(), self.spinBox_plotHeight.value()),
+                sharex = True
+            )
+
+            ax[0].plot(self.flim_object.time_axis, self.flim_object.selected_decay, 'b.')
+            ax[0].plot(self.flim_object.time_axis, self.fitted_curve, 'r-')
+            ax[0].set(
+                ylabel = 'Counts',
+                yscale = 'log'
+            )
+
+            ax[1].plot(self.flim_object.time_axis, self.residuals)
+            ax[1].set(
+                ylabel='Residiuals',
+                xlabel = 'Time [ps]'
+            )
+
             plt.savefig(
                 save_path,
                 dpi=350,

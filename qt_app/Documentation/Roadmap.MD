@@ -148,3 +148,7 @@ The intensity image from the `Intensity Image` tab on the right panel can be sav
   ​	- Resolved on April 22nd 2020, Jacobian step size in `scipy.optimize.minimize` not optimal!
 
 - [x] Additional ROI added sometimes, when new file is loaded and 'Show Selected Decay' is clicked (April 20th 2020)
+
+- [ ] ROI selection is reset every time 'Select Image Region' is clicked (April 28th 2020)
+    - This should only happen, if a new file is loaded!
+    - Right now, the consequence is, that if the user clicks on 'Select Image' region, the region is selected, but only the standard region will be carried over to the plot window, because internally, a new ROI is initialized!

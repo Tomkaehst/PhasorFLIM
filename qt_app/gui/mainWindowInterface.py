@@ -242,6 +242,9 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
                     QRect(0, 0, self.flim_object.intensity_image.shape[0], self.flim_object.intensity_image.shape[1])
                     )
                     self.tabWidget_view.setCurrentIndex(0)
+
+                    if (self.ROI):
+                        self.graphicsView_intensityimage.removeItem(self.ROI)
                     self.ROI = pg.RectROI(
                     [self.flim_object.intensity_image.shape[0]/ 2, self.flim_object.intensity_image.shape[1]/ 2],
                     [20, 20]

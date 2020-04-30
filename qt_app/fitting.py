@@ -95,7 +95,7 @@ class fitter:
 
         for n in range(self.number_of_exponentials):
             # Add model parameters for n-th decay component
-            decay_parameters.append(random.randint(100, np.amax(self.data))) # Randomizing initial amplitude of component
+            decay_parameters.append(random.randint(1, np.amax(self.data))) # Randomizing initial amplitude of component
             decay_parameters.append(random.randint(1000, 4000)) # Randomizing initial tau value
 
             # Add parameter name for n-th decay component

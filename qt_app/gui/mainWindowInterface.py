@@ -242,6 +242,11 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
                     QRect(0, 0, self.flim_object.intensity_image.shape[0], self.flim_object.intensity_image.shape[1])
                     )
                     self.tabWidget_view.setCurrentIndex(0)
+                    self.ROI = pg.RectROI(
+                    [self.flim_object.intensity_image.shape[0]/ 2, self.flim_object.intensity_image.shape[1]/ 2],
+                    [20, 20]
+                    )
+                    self.graphicsView_intensityimage.addItem(self.ROI)
                 else:
                     self.show_error('Loading Error', 'No FLIM data has been loaded yet!')
                 
@@ -348,44 +353,29 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         the decay in the corresponding image region will be extracted
         and plotted.
         '''
-        if(self.flim_object):
-            if(self.ROI is None):
-                self.ROI = pg.RectROI(
-                    [self.flim_object.intensity_image.shape[0]/ 2, self.flim_object.intensity_image.shape[1]/ 2],
-                    [20, 20]
-                )
-                self.graphicsView_intensityimage.addItem(self.ROI)
-            else:
-                # Remove old ROI and add new one; otherwise ROIs overlap
-                self.graphicsView_intensityimage.removeItem(self.ROI)
-                self.ROI = pg.RectROI(
-                    [self.flim_object.intensity_image.shape[0]/ 2, self.flim_object.intensity_image.shape[1]/ 2],
-                    [20, 20]
-                )
-                self.graphicsView_intensityimage.addItem(self.ROI)
+        if(self.flim_object and self.ROI is not None):
+            coordinates = self.ROI.pos()
+            size = self.ROI.size()
+            
+            self.flim_object.sum_up_selected_decay(
+                start_x = int(coordinates[0]),
+                stop_x = int(coordinates[0] + size[0]),
+                start_y = int(coordinates[1]),
+                stop_y = int(coordinates[1] + size[1])
+            )
 
-                coordinates = self.ROI.pos()
-                size = self.ROI.size()
-                
-                self.flim_object.sum_up_selected_decay(
-                    start_x = int(coordinates[0]),
-                    stop_x = int(coordinates[0] + size[0]),
-                    start_y = int(coordinates[1]),
-                    stop_y = int(coordinates[1] + size[1])
-                )
+            #self.selectedDecay = np.sum(np.sum(
+            #    self.flim_object.flimarray[int(coordinates[0]):int(coordinates[0] + size[0]), int(coordinates[1]):int(coordinates[1] + size[1]), :], axis = 0
+            #), axis = 0)
 
-                #self.selectedDecay = np.sum(np.sum(
-                #    self.flim_object.flimarray[int(coordinates[0]):int(coordinates[0] + size[0]), int(coordinates[1]):int(coordinates[1] + size[1]), :], axis = 0
-                #), axis = 0)
-
-                self.decay_plot.clear()
-                self.residual_plot.clear()
-                self.decay_plot.plot(
-                    x = self.flim_object.time_axis,
-                    y = self.flim_object.selected_decay,
-                    pen = pg.mkPen('w', width = 2)
-                )
-                self.tabWidget_view.setCurrentIndex(1)
+            self.decay_plot.clear()
+            self.residual_plot.clear()
+            self.decay_plot.plot(
+                x = self.flim_object.time_axis,
+                y = self.flim_object.selected_decay,
+                pen = pg.mkPen('w', width = 2)
+            )
+            self.tabWidget_view.setCurrentIndex(1)
             
         else:
             self.show_error('Selection not possible.', 'Please load a FLIM file first.')

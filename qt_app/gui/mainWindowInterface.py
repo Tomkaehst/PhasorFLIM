@@ -637,14 +637,14 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
                 sharex = True
             )
 
-            ax[0].plot(self.flim_object.time_axis, self.flim_object.selected_decay, 'b.')
-            ax[0].plot(self.flim_object.time_axis, self.fitted_curve, 'r-')
+            ax[0].plot(self.fit_object.time_axis, self.fit_object.data, 'b.')
+            ax[0].plot(self.fit_object.time_axis, self.fitted_curve, 'r-')
             ax[0].set(
                 ylabel = 'Counts',
                 yscale = 'log'
             )
 
-            ax[1].plot(self.flim_object.time_axis, self.residuals)
+            ax[1].plot(self.fit_object.time_axis, self.residuals)
             ax[1].set(
                 ylabel='Residiuals',
                 xlabel = 'Time [ps]'
@@ -656,7 +656,8 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
                 format = 'png'
             )
             plt.close()            
-        except:
+        except Exception as excep:
+            print(excep)
             self.show_error('No Fit', 'No fitted curve available.')
 
 

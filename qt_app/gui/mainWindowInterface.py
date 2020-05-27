@@ -163,7 +163,7 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         if(self.fit_object.optimized_parameters):
             self.listWidget_fittedParameters.clear()
             for i in range(len(self.fit_object.optimized_parameters['x'])):
-                item = QListWidgetItem('%s: %d'%(self.fit_object.parameter_names[i], self.fit_object.optimized_parameters['x'][i]))
+                item = QListWidgetItem('%s: %f'%(self.fit_object.parameter_names[i], self.fit_object.optimized_parameters['x'][i]))
                 self.listWidget_fittedParameters.addItem(item)
 
             # Calculate reduced chi-square
@@ -214,6 +214,33 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         self.ptuFileHistory.append(self.ptupath)
         self.peak_at_header()
 
+    def ajdust_cutoff_gui(self):
+        '''
+        Adjusting GUI elements to cut decay axis.
+        Step size is set to decay bin width of data.
+        Maximum is set to maximum time of decay and
+        the automatic cutoff is set to 85 % of the
+        maximum of the decay axis.
+        '''
+        # Adjusting step size of spin boxes
+        step_size = int(round(self.flim_object.FLIMInfo['Resolution']*1E12))
+        self.DoubleSpinBox_lowerCutoff.setSingleStep(step_size)
+        self.DoubleSpinBox_higherCutoff.setSingleStep(step_size)
+
+        # Setting maximum of spin boxes
+        maximum = self.flim_object.time_axis[-1]
+        self.DoubleSpinBox_lowerCutoff.setMaximum(maximum)
+        self.DoubleSpinBox_higherCutoff.setMaximum(maximum)
+
+        # Set current value of higher cutoff to 85 % of maximum
+        standard_value = int((max(self.flim_object.time_axis))*0.85)
+        print(standard_value)
+        self.DoubleSpinBox_higherCutoff.setProperty(
+            "value",
+            standard_value
+        )
+
+
 
     def load_ptu_file(self):
         """ 
@@ -234,15 +261,22 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
                     temporal_binning,
                     fast_load = True
                 )
+
+                # Changing max, min and step of upper and lower decay axis cutoffs
+                self.ajdust_cutoff_gui()
+
                 if (self.flim_object):
+                    # Adding intensity image to first tab
                     #self.graphicsView_intensityimage.clear()
                     intensity_image = pg.ImageItem(self.flim_object.intensity_image)
                     self.graphicsView_intensityimage.addItem(intensity_image)
                     self.graphicsView_intensityimage.setRange(
                     QRect(0, 0, self.flim_object.intensity_image.shape[0], self.flim_object.intensity_image.shape[1])
                     )
+                    # Switching view to first tab
                     self.tabWidget_view.setCurrentIndex(0)
 
+                    # Delete previous ROI and create new
                     if (self.ROI):
                         self.graphicsView_intensityimage.removeItem(self.ROI)
                     self.ROI = pg.RectROI(
@@ -253,7 +287,8 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
                 else:
                     self.show_error('Loading Error', 'No FLIM data has been loaded yet!')
                 
-            except:
+            except Exception as excep:
+                print("Unexpected error:", excep)
                 self.show_error('File Loading Error', 'File could not be loaded. Check file integrity!')
                 return(-1)
 

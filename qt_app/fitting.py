@@ -33,8 +33,9 @@ class fitter:
         ):
 
         self.time_axis = time_axis
-        self.lower_time_cutoff = lower_time_cutoff
-        self.upper_time_cutoff = upper_time_cutoff
+        self.time_axis_stepsize = self.time_axis[1] - self.time_axis[0]
+        self.lower_time_cutoff = int(lower_time_cutoff/self.time_axis_stepsize)
+        self.upper_time_cutoff = int(upper_time_cutoff/self.time_axis_stepsize)
         self.cutoff_time_axis()
 
         self.data = data
@@ -121,7 +122,7 @@ class fitter:
 
         for n in range(self.number_of_exponentials):
             # Add model parameters for n-th decay component
-            decay_parameters.append(random.randint(1, np.amax(self.data))) # Randomizing initial amplitude of component
+            decay_parameters.append(random.randint(0, np.amax(self.data))) # Randomizing initial amplitude of component
             decay_parameters.append(random.randint(1000, 4000)) # Randomizing initial tau value
 
             # Add parameter name for n-th decay component
@@ -129,7 +130,7 @@ class fitter:
             parameter_names.append('tau' + str(n + 1))
 
             # Add bounds for n-th decay component
-            parameter_bounds.append((0, np.infty))
+            parameter_bounds.append((0.1, np.amax(self.data) * np.amax(self.data)*0.5))
             parameter_bounds.append((10, 10000))
 
         # Parameters for Gauss curve approximated IRF
@@ -139,7 +140,7 @@ class fitter:
         ]
 
         # Bounds and paramter names for approximated IRF paramters
-        parameter_bounds.append((-self.time_axis.shape[0], self.time_axis.shape[0]))
+        parameter_bounds.append((-self.time_axis.shape[0]/2, self.time_axis.shape[0]))
         parameter_bounds.append((10, 250))
         parameter_names.append('IRF_shift')
         parameter_names.append('IRF_sigma')
@@ -185,7 +186,9 @@ class fitter:
         output = np.zeros(time_axis.shape, dtype=np.float64)
 
         for n in range(1, len(parameters), 2):
-            output += (10 * parameters[n] * np.exp(-(time_axis) / parameters[n + 1]))
+            output += (parameters[n] * np.exp(-(time_axis) / parameters[n + 1]))
+
+        output *= 10
 
         return(output)
 
@@ -356,8 +359,9 @@ class fitter:
 
         # Calculate fit with optimized parameters and weigted residuals
         fitted_curve = self.convoluted_decay(self.time_axis, self.optimized_parameters['x'])
-        print(len(fitted_curve))
         residuals = self.calculate_residuals()
+
+        #print(self.optimized_parameters.hess_inv(1.0))
 
         return(fitted_curve, residuals)
 

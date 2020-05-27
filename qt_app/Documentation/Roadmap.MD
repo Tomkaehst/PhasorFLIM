@@ -123,7 +123,7 @@ The intensity image from the `Intensity Image` tab on the right panel can be sav
 ### To Do
 
 - [ ] Add algorithm for sinusodial correction (see Jupyter notebook)
-- [ ] Add spinboxes to allow users to reduce the decay time axis so that peak at end of decay can be excluded
+- [x] Add spinboxes to allow users to reduce the decay time axis so that peak at end of decay can be excluded
 - [ ] Add parameter uncertainty from Hessian that is returned from `scipy.optimize`
 - [x] Show some information in header of selected `.ptu` file before user loads data into memory
   - [x] User comments should be visible before loading the entire file

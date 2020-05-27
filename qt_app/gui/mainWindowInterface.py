@@ -396,7 +396,9 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
             time_axis = self.flim_object.time_axis,
             data = self.flim_object.selected_decay,
             number_of_exponentials = self.spinBox_noExp.value(),
-            objective_function = self.comboBox_objectiveFunction.currentText()
+            objective_function = self.comboBox_objectiveFunction.currentText(),
+            lower_time_cutoff = self.DoubleSpinBox_lowerCutoff.value(),
+            upper_time_cutoff = self.DoubleSpinBox_higherCutoff.value()
         )
 
         if (self.irf_object and self.checkBox_measuredIRFFit.isChecked()):
@@ -413,23 +415,23 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
             self.fitted_curve, self.residuals = self.fit_object.fit_decay(
                 decay=self.fit_object.data
             )
-        
+
         # Plotting selected decay and the corresping fit
         self.decay_plot.clear()
         self.decay_plot.plot(
-            x = self.flim_object.time_axis,
-            y = self.flim_object.selected_decay,
+            x = self.fit_object.time_axis,
+            y = self.fit_object.data,
             pen = pg.mkPen('w', width = 2)
         )
         self.decay_plot.plot(
-            x = self.flim_object.time_axis,
+            x = self.fit_object.time_axis,
             y = self.fitted_curve,
             pen = pg.mkPen('r', width = 2)
         )
 
         self.residual_plot.clear()
         self.residual_plot.plot(
-            x = self.flim_object.time_axis,
+            x = self.fit_object.time_axis,
             y = self.residuals,
             pen = pg.mkPen('w', width = 2)
         )
@@ -487,6 +489,7 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         '''
         Write fitted parameters to csv file together with header information.
         '''
+
         try:
             save_path = QFileDialog.getSaveFileName(
                 self,
@@ -504,6 +507,11 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
                     self.fit_object.optimized_parameters['x'][i]
                     
                     ])
+
+                writer.writerow([
+                    "Red. Chi-Sq.",
+                    self.fit_object.calculate_reduced_chi_square()
+                ])
 
                 writer.writerow(['---'])
 

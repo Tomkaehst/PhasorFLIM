@@ -123,6 +123,8 @@ The intensity image from the `Intensity Image` tab on the right panel can be sav
 ### To Do
 
 - [ ] Add algorithm for sinusodial correction (see Jupyter notebook)
+- [ ] Add spinboxes to allow users to reduce the decay time axis so that peak at end of decay can be excluded
+- [ ] Add parameter uncertainty from Hessian that is returned from `scipy.optimize`
 - [x] Show some information in header of selected `.ptu` file before user loads data into memory
   - [x] User comments should be visible before loading the entire file
   - [x] Show image dimensions from file header
@@ -149,6 +151,9 @@ The intensity image from the `Intensity Image` tab on the right panel can be sav
 
 - [x] Additional ROI added sometimes, when new file is loaded and 'Show Selected Decay' is clicked (April 20th 2020)
 
-- [ ] ROI selection is reset every time 'Select Image Region' is clicked (April 28th 2020)
+- [x] ROI selection is reset every time 'Select Image Region' is clicked (April 28th 2020)
     - This should only happen, if a new file is loaded!
     - Right now, the consequence is, that if the user clicks on 'Select Image' region, the region is selected, but only the standard region will be carried over to the plot window, because internally, a new ROI is initialized!
+
+- [x] $\chi²$ is not written into CSV upon export (May 2nd 2020)
+  - Fixed on May 27th 2020

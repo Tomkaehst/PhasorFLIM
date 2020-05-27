@@ -27,11 +27,19 @@ class fitter:
         data,
         number_of_exponentials = 1,
         objective_function = None,
-        fit_settings = None
+        fit_settings = None,
+        lower_time_cutoff = None,
+        upper_time_cutoff = None
         ):
 
         self.time_axis = time_axis
+        self.lower_time_cutoff = lower_time_cutoff
+        self.upper_time_cutoff = upper_time_cutoff
+        self.cutoff_time_axis()
+
         self.data = data
+        self.cutoff_data()
+
         self.number_of_exponentials = number_of_exponentials
         self.objective_function = objective_function
         self.irf_data = None
@@ -49,6 +57,24 @@ class fitter:
             self.fit_settings = self.decay_parameters + self.irf_parameters
         else:
             self.fit_settings = fit_settings
+
+
+
+
+    def cutoff_time_axis(self):
+        '''
+        Cutting time axis according to user set values.
+
+        '''
+        if(self.upper_time_cutoff is not None and self.upper_time_cutoff is not None):
+            self.time_axis = self.time_axis[int(self.lower_time_cutoff):int(self.upper_time_cutoff)]
+
+    def cutoff_data(self):
+        '''
+        Cutting data according to user set values from lower and upper cutoff.
+        '''
+        if(self.upper_time_cutoff is not None and self.upper_time_cutoff is not None):
+            self.data = self.data[int(self.lower_time_cutoff):int(self.upper_time_cutoff)]
 
 
 
@@ -226,6 +252,7 @@ class fitter:
         """
 
         """
+
         residuals = ((self.convoluted_decay(self.time_axis, self.optimized_parameters['x']) - self.data)) / np.sqrt(self.data)
 
         return(residuals)
@@ -329,6 +356,7 @@ class fitter:
 
         # Calculate fit with optimized parameters and weigted residuals
         fitted_curve = self.convoluted_decay(self.time_axis, self.optimized_parameters['x'])
+        print(len(fitted_curve))
         residuals = self.calculate_residuals()
 
         return(fitted_curve, residuals)

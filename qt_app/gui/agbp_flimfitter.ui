@@ -54,7 +54,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="tab_load">
        <attribute name="title">
@@ -65,57 +65,50 @@
          <rect>
           <x>0</x>
           <y>10</y>
-          <width>311</width>
-          <height>231</height>
+          <width>199</width>
+          <height>214</height>
          </rect>
         </property>
-        <layout class="QFormLayout" name="formLayout">
-         <item row="0" column="0" colspan="2">
+        <layout class="QGridLayout" name="gridLayout_7">
+         <item row="0" column="0">
           <widget class="QLineEdit" name="lineEdit_filepath"/>
          </item>
-         <item row="1" column="0">
-          <widget class="QPushButton" name="pushButton_selectFile">
-           <property name="text">
-            <string>Select File</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="0">
+         <item row="2" column="0">
           <widget class="QLabel" name="label_channel">
            <property name="text">
             <string>Channel</string>
            </property>
           </widget>
          </item>
-         <item row="3" column="1">
+         <item row="2" column="2">
           <widget class="QSpinBox" name="spinBox_channel">
            <property name="maximum">
             <number>3</number>
            </property>
           </widget>
          </item>
-         <item row="4" column="0">
+         <item row="3" column="0">
           <widget class="QLabel" name="label_spatialBinning">
            <property name="text">
             <string>Spatial Binning</string>
            </property>
           </widget>
          </item>
-         <item row="4" column="1">
+         <item row="3" column="2">
           <widget class="QSpinBox" name="spinBox_spatialBinning">
            <property name="maximum">
             <number>8</number>
            </property>
           </widget>
          </item>
-         <item row="5" column="0">
+         <item row="4" column="0">
           <widget class="QLabel" name="label_temporalBinning">
            <property name="text">
             <string>Temporal Binning</string>
            </property>
           </widget>
          </item>
-         <item row="5" column="1">
+         <item row="4" column="2">
           <widget class="QSpinBox" name="spinBox_temporalBinning">
            <property name="maximum">
             <number>8</number>
@@ -123,23 +116,30 @@
           </widget>
          </item>
          <item row="6" column="0">
-          <widget class="QPushButton" name="pushButton_LoadPTU">
+          <widget class="QPushButton" name="pushButton_showSelectedDecay">
            <property name="text">
-            <string>Load PTU File</string>
+            <string>Show Selected Decay</string>
            </property>
           </widget>
          </item>
-         <item row="7" column="0">
+         <item row="6" column="1" colspan="2">
           <widget class="Line" name="line">
            <property name="orientation">
             <enum>Qt::Horizontal</enum>
            </property>
           </widget>
          </item>
-         <item row="8" column="0">
-          <widget class="QPushButton" name="pushButton_showSelectedDecay">
+         <item row="5" column="0">
+          <widget class="QPushButton" name="pushButton_LoadPTU">
            <property name="text">
-            <string>Show Selected Decay</string>
+            <string>Load PTU File</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QPushButton" name="pushButton_selectFile">
+           <property name="text">
+            <string>Select File</string>
            </property>
           </widget>
          </item>
@@ -380,9 +380,6 @@
         <property name="singleStep">
          <number>50</number>
         </property>
-        <property name="stepType">
-         <enum>QAbstractSpinBox::DefaultStepType</enum>
-        </property>
         <property name="value">
          <number>500</number>
         </property>
@@ -452,11 +449,11 @@
          <rect>
           <x>0</x>
           <y>10</y>
-          <width>311</width>
-          <height>201</height>
+          <width>260</width>
+          <height>144</height>
          </rect>
         </property>
-        <layout class="QFormLayout" name="formLayout_4">
+        <layout class="QGridLayout" name="gridLayout_6">
          <item row="0" column="0">
           <widget class="QLabel" name="label_objective">
            <property name="text">
@@ -549,6 +546,144 @@
         </property>
        </widget>
       </widget>
+      <widget class="QWidget" name="tab">
+       <attribute name="title">
+        <string>Batch</string>
+       </attribute>
+       <widget class="QWidget" name="formLayoutWidget_5">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>0</y>
+          <width>281</width>
+          <height>321</height>
+         </rect>
+        </property>
+        <layout class="QFormLayout" name="formLayout">
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_batch_PTUFile">
+           <property name="text">
+            <string/>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QPushButton" name="pushButton_BatchLoadWorkbook">
+           <property name="text">
+            <string>Load Workbook</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QPushButton" name="pushButton_loadNewWorkbook">
+           <property name="text">
+            <string>New Workbook</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="label_Batch_CurrentFile">
+           <property name="text">
+            <string>Current File</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="QLabel" name="label_BatchCurrentFile">
+           <property name="text">
+            <string>...</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QLabel" name="label_batch_Channel">
+           <property name="text">
+            <string>Channel</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QSpinBox" name="spinBox_BatchChannel">
+           <property name="maximum">
+            <number>4</number>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0">
+          <widget class="QLabel" name="label_batch_Fluorophore">
+           <property name="text">
+            <string>Fluorophore</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="1">
+          <widget class="QLineEdit" name="lineEdit_BatchFluorophore"/>
+         </item>
+         <item row="5" column="0">
+          <widget class="QLabel" name="label_batch_Model">
+           <property name="text">
+            <string>Model</string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="1">
+          <widget class="QComboBox" name="comboBox_BatchModel">
+           <property name="maxVisibleItems">
+            <number>10</number>
+           </property>
+           <item>
+            <property name="text">
+             <string>Monoexponential</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Biexponential</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item row="6" column="0">
+          <widget class="QPushButton" name="pushButton_BatchNextROI">
+           <property name="text">
+            <string>Next ROI</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="1">
+          <widget class="QPushButton" name="pushButton_BatchFitCurrent">
+           <property name="text">
+            <string>Fit</string>
+           </property>
+          </widget>
+         </item>
+         <item row="7" column="0">
+          <widget class="QPushButton" name="pushButton_BatchPreviousFile">
+           <property name="text">
+            <string>Previous File</string>
+           </property>
+          </widget>
+         </item>
+         <item row="7" column="1">
+          <widget class="QPushButton" name="pushButton_BatchNextFile">
+           <property name="text">
+            <string>Next File</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QTreeView" name="treeView">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>360</y>
+          <width>256</width>
+          <height>192</height>
+         </rect>
+        </property>
+       </widget>
+      </widget>
       <widget class="QWidget" name="tab_output">
        <attribute name="title">
         <string>Output</string>
@@ -558,11 +693,11 @@
          <rect>
           <x>0</x>
           <y>10</y>
-          <width>311</width>
-          <height>205</height>
+          <width>265</width>
+          <height>200</height>
          </rect>
         </property>
-        <layout class="QFormLayout" name="formLayout_3">
+        <layout class="QGridLayout" name="gridLayout_8">
          <item row="0" column="1">
           <widget class="QPushButton" name="pushButton_saveFitResults">
            <property name="text">

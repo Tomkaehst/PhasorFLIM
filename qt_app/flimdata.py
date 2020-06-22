@@ -26,13 +26,12 @@ class flimdata:
 
         # Defining data types for the raw record array where ptu data stream is written in to
         self.record_array_datatypes = np.dtype([('record', np.uint32), ('marker', np.uint8),
-                                              ('nanotime', np.float64), ('macrotime', np.float64)])
+                                                ('nanotime', np.float64), ('macrotime', np.float64)])
 
         self.FLIMInfo = None  # Quick access FLIM image infos
         self.header_contents = None  # Whole file header
         # Bit offset of file in file_path, where TTTR records start
         self.headerBitOffset = None
-
 
 
         # Reading header; do this automatically when flimdata instance is created; no great time pennalty
@@ -47,7 +46,8 @@ class flimdata:
             # Generating nano tim(se axis
             self.time_axis = self.generate_nanotime_axis()
             # Getting list of channels from the data
-            self.FLIMInfo['availableChannels'] = self.checkChannelAvailability(self.recordarray)
+            self.FLIMInfo['availableChannels'] = self.checkChannelAvailability(
+                self.recordarray)
 
             if (channel is None):
                 self.selected_channel = self.FLIMInfo['availableChannels'][0]
@@ -60,22 +60,20 @@ class flimdata:
             # Reconstruct FLIM array for fitting
             self.flimarray, self.intensity_image = self.reconstruct_flim_array(
                 self.recordarray,
-                channel = self.selected_channel,
-                lines_in_file = self.FLIMInfo['Lines_in_file'],
-                pixels_x = self.FLIMInfo['PixelsX'],
-                pixels_y = self.FLIMInfo['PixelsY'],
-                global_resolution = self.FLIMInfo['GlobalResolution'],
-                time_resolution = self.FLIMInfo['Resolution'],
-                spatial_binning = self.spatial_binning,
-                temporal_binning = self.temporal_binning
+                channel=self.selected_channel,
+                lines_in_file=self.FLIMInfo['Lines_in_file'],
+                pixels_x=self.FLIMInfo['PixelsX'],
+                pixels_y=self.FLIMInfo['PixelsY'],
+                global_resolution=self.FLIMInfo['GlobalResolution'],
+                time_resolution=self.FLIMInfo['Resolution'],
+                spatial_binning=self.spatial_binning,
+                temporal_binning=self.temporal_binning
             )
 
             # Generating overall decay histograms from available channels
             self.overall_decays = self.overall_decay()
 
             self.selected_decay = None
-
-
 
 
     def readPTUHeader(self, file_path):
@@ -261,7 +259,8 @@ class flimdata:
 
         recordarray['marker'] = (np.right_shift(
             recordarray[:]['record'], 25) & 127)
-        recordarray[:]['nanotime'] = ((np.right_shift(recordarray[:]['record'], 10) & 32767) * nano_mult_factor).astype(np.float32)
+        recordarray[:]['nanotime'] = ((np.right_shift(
+            recordarray[:]['record'], 10) & 32767) * nano_mult_factor).astype(np.float32)
 
         recordarray = self.treat_overflows(recordarray, macro_mult_factor)
 
@@ -346,8 +345,6 @@ class flimdata:
         time_axis = np.linspace(0, t_end, number_of_bins)
         return(time_axis)
 
-
-
     def overall_decay(self):
         """[summary]
 
@@ -356,27 +353,26 @@ class flimdata:
             channel_list {List[int]} -- [description]
         """
 
-        decay = np.sum(np.sum(self.flimarray, axis = 1), axis = 0)
+        decay = np.sum(np.sum(self.flimarray, axis=1), axis=0)
 
         return(decay)
 
     def sum_up_selected_decay(self, start_x, stop_x, start_y, stop_y):
-        decay = np.sum(np.sum(self.flimarray[start_x:stop_x, start_y:stop_y], axis = 0), axis = 0)
+        decay = np.sum(
+            np.sum(self.flimarray[start_x:stop_x, start_y:stop_y], axis=0), axis=0)
         self.selected_decay = decay
 
-
     @staticmethod
-    @jit(nopython = True)
+    @jit(nopython=True)
     def reconstruct_flim_array(recordarray: np.ndarray,
-                             channel: int,
-                             lines_in_file: int,
-                             pixels_x: int,
-                             pixels_y: int,
-                             global_resolution: float,
-                             time_resolution: float,
-                             spatial_binning: int,
-                             temporal_binning: int):
-        
+                               channel: int,
+                               lines_in_file: int,
+                               pixels_x: int,
+                               pixels_y: int,
+                               global_resolution: float,
+                               time_resolution: float,
+                               spatial_binning: int,
+                               temporal_binning: int):
         '''
         buildFLIMArray(
         - recordarray: 4 x numRec NumPy array, holds raw photon data and system events
@@ -397,7 +393,8 @@ class flimdata:
 
         frames_in_file = int(lines_in_file[0] / pixels_x)
         # Number of TCSPC bins based on time between pulses and TCSPC time resolution
-        decay_bins = math.ceil((global_resolution / time_resolution)/(2**temporal_binning))
+        decay_bins = math.ceil(
+            (global_resolution / time_resolution)/(2**temporal_binning))
         global_resolution = global_resolution * 10E8  # time between pulses in ns
         time_resolution = time_resolution * 10E9  # TCSPC time resolution in ns
 
@@ -436,12 +433,13 @@ class flimdata:
             tmp_marker = recordarray['marker'][event_counter]
 
             if(tmp_marker == 65):  # Event is line start marker
-                line_active = True  # Starting line evaluation (next while loop)
+                # Starting line evaluation (next while loop)
+                line_active = True
                 # Store line start time
                 line_start = recordarray['macrotime'][event_counter]
                 event_counter += 1
                 continue  # Skip this loop iteration
-            
+
             while(line_active == True):
                 tmp_marker = recordarray['marker'][event_counter]
                 tmp_macro = recordarray['macrotime'][event_counter]
@@ -459,15 +457,18 @@ class flimdata:
                     for i in range(0, len(tmp_events)):
                         diff = tmp_events[i] - line_start
                         pixel_id_y = int(math.floor(diff / pixel_time))
-                        bin_id = math.floor((tmp_nano[i]/global_resolution)*decay_bins) - 1
-    
+                        bin_id = math.floor(
+                            (tmp_nano[i]/global_resolution)*decay_bins) - 1
+
                         if(pixel_id_y < 0):
                             pixel_id_y = 0
                         elif(pixel_id_y > (nPixelY - 1)):
                             pixel_id_y = nPixelY - 1
 
-                        intensity_image[math.floor(pixel_id_x)][pixel_id_y] += 1
-                        flimarray[math.floor(pixel_id_x)][pixel_id_y][bin_id] += 1
+                        intensity_image[math.floor(
+                            pixel_id_x)][pixel_id_y] += 1
+                        flimarray[math.floor(pixel_id_x)
+                                  ][pixel_id_y][bin_id] += 1
 
                     pixel_id_x += 1/binning_factor
                     line_counter += 1

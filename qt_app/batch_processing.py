@@ -220,11 +220,9 @@ class BatchProcessing:
             fast_load=True
         )
 
-        print(self.current_flim_object.FLIMInfo)
-
-        print("Channels: ",
-              self.current_flim_object.FLIMInfo['availableChannels']
-              )
+        # print("Channels: ",
+        #       self.current_flim_object.FLIMInfo['availableChannels']
+        #       )
 
     def change_channel(self, channel: int):
         self.channel = channel
@@ -299,4 +297,7 @@ if(__name__ == '__main__'):
     batch = BatchProcessing(directory=path)
     batch.write_ptu_paths_to_workbook()
     batch.load_ptu_file()
+
+    print(batch.current_flim_object.FLIMInfo['Comment'])
+
     batch.save_workbook()

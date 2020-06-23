@@ -567,7 +567,7 @@
            </property>
           </widget>
          </item>
-         <item row="0" column="1">
+         <item row="1" column="0">
           <widget class="QPushButton" name="pushButton_BatchLoadWorkbook">
            <property name="text">
             <string>Load Workbook</string>
@@ -620,40 +620,23 @@
           <widget class="QLineEdit" name="lineEdit_BatchFluorophore"/>
          </item>
          <item row="5" column="0">
-          <widget class="QLabel" name="label_batch_Model">
-           <property name="text">
-            <string>Model</string>
-           </property>
-          </widget>
-         </item>
-         <item row="5" column="1">
-          <widget class="QComboBox" name="comboBox_BatchModel">
-           <property name="maxVisibleItems">
-            <number>10</number>
-           </property>
-           <item>
-            <property name="text">
-             <string>Monoexponential</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Biexponential</string>
-            </property>
-           </item>
-          </widget>
-         </item>
-         <item row="6" column="0">
           <widget class="QPushButton" name="pushButton_BatchNextROI">
            <property name="text">
             <string>Next ROI</string>
            </property>
           </widget>
          </item>
-         <item row="6" column="1">
+         <item row="6" column="0">
           <widget class="QPushButton" name="pushButton_BatchFitCurrent">
            <property name="text">
             <string>Fit</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="1">
+          <widget class="QPushButton" name="pushButton_BatchWriteToWorkbook">
+           <property name="text">
+            <string>Write to Workbook</string>
            </property>
           </widget>
          </item>

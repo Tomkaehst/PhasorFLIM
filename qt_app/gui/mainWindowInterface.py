@@ -1,4 +1,5 @@
 import sys
+import os
 import time
 import traceback
 import csv
@@ -36,13 +37,21 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
 
         self.logHistory = []
 
-        # Setting up flimdata class
+        # Setting up external classes
+        # FLIM Data and Processing
         self.flim_object = None
+        # FLIM Data and Processing for IRF Measurements
         self.irf_object = None
+        # Path to PTU
         self.ptupath = None
+        # Path to PTU of IRF
         self.irfpath = None
+        # History of PTUs in current session
         self.ptuFileHistory = []
+        # FLIM Decay Fitting Class
         self.fit_object = None
+        # Batch Processing of PTUs
+        self.batch = None
 
         # Some storage here for simple fit curve and residuals
         self.fitted_curve = None
@@ -95,7 +104,11 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         self.residual_plot = self.decay_layout.addPlot(row=2, col=1)
 
         # Batch processing functions
-        self.pushButton_loadBatch.pressed.connect(self.select_batch_directory)
+        self.pushButton_loadNewWorkbook.pressed.connect(
+            self.new_batch_workbook)
+        self.pushButton_BatchNextFile.pressed.connect(self.next_file_in_batch)
+        self.pushButton_BatchPreviousFile.pressed.connect(
+            self.previous_file_in_batch)
 
         # Output functions
         self.pushButton_saveFitResults.pressed.connect(
@@ -357,18 +370,22 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         else:
             self.show_error('Attention', 'No IRF has been loaded yet!')
 
-    def show_intensity_image(self):
+    def show_intensity_image(self, flim_object: flimdata = None):
         '''
         Displays intensity image of PTU file, if a flim data object is present.
         Otherwise, error message will be shown to user.
         '''
-        if (self.flim_object):
+
+        if(flim_object is None):
+            flim_object = self.flim_object
+
+        if (flim_object):
             # self.graphicsView_intensityimage.clear()
-            intensity_image = pg.ImageItem(self.flim_object.intensity_image)
+            intensity_image = pg.ImageItem(flim_object.intensity_image)
             self.graphicsView_intensityimage.addItem(intensity_image)
             self.graphicsView_intensityimage.setRange(
                 QRect(
-                    0, 0, self.flim_object.intensity_image.shape[0], self.flim_object.intensity_image.shape[1])
+                    0, 0, flim_object.intensity_image.shape[0], flim_object.intensity_image.shape[1])
             )
             self.tabWidget_view.setCurrentIndex(0)
         else:
@@ -514,14 +531,101 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
 
     # Batch processing functions
 
-    def select_batch_directory(self):
+    def new_batch_workbook(self):
         self.batch_directory = QFileDialog.getExistingDirectory()
 
         print(self.batch_directory)
 
+        # Creating new Batch object
         self.batch = BatchProcessing(directory=self.batch_directory)
 
-        print(self.batch.ptus_in_working_directory)
+        # Setting user-selected channel for processing
+        self.batch.change_channel(
+            self.spinBox_BatchChannel.value()
+        )
+        # Loading first file in batch
+        self.batch.load_ptu_file()
+
+        # Display current file name in batch menu
+        self.label_BatchCurrentFile.setText(
+            os.path.basename(self.batch.current_file_path)
+        )
+
+        # Display intensity image of first file in batch
+        self.show_current_image_in_batch()
+
+        self.update_log(
+            str('Created new batch file at ' + self.batch_directory)
+        )
+
+    def next_file_in_batch(self):
+        if(self.batch is not None):
+            # Decrement Batch file index
+            self.batch.go_to_next_file()
+
+            # Check if user changed channel
+            #! Use PyQt5 featured / concurrency to do this like a normal person!
+            self.batch.change_channel(
+                self.spinBox_BatchChannel.value()
+            )
+            self.batch.load_ptu_file()
+            self.label_Batch_CurrentFile.setText(
+                os.path.basename(self.batch.current_file_path)
+            )
+            self.show_current_image_in_batch()
+        else:
+            self.show_error(
+                'No Batch',
+                'No batch is currently active.'
+            )
+
+    def previous_file_in_batch(self):
+        if(self.batch is not None):
+            # Decrement Batch file index
+            self.batch.go_to_previous_file()
+
+            # Check if user changed channel
+            #! Use PyQt5 featured / concurrency to do this like a normal person!
+            self.batch.change_channel(
+                self.spinBox_BatchChannel.value()
+            )
+            self.batch.load_ptu_file()
+            self.label_Batch_CurrentFile.setText(
+                os.path.basename(self.batch.current_file_path)
+            )
+            self.show_current_image_in_batch()
+        else:
+            self.show_error(
+                'No Batch',
+                'No batch is currently active.'
+            )
+
+    def show_current_image_in_batch(self):
+        # Display intensity image of current file in batch
+        self.show_intensity_image(
+            self.batch.current_flim_object
+        )
+
+        # Add ROI to current file in batch
+        if (self.ROI):
+            self.graphicsView_intensityimage.removeItem(self.ROI)
+            self.ROI = pg.RectROI(
+                [self.batch.current_flim_object.intensity_image.shape[0] / 2,
+                 self.batch.current_flim_object.intensity_image.shape[1] / 2],
+                [10, 10]
+            )
+            self.graphicsView_intensityimage.addItem(self.ROI)
+
+        else:
+            self.ROI = pg.RectROI(
+                [self.batch.current_flim_object.intensity_image.shape[0] / 2,
+                 self.batch.current_flim_object.intensity_image.shape[1] / 2],
+                [10, 10]
+            )
+            self.graphicsView_intensityimage.addItem(self.ROI)
+
+        # Set view to intensity image
+        self.tabWidget_view.setCurrentIndex(0)
 
     # Output functions
 

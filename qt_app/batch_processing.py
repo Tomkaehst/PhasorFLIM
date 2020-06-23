@@ -1,8 +1,11 @@
-import path
 import os
 import sys
 import glob
+import numpy as np
 import openpyxl as xlsx
+
+from flimdata import flimdata
+from fitting import fitter
 
 
 class BatchProcessing:
@@ -10,9 +13,17 @@ class BatchProcessing:
         # Working directory for batch processing
         # PTU files in user-defined directory and
         # subdirectories will be included.
+        # CAVE: In order to be compatible with
+        # PyQt5's file selector, we have to use
+        # absolute paths!
         self.directory = directory
         self.workbook = None
         self.ptus_in_working_directory = self.get_ptus_from_working_directory()
+        # Current PTU file based on position on list of files in working directory
+        self.current_ptu = 0
+        self.current_file_path = None
+        self.current_flim_object = None
+        self.current_channel = 0
 
         # Useful info at start row, above that only description
         self.start_row = 6
@@ -71,8 +82,11 @@ class BatchProcessing:
         ]
 
         if(workbook_path is None):
+            print('Creating new Batch Workbook...\n')
+            self.workbook = xlsx.Workbook()
+            self.sheet = self.workbook.active
             self.create_workbook()
-            self.write_ptu_infos_to_workbook()
+            self.write_ptu_paths_to_workbook()
             self.save_workbook()
         else:
             self.read_workbook(workbook_path)
@@ -88,36 +102,35 @@ class BatchProcessing:
         Formatting follows template agreed upon on 06/2020.
         '''
         # Creating new Excel workbook and worksheet
-        self.workbook = xlsx.Workbook()
-        batch_sheet = self.workbook.active
+        # batch_sheet = self.workbook.active
 
         # Add title and color description
-        batch_sheet.cell(1, 1).value = "FLIM Data Fitting"
-        batch_sheet.cell(1, 1).font = xlsx.styles.Font(
+        self.sheet.cell(1, 1).value = "FLIM Data Fitting"
+        self.sheet.cell(1, 1).font = xlsx.styles.Font(
             name='Calibri',
             size=24,
             bold=True
         )
-        batch_sheet.cell(
+        self.sheet.cell(
             2, 2).value = 'Information supplied by the user and used by the program to retrieve the data'
-        batch_sheet.cell(2, 1).fill = self.user_input_fill
+        self.sheet.cell(2, 1).fill = self.user_input_fill
 
-        batch_sheet.cell(
+        self.sheet.cell(
             3, 2).value = 'additional Information supplied by the user, but not used by the program'
-        batch_sheet.cell(3, 1).fill = self.user_annotation_fill
+        self.sheet.cell(3, 1).fill = self.user_annotation_fill
 
-        batch_sheet.cell(
+        self.sheet.cell(
             4, 2).value = 'output from AGBP FLIM Fitter'
-        batch_sheet.cell(4, 1).fill = self.output_fill
+        self.sheet.cell(4, 1).fill = self.output_fill
 
         # Setting column size for proper displaying of parameters
-        batch_sheet.column_dimensions['A'].width = 25
-        batch_sheet.column_dimensions['B'].width = 25
-        batch_sheet.column_dimensions['C'].width = 7
-        batch_sheet.column_dimensions['D'].width = 13
-        batch_sheet.column_dimensions['E'].width = 13
-        batch_sheet.column_dimensions['F'].width = 13
-        batch_sheet.column_dimensions['G'].width = 13
+        self.sheet.column_dimensions['A'].width = 25
+        self.sheet.column_dimensions['B'].width = 25
+        self.sheet.column_dimensions['C'].width = 7
+        self.sheet.column_dimensions['D'].width = 13
+        self.sheet.column_dimensions['E'].width = 13
+        self.sheet.column_dimensions['F'].width = 13
+        self.sheet.column_dimensions['G'].width = 13
 
         # Adding one measurement section per ptu file
         # in directory and subdirectories
@@ -157,36 +170,133 @@ class BatchProcessing:
 
         self.current_row += 2
 
-    def read_workbook(self, filepath):
-        self.workbook = xlsx.load_workbook(filepath)
-
-    def save_workbook(self, filepat=None):
-        self.workbook.save(filename=(self.directory + '/ptu_batch.xlsx'))
-
     # PTU file gathering and processing
 
     def get_ptus_from_working_directory(self):
         ptu_file_list = glob.glob(self.directory + "/**/*.ptu", recursive=True)
         return(ptu_file_list)
 
-    def write_ptu_infos_to_workbook(self):
-        for i in range(0, len(self.ptus_in_working_directory)):
-            sheet = self.workbook.active
-            # Writing relative path to file
-            sheet.cell(
+    def check_for_new_files(self):
+        '''
+        If workbook has already files in it, check if there're new
+        files in the working directory of the loaded workbook.
+        Append the new files to the list and start processing
+        from the first new file.
+        '''
+
+        pass
+
+    def check_for_unprocessed_files(self):
+        '''
+        Check for files that have not been processed in a
+        given, loaded workbook.
+        '''
+
+        pass
+
+    def change_current_file_path(self):
+        self.current_file_path = os.path.join(
+            self.sheet.cell(
                 row=self.current_row,
                 column=1
-            ).value = self.ptus_in_working_directory[i]
+            ).value,
+            self.sheet.cell(
+                row=self.current_row,
+                column=2
+            ).value
+        )
+
+        print(os.path.basename(self.current_file_path))
+
+    def load_ptu_file(self, spatial_binning=3, temporal_binning=0):
+
+        self.change_current_file_path()
+
+        self.current_flim_object = flimdata(
+            self.current_file_path,
+            self.current_channel,
+            spatial_binning,
+            temporal_binning,
+            fast_load=True
+        )
+
+        print(self.current_flim_object.FLIMInfo)
+
+        print("Channels: ",
+              self.current_flim_object.FLIMInfo['availableChannels']
+              )
+
+    def change_channel(self, channel: int):
+        self.channel = channel
+
+    def go_to_next_file(self):
+
+        self.current_row += 1
+
+        # Start from first file if last file is exceeded
+        if(self.current_row > len(self.ptus_in_working_directory) + 2):
+            self.current_row = self.start_row + 2
+
+        self.load_ptu_file()
+
+    def go_to_previous_file(self):
+
+        self.current_row -= 1
+
+        # Start from last file if first file is exceeded
+        if(self.current_row < (self.start_row + 2)):
+            self.current_row = len(self.ptus_in_working_directory)
+
+        self.load_ptu_file()
+
+    def fit_current_ROI(self, roi_position=None):
+        '''
+        Perform fit of currently loaded PTU file (self.current_flim_object)
+        using the user-set ROI from mainWindowInterface.
+        '''
+        pass
+
+    # Write data to workbook
+
+    def write_ptu_paths_to_workbook(self, roi_position=None):
+        # Loop through files in working directory
+        # and write directory and file name in
+        # first and second column of the current row.
+        for i in range(0, len(self.ptus_in_working_directory)):
+            # Writing relative path to file
+            self.sheet.cell(
+                row=self.current_row,
+                column=1
+            ).value = os.path.dirname(self.ptus_in_working_directory[i])
 
             # Writing filename
-            sheet.cell(
+            self.sheet.cell(
                 row=self.current_row,
                 column=2
             ).value = os.path.basename(self.ptus_in_working_directory[i])
 
             self.current_row += 1
 
+        # Resetting row number to first position of file list
+        self.current_row = self.start_row + 2
 
-#batch = BatchProcessing(directory='../notebooks/data/')
-# batch.write_ptu_infos_to_workbook()
-# batch.save_workbook()
+    def read_workbook(self, file_path):
+        '''
+        Read Excel workbook from user-set file path.
+        '''
+        self.workbook = xlsx.load_workbook(file_path)
+
+    def save_workbook(self):
+        '''
+        Write Excel workbook to user-set directory.
+        '''
+        self.workbook.save(filename=(self.directory + '/ptu_batch.xlsx'))
+
+
+# For debugging – Only runs, if batch_processing.py was called from command line
+if(__name__ == '__main__'):
+    path = '/Users/tomkache/Documents/Studium/PhD/2019/Data Analysis/PhasorFLIM/notebooks/data'
+    batch = BatchProcessing(directory=path)
+    batch.write_ptu_paths_to_workbook()
+    batch.load_ptu_file()
+    batch.save_workbook()

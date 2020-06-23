@@ -33,7 +33,6 @@ class flimdata:
         # Bit offset of file in file_path, where TTTR records start
         self.headerBitOffset = None
 
-
         # Reading header; do this automatically when flimdata instance is created; no great time pennalty
         self.readPTUHeader(self.file_path)
 
@@ -74,7 +73,6 @@ class flimdata:
             self.overall_decays = self.overall_decay()
 
             self.selected_decay = None
-
 
     def readPTUHeader(self, file_path):
         """[summary]

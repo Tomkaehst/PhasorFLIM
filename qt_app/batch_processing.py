@@ -3,6 +3,7 @@ import sys
 import glob
 import numpy as np
 import openpyxl as xlsx
+import pyqtgraph as pq
 
 from flimdata import flimdata
 from fitting import fitter
@@ -19,10 +20,12 @@ class BatchProcessing:
         self.directory = directory
         self.workbook = None
         self.ptus_in_working_directory = self.get_ptus_from_working_directory()
+
         # Current PTU file based on position on list of files in working directory
         self.current_ptu = 0
         self.current_file_path = None
         self.current_flim_object = None
+        self.fit = None
         self.current_channel = 0
 
         # Useful info at start row, above that only description
@@ -229,6 +232,8 @@ class BatchProcessing:
 
     def go_to_next_file(self):
 
+        print(self.current_row)
+        print(self.current_ptu)
         self.current_row += 1
 
         # Start from first file if last file is exceeded
@@ -252,9 +257,54 @@ class BatchProcessing:
         Perform fit of currently loaded PTU file (self.current_flim_object)
         using the user-set ROI from mainWindowInterface.
         '''
-        pass
+        # Getting ROI coordinates from overloaded ROI object
+        coordinates = roi_position.pos()
+        size = roi_position.size()
+
+        # Summing up decay data from ROI
+        self.current_flim_object.sum_up_selected_decay(
+            start_x=int(coordinates[0]),
+            stop_x=int(coordinates[0] + size[0]),
+            start_y=int(coordinates[1]),
+            stop_y=int(coordinates[1] + size[1])
+        )
+
+        # Fit with monoexponential model
+        self.fit = fitter(
+            time_axis=self.current_flim_object.time_axis,
+            data=self.current_flim_object.selected_decay,
+            number_of_exponentials=1,
+            objective_function='Poisson',
+            lower_time_cutoff=100,
+            upper_time_cutoff=40000
+        )
+
+        self.fitted_curve, self.residuals = self.fit.fit_decay(
+            decay=self.fit.data
+        )
+
+        # Appending reduced chi-squared to end of fitted parameters array
+        self.fit.optimized_parameters['x'] = np.append(
+            self.fit.optimized_parameters['x'],
+            self.fit.calculate_reduced_chi_square()
+        )
 
     # Write data to workbook
+
+    def write_parameters_to_workbook(self):
+        '''
+        Write fitted parameters to excel workbook.
+        '''
+
+        # Writing parameters to corresponding cells in workbook
+        for i in range(0, (len(self.fit.optimized_parameters['x']))):
+            self.sheet.cell(
+                row=self.current_row,
+                column=(9 + i)
+            ).value = self.fit.optimized_parameters['x'][i]
+
+        # Writing changes to workbook file
+        self.save_workbook()
 
     def write_ptu_paths_to_workbook(self, roi_position=None):
         # Loop through files in working directory

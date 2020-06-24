@@ -109,6 +109,12 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         self.pushButton_BatchNextFile.pressed.connect(self.next_file_in_batch)
         self.pushButton_BatchPreviousFile.pressed.connect(
             self.previous_file_in_batch)
+        self.pushButton_BatchFitCurrent.pressed.connect(
+            self.fit_current_file_in_batch
+        )
+        self.pushButton_BatchWriteToWorkbook.pressed.connect(
+            self.write_current_batch_fit_to_workbook
+        )
 
         # Output functions
         self.pushButton_saveFitResults.pressed.connect(
@@ -626,6 +632,54 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
 
         # Set view to intensity image
         self.tabWidget_view.setCurrentIndex(0)
+
+    def fit_current_file_in_batch(self):
+        if(self.batch is not None):
+            self.batch.fit_current_ROI(self.ROI)
+
+            # Plotting selected decay and the corresping fit
+            self.decay_plot.clear()
+            self.decay_plot.plot(
+                x=self.batch.fit.time_axis,
+                y=self.batch.fit.data,
+                pen=pg.mkPen('w', width=2)
+            )
+            self.decay_plot.plot(
+                x=self.batch.fit.time_axis,
+                y=self.batch.fitted_curve,
+                pen=pg.mkPen('r', width=2)
+            )
+
+            self.residual_plot.clear()
+            self.residual_plot.plot(
+                x=self.batch.fit.time_axis,
+                y=self.batch.residuals,
+                pen=pg.mkPen('w', width=2)
+            )
+
+            # Set view to plot and residuals
+            self.tabWidget_view.setCurrentIndex(1)
+
+        else:
+            self.show_error(
+                'No Batch',
+                'No batch is currently active.'
+            )
+
+    def write_current_batch_fit_to_workbook(self):
+        if(self.batch is not None):
+            if(self.batch.fit is not None):
+                self.batch.write_parameters_to_workbook()
+            else:
+                self.show_error(
+                    'No Fit in Batch',
+                    'No fit present to be written to current workbook.'
+                )
+        else:
+            self.show_error(
+                'No Batch',
+                'No batch is currently active.'
+            )
 
     # Output functions
 

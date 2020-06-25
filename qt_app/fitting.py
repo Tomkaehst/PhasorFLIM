@@ -3,8 +3,6 @@
 Class Description: fitter()
 ---------
 
-
-
 Authors: Tom Kache & Christoph Biskup, University Hospital Jena
 April 2020
 '''
@@ -73,7 +71,6 @@ class fitter:
         if(self.upper_time_cutoff is not None and self.upper_time_cutoff is not None):
             self.data = self.data[int(self.lower_time_cutoff):int(
                 self.upper_time_cutoff)]
-
 
     def build_parameter_tuple(self):
         '''
@@ -147,7 +144,6 @@ class fitter:
 
         return(decay_parameters, irf_parameters, parameter_names, parameter_bounds)
 
-
     def estimate_background(self, data):
         '''
         Calculates median of last 3 % of data.
@@ -173,7 +169,6 @@ class fitter:
             np.sqrt(self.estimate_background(data))
 
         return(weights)
-
 
     @staticmethod
     @njit
@@ -360,6 +355,7 @@ class fitter:
         # print(self.optimized_parameters.hess_inv(1.0))
 
         return(fitted_curve, residuals)
+
     def fit_image(self, photon_threshold=100):
         ''' 
 

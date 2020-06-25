@@ -11,7 +11,14 @@ from numba.typed import List
 
 class flimdata:
     def __init__(self, file_path: str, channel: int, spatial_binning: int, temporal_binning: int, fast_load: bool = True):
-        """[summary]
+        """[flimdata]
+        Class that handles loading and pre-processing of PicoQuant TTTR (PTU) files.
+        flimdata object has FLIM array (3D X-Y-ns array) and intensity image (2D X-Y)
+        data, which is then available to other functions during runtime.
+
+        Quick Start: 
+            from flimdata import flimdata
+
 
         Arguments:
             file_path {str} -- [description]
@@ -227,12 +234,30 @@ class flimdata:
     # @jit(nopython = True, cache = True)
 
     def readPhotonData(self, file_path: str, bitoffset: int, numRecords: int):
-        """[summary]
+        """[flimdata.readPhotonData]
+        Recovers real TTTR macro and nano times and marker signals
+        from 32-bit records from HydraHarp hardware.
+        Numpy array with pre-defined data type for raw 32 bit records,
+        macrotimes, nanotimes, and markers (uint32, float64, float64,
+        uint8) is alloated and used for further processing.
 
         Arguments:
-            file_path {string} -- [description]
-            bitoffset {int} -- [description]
-            numRecords {int} -- [description]
+            file_path {string} -- Path to PTU file to be processed
+            bitoffset {int} -- Position in PTU where photon records start,
+                                i.e. after header infos
+            numRecords {int} -- Number of 32 bit photon records in file
+                                (from header section)
+
+        Output:
+            recordarray {np.array(dtype = self.record_array_datatypes)} --
+                                Array of recovered and treated photon records
+                                from PTU file. 
+                                Contents of recordarray:
+                                    ['record'] - raw 32 bit TTTR photon and system records
+                                    ['marker] - scan and system markers (i.e. line start / stop
+                                                and macro time overflow)
+                                    ['macrotime'] - experiment macro times, corrected for clock 
+                                                    overflows by self.treat_overflows
         """
 
         # Initializing recordarray
@@ -272,11 +297,17 @@ class flimdata:
     @staticmethod
     @jit(nopython=True, cache=True)
     def treat_overflows(recordarray: np.ndarray, macrotimefactor: float):
-        """[summary]
+        """ Adapted from https://github.com/PicoQuant/PicoQuant-Time-Tagged-File-Format-Demos
+        Accelerated just-in-time using Numba.
+        [flimdata.treat_overflows]
+
 
         Arguments:
-            recordarray {np.ndarray} -- [description]
-            macrotimefactor {float} -- [description]
+            recordarray {np.ndarray} -- 
+            macrotimefactor {float} -- 
+
+        Output:
+            recordarray {np.array} -- Overflow corrected TTTR array.
         """
 
         overflow_period = 1024
@@ -344,7 +375,8 @@ class flimdata:
         return(time_axis)
 
     def overall_decay(self):
-        """[summary]
+        """[flimdata.overall_decay]
+        Sum up all decays in the 3D FLIM array to get overall decay.
 
         Arguments:
             recordarray {np.array} -- [description]
@@ -372,16 +404,18 @@ class flimdata:
                                spatial_binning: int,
                                temporal_binning: int):
         '''
-        buildFLIMArray(
-        - recordarray: 4 x numRec NumPy array, holds raw photon data and system events
-        - channel: int; which channel to reconstruct the flimarray from
-        - pixels_x: original image dimension in X, stored in FLIMInfo
-        - pixels_y: original image dimension in Y, stored in FLIMInfo
-        - global_resolution: global measurment of nanotime, stored in FLIMInfo, in ns, 51 ns for 20 MHz laser pulse frequency
-        - time_resolution: nanotime resolution of TCSPC device, in ps
-        - spatial_binning: user-defined binning factor of image, calculated as 2**factor
-        - temporal_binning: user-defined binning factor for fluorescence decay histogram
-        )
+        [flimdata.buildFLIMArray]
+
+        [Arguments]
+            - recordarray: 4 x numRec NumPy array, holds raw photon data and system events
+            - channel: int; which channel to reconstruct the flimarray from
+            - pixels_x: original image dimension in X, stored in FLIMInfo
+            - pixels_y: original image dimension in Y, stored in FLIMInfo
+            - global_resolution: global measurment of nanotime, stored in FLIMInfo, in ns, 51 ns for 20 MHz laser pulse frequency
+            - time_resolution: nanotime resolution of TCSPC device, in ps
+            - spatial_binning: user-defined binning factor of image, calculated as 2**factor
+            - temporal_binning: user-defined binning factor for fluorescence decay histogram
+
         '''
 
         event_counter = 0  # Keeps track of photon / marker events while looping through data

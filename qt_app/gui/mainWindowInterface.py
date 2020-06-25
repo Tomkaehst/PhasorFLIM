@@ -669,7 +669,9 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
     def write_current_batch_fit_to_workbook(self):
         if(self.batch is not None):
             if(self.batch.fit is not None):
-                self.batch.write_parameters_to_workbook()
+                self.batch.write_parameters_to_workbook(
+                    roi_position=self.ROI
+                )
             else:
                 self.show_error(
                     'No Fit in Batch',

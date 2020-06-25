@@ -291,10 +291,25 @@ class BatchProcessing:
 
     # Write data to workbook
 
-    def write_parameters_to_workbook(self):
+    def write_parameters_to_workbook(self, roi_position=None):
         '''
         Write fitted parameters to excel workbook.
         '''
+
+        # Writing ROI position and size
+        coordinates = roi_position.pos()
+        size = roi_position.size()
+        roi_coordinates = [
+            coordinates[0],
+            coordinates[0] + size[0],
+            coordinates[1],
+            coordinates[1] + size[1]
+        ]
+
+        self.sheet.cell(
+            row=self.current_row,
+            column=8
+        ).value = roi_coordinates
 
         # Writing parameters to corresponding cells in workbook
         for i in range(0, (len(self.fit.optimized_parameters['x']))):
@@ -329,15 +344,11 @@ class BatchProcessing:
         self.current_row = self.start_row + 2
 
     def read_workbook(self, file_path):
-        '''
-        Read Excel workbook from user-set file path.
-        '''
+        '''Read Excel workbook from user-set file path.'''
         self.workbook = xlsx.load_workbook(file_path)
 
     def save_workbook(self):
-        '''
-        Write Excel workbook to user-set directory.
-        '''
+        '''Write Excel workbook to user-set directory.'''
         self.workbook.save(filename=(self.directory + '/ptu_batch.xlsx'))
 
 
@@ -348,6 +359,12 @@ if(__name__ == '__main__'):
     batch.write_ptu_paths_to_workbook()
     batch.load_ptu_file()
 
-    print(batch.current_flim_object.FLIMInfo['Comment'])
+    FLIM_Info = batch.current_flim_object.FLIMInfo['Comment'].splitlines()
+
+    print(FLIM_Info, '\n')
+
+    detector_range = [d for d in FLIM_Info if 'SP PMT' in d]
+
+    print(detector_range)
 
     batch.save_workbook()

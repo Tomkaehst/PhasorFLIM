@@ -10,6 +10,24 @@ from fitting import fitter
 
 
 class BatchProcessing:
+    '''
+
+    Class Description: Batchprocessing()
+    ---
+
+    Class creates an Excel worksheet in a user-set working directory
+    which is passed to BatchProcessing from mainWindowInterface / the
+    Qt-GUI.
+    The class then looks for PTU files in the selected working
+    directory and the user then skips through the files and performs
+    data analysis / fitting. The results are saved to the Excel work-
+    book.
+
+    Author: Tom Kache
+    June 2020
+
+    '''
+
     def __init__(self, workbook_path=None, directory='./'):
         # Working directory for batch processing
         # PTU files in user-defined directory and
@@ -52,6 +70,15 @@ class BatchProcessing:
             patternType='solid',
             fgColor=self.output_color
         )
+
+        self.headings_overview = [
+            'Directory',
+            'Filename',
+            'Fluorophore'
+            'Excitation',
+            'Detection',
+            'Model'
+        ]
 
         self.headings = [
             'Directory',
@@ -222,10 +249,6 @@ class BatchProcessing:
             temporal_binning,
             fast_load=True
         )
-
-        # print("Channels: ",
-        #       self.current_flim_object.FLIMInfo['availableChannels']
-        #       )
 
     def change_channel(self, channel: int):
         self.channel = channel

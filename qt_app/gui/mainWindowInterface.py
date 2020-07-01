@@ -591,7 +591,6 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
             self.batch.go_to_previous_file()
 
             # Check if user changed channel
-            #! Use PyQt5 featured / concurrency to do this like a normal person!
             self.batch.change_channel(
                 self.spinBox_BatchChannel.value()
             )

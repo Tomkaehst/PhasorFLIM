@@ -339,9 +339,9 @@ class fitter:
                 method=minimization_method,
                 bounds=self.parameter_bounds,
                 options={
-                    'maxiter': 2000,
+                    'maxiter': 40000,
                     'disp': False,
-                    'eps': 1E-5
+                    'eps': 1E-4
                 }
             )
         except RuntimeWarning:

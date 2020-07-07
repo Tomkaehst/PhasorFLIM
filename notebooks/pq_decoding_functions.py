@@ -55,12 +55,12 @@ def treatOverflows(recordarray, macrotimefactor):
     number of macrotime clock overflows. See PicoQuant PTU documentary for further details and explanation.
     '''
     
-    overflow_period = 1024
+    OVERFLOW_PERIOD = 1024
     overflow_cor = 0
 
     for record in recordarray:
         if(record['marker'] == 127):
-            overflow_cor += overflow_period * \
+            overflow_cor += OVERFLOW_PERIOD * \
                 (record['record'] & (2**10 - 1))
 
         record['macrotime'] = (overflow_cor + np.bitwise_and(record['record'], 2**10-1)) * macrotimefactor

@@ -77,7 +77,33 @@ class BatchProcessing:
             'Fluorophore'
             'Excitation',
             'Detection',
-            'Model'
+            'Monoexp.',
+            '', '', '', '', '', '', '', '',
+            'Biexp.'
+        ]
+
+        self.headings_overview2 = [
+            '', '', '', '', '',
+            'tau (Ch1)',
+            'Chi2',
+            'tau (Ch2)',
+            'Chi2',
+            'tau (Ch3)',
+            'Chi2',
+            'tau (Ch4)',
+            'Chi2',
+            'tau1 (Ch1)',
+            'tau2 (Ch1)',
+            'Chi2',
+            'tau1 (Ch2)',
+            'tau2 (Ch2)',
+            'Chi2',
+            'tau1 (Ch3)',
+            'tau2 (Ch3)',
+            'Chi2',
+            'tau1 (Ch4)',
+            'tau2 (Ch4)',
+            'Chi2'
         ]
 
         self.headings = [
@@ -131,40 +157,44 @@ class BatchProcessing:
         ptu-files found in the subdirectories.
         Formatting follows template agreed upon on 06/2020.
         '''
-        # Creating new Excel workbook and worksheet
-        # batch_sheet = self.workbook.active
 
-        # Add title and color description
-        self.sheet.cell(1, 1).value = "FLIM Data Fitting"
-        self.sheet.cell(1, 1).font = xlsx.styles.Font(
-            name='Calibri',
-            size=24,
-            bold=True
-        )
-        self.sheet.cell(
-            2, 2).value = 'Information supplied by the user and used by the program to retrieve the data'
-        self.sheet.cell(2, 1).fill = self.user_input_fill
+        # Creating Excel sheets for each channel
+        for i in range(0, 3):
+            sheetname = str('Channel', i)
+            self.workbook.create_sheet(sheetname)
+            current_sheet = self.workbook[sheetname]
 
-        self.sheet.cell(
-            3, 2).value = 'additional Information supplied by the user, but not used by the program'
-        self.sheet.cell(3, 1).fill = self.user_annotation_fill
+            # Add title and color description
+            current_sheet.cell(1, 1).value = "FLIM Data Fitting"
+            current_sheet.cell(1, 1).font = xlsx.styles.Font(
+                name='Calibri',
+                size=24,
+                bold=True
+            )
+            current_sheet.cell(
+                2, 2).value = 'Information supplied by the user and used by the program to retrieve the data'
+            current_sheet.cell(2, 1).fill = self.user_input_fill
 
-        self.sheet.cell(
-            4, 2).value = 'output from AGBP FLIM Fitter'
-        self.sheet.cell(4, 1).fill = self.output_fill
+            current_sheet.cell(
+                3, 2).value = 'additional Information supplied by the user, but not used by the program'
+            current_sheet.cell(3, 1).fill = self.user_annotation_fill
 
-        # Setting column size for proper displaying of parameters
-        self.sheet.column_dimensions['A'].width = 25
-        self.sheet.column_dimensions['B'].width = 25
-        self.sheet.column_dimensions['C'].width = 7
-        self.sheet.column_dimensions['D'].width = 13
-        self.sheet.column_dimensions['E'].width = 13
-        self.sheet.column_dimensions['F'].width = 13
-        self.sheet.column_dimensions['G'].width = 13
+            current_sheet.cell(
+                4, 2).value = 'output from AGBP FLIM Fitter'
+            current_sheet.cell(4, 1).fill = self.output_fill
 
-        # Adding one measurement section per ptu file
-        # in directory and subdirectories
-        self.add_header()
+            # Setting column size for proper displaying of parameters
+            current_sheet.column_dimensions['A'].width = 25
+            current_sheet.column_dimensions['B'].width = 25
+            current_sheet.column_dimensions['C'].width = 7
+            current_sheet.column_dimensions['D'].width = 13
+            current_sheet.column_dimensions['E'].width = 13
+            current_sheet.column_dimensions['F'].width = 13
+            current_sheet.column_dimensions['G'].width = 13
+
+            # Adding one measurement section per ptu file
+            # in directory and subdirectories
+            self.add_header()
 
     def add_header(self, row_offset=0):
         '''

@@ -252,7 +252,7 @@ def readPTUData(path: str, makeFLIMInfo: bool = True):
 
     ## Recover marker signals and nano times by bitwise operations on recordarray['record']
     recordarray[:]['marker'] = (np.right_shift(recordarray[:]['record'], 25) & 127)
-    recordarray[:]['nanotime'] = ((np.right_shift(recordarray[:]['record'], 10) & 32767) * nanoMultFactor).astype(np.float32)
+    recordarray[:]['nanotime'] = ((np.right_shift(recordarray[:]['record'], 10) & 32767) * nanoMultFactor).astype(np.float64)
 
     # Recover macro times using treatOverflows()
     recordarray = treatOverflows(recordarray, macroMultFactor)

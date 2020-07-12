@@ -268,9 +268,30 @@ def readPTUData(path: str, makeFLIMInfo: bool = True):
     return(recordarray, header_contents)
 
 
+@jit(nopython = False, cache = True) 
+def sinCorr(correction_factor, number_of_pixels, pixel_mult_factor = 10):
+    corrected_bins = np.linspace(-(correction_factor), (correction_factor), (pixel_mult_factor * number_of_pixels))
+    np.sin(corrected_bins, corrected_bins)
+    np.add(corrected_bins, np.max(corrected_bins), corrected_bins)
+    np.multiply(corrected_bins, 1/np.max(corrected_bins), corrected_bins)
+    np.multiply(corrected_bins, (number_of_pixels - 1), corrected_bins)
+
+    return(corrected_bins, pixel_mult_factor)
+
+
 
 @jit(nopython=True, cache=True)
-def buildFLIMArray(recordarray, channel, linesinfile, pixelsx, pixelsy, globRes, timeRes, spatialBinning, temporalBinning):
+def buildFLIMArray(
+	recordarray,
+	channel,
+	linesinfile,
+	pixelsx,
+	pixelsy,
+	globRes,
+	timeRes,
+	spatialBinning,
+	temporalBinning,
+	sinusodialCorr = 0.0):
     '''
     buildFLIMArray(
     - recordarray: 4 x numRec NumPy array, holds raw photon data and system events
@@ -326,6 +347,22 @@ def buildFLIMArray(recordarray, channel, linesinfile, pixelsx, pixelsy, globRes,
     flimarray = np.zeros((nPixelX, nPixelY, decayBins), dtype=np.uint16)
     # 2D array for intensity image
     intensityImage = np.zeros((nPixelX, nPixelY), dtype=np.uint16)
+    
+    # Generating array for sinosidial image correction using sinCorr() function
+    # sinCorr() needs number of pixels and the correction factor, which specifies
+    # what percentage of the sin curve is used for mapping of pixels and thus
+    # correction of the distorted image
+    # An excess of correction bins is produced and handeled as float (!), because due
+    # to the distortion, some pixels will be rounded to other values and thus do not
+    # map to an actual pixel in a particular line. Because of that,
+    # sinCorr also returns the number of exceeding bins. This is the multiplier needed
+    # to assign the pixel to the corrected bin
+    corrected_bins, correction_mult_factor = sinCorr(
+    	sinusodialCorr,
+    	nPixelY,
+    	pixel_mult_factor = 20
+    )
+    
 
     while(lastLine == False):
         tmpMarker = recordarray['marker'][eventCounter]
@@ -355,9 +392,9 @@ def buildFLIMArray(recordarray, channel, linesinfile, pixelsx, pixelsy, globRes,
 
                 # Build intensity image and FLIM array from photon macro times
                 for i in range(0, len(tmpEvents)):
-                    diff = tmpEvents[i] - lineStart
-                    pixelIDY = math.floor(diff / pixelTime)
+                    diff = round(correction_mult_factor * ((tmpEvents[i] - lineStart)/pixelTime))
                     binID = math.floor((tmpNano[i]/globalResolution)*decayBins) - 1
+                    pixelIDY = int(round(corrected_bins[int(diff)]))
 
                     if(pixelIDY < 0 or pixelIDY > (nPixelY - 1)):
                         #oorPhotons = oorPhotons + 1
@@ -406,7 +443,13 @@ def make_time_axis(global_resolution, resolution, number_of_bins = 0):
     return(t_axis)
 
 
-def load_flim_data(path, channel = 0, spatialBinning = 0, temporalBinning = 0, makeFLIMInfo = True):
+def load_flim_data(
+	path,
+	channel = 0,
+	spatialBinning = 0,
+	temporalBinning = 0,
+	sinusodial_correction = 0.001,
+	makeFLIMInfo = True):
     '''
     Function wrapper for readPTUData and buildFLIMarray.
     Returns the 3D FLIM array and the intensity image of the ptu file provided with path (str).
@@ -423,7 +466,8 @@ def load_flim_data(path, channel = 0, spatialBinning = 0, temporalBinning = 0, m
         globRes = header_info['GlobalResolution'],
         timeRes = header_info['Resolution'],
         spatialBinning = spatialBinning,
-        temporalBinning = temporalBinning
+        temporalBinning = temporalBinning,
+        sinusodialCorr = sinusodial_correction
     )
 
     time_axis = make_time_axis(

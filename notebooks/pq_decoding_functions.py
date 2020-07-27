@@ -2,16 +2,11 @@
 '''
 PicoQuant TTTR / PTU File Decoding Functions
 --------------------------------------------
-
 Set of functions that are used to decode PicoQuant TTTR files and loading them into RAM.
 For use with Jupyter Notebooks. Numba JIT accelerated.
-
-
 For importing raw TTTR data into memory, use readPTUData(path = 'path/to/file.ptu') and provide the 
 path to the PTU file to be processed.
-
 To turn
-
 '''
 
 # Importing modules

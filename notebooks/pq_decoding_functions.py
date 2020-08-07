@@ -4,7 +4,7 @@ PicoQuant TTTR / PTU File Decoding Functions
 --------------------------------------------
 Set of functions that are used to decode PicoQuant TTTR files and loading them into RAM.
 For use with Jupyter Notebooks. Numba JIT accelerated.
-For importing raw TTTR data into memory, use readPTUData(path = 'path/to/file.ptu') and provide the 
+For importing raw TTTR data into memory, use readPTUData(path = 'path/to/file.ptu') and provide the
 path to the PTU file to be processed.
 To turn
 '''
@@ -45,11 +45,11 @@ def treatOverflows(recordarray, macrotimefactor):
     macrotimefactor: multiplication factor for mactotime clock to recover real experiment macrotime
     )
     Output is recordarray, but with populated ['macrotime'] row
-    
+
     Takes whole record array and recovers real macrotime from raw photon TTTR data by adding
     number of macrotime clock overflows. See PicoQuant PTU documentary for further details and explanation.
     '''
-    
+
     OVERFLOW_PERIOD = 1024
     overflow_cor = 0
 
@@ -59,7 +59,7 @@ def treatOverflows(recordarray, macrotimefactor):
                 (record['record'] & (2**10 - 1))
 
         record['macrotime'] = (overflow_cor + np.bitwise_and(record['record'], 2**10-1)) * macrotimefactor
-            
+
     return(recordarray)
 
 
@@ -76,17 +76,17 @@ def countLines(recordarray):
 #@jit(nopython = True, cache = True)
 def readPTUData(path: str, makeFLIMInfo: bool = True):
     """readPTUData()
-    
+
     Arguments:
         path {str} -- Path to PicoQuant TTTR / PTU file to be processed
         makeFLIMInfo {bool} -- Make Python dictionary containing required infos for image reconstruction for quicker access-
-    
+
     Output:
         macrotimes {np.ndarray} -- Array of macrotimes of TTTR file in Float32.
         nanotimes {np.ndarray} -- Array of nanotimes in Float32.
         markers {np.ndarray} -- Array of system / event marker signals in UInt32
         header_contents {KV-pair} -- Key-Value-Pair containing header section of TTTR file.
-    """    
+    """
 
     # Open file defined in ptupath
     ptureadstream = open(path, 'rb')
@@ -105,7 +105,7 @@ def readPTUData(path: str, makeFLIMInfo: bool = True):
 
 
     ## Decoding Header
-    ## setting up header end string to terminate header decoding in while loop 
+    ## setting up header end string to terminate header decoding in while loop
     headerend_tag = 'Header_End'
     reached_headerend = False
 
@@ -185,25 +185,8 @@ def readPTUData(path: str, makeFLIMInfo: bool = True):
     #print('Finished decoding header.')
 
     # Copying header info into FLIMInfo dict
-    if(makeFLIMInfo == False):
-        FLIMInfo = {
-            #'Filename' : header_contents['$Filename'],
-            #'Comment': header_contents['$Comment'],
-            'RecordType' : header_contents['TTResultFormat_TTTRRecType'],
-            'BitsPerRecord' : header_contents['TTResultFormat_BitsPerRecord'],
-            #'PixelResolution' : header_contents['$ReqHdr_SpatialResolution'],
-            'PixelsX' : header_contents['ImgHdr_PixX'],
-            'PixelsY' : header_contents['ImgHdr_PixY'],
-            'GlobalResolution' : header_contents['MeasDesc_GlobalResolution'],
-            'BaseResolution' : header_contents['HW_BaseResolution'],
-            'Resolution' : header_contents['MeasDesc_Resolution'],
-            'BinningFactor' : header_contents['MeasDesc_BinningFactor'],
-            'SyncRate' : header_contents['TTResult_SyncRate'],
-            'NumberOfRecords': header_contents['TTResult_NumberOfRecords'],
-            'LineStart': header_contents['ImgHdr_LineStart'],
-            'LineStop': header_contents['ImgHdr_LineStop']
-        }
-    else:
+
+    try:
         FLIMInfo = {
             'Filename' : header_contents['$Filename'],
             'Comment': header_contents['$Comment'],
@@ -221,7 +204,26 @@ def readPTUData(path: str, makeFLIMInfo: bool = True):
             'LineStart': header_contents['ImgHdr_LineStart'],
             'LineStop': header_contents['ImgHdr_LineStop']
         }
-        
+    except:
+        FLIMInfo = {
+            #'Filename' : header_contents['$Filename'],
+            #'Comment': header_contents['$Comment'],
+            'RecordType' : header_contents['TTResultFormat_TTTRRecType'],
+            'BitsPerRecord' : header_contents['TTResultFormat_BitsPerRecord'],
+            #'PixelResolution' : header_contents['$ReqHdr_SpatialResolution'],
+            'PixelsX' : header_contents['ImgHdr_PixX'],
+            'PixelsY' : header_contents['ImgHdr_PixY'],
+            'GlobalResolution' : header_contents['MeasDesc_GlobalResolution'],
+            'BaseResolution' : header_contents['HW_BaseResolution'],
+            'Resolution' : header_contents['MeasDesc_Resolution'],
+            'BinningFactor' : header_contents['MeasDesc_BinningFactor'],
+            'SyncRate' : header_contents['TTResult_SyncRate'],
+            'NumberOfRecords': header_contents['TTResult_NumberOfRecords'],
+            'LineStart': header_contents['ImgHdr_LineStart'],
+            'LineStop': header_contents['ImgHdr_LineStop']
+        }
+
+
 
     #print(FLIMInfo['LineStart'], FLIMInfo['LineStop'])
     # Closing read stream
@@ -253,17 +255,19 @@ def readPTUData(path: str, makeFLIMInfo: bool = True):
     recordarray = treatOverflows(recordarray, macroMultFactor)
 
     header_contents = FLIMInfo
+    header_contents['NumberOfLines'] = countLines(recordarray)
+    header_contents['NumberOfFrames'] = int(header_contents['NumberOfLines'] / header_contents['PixelsX'])
 
     #macrotimes = np.array(recordarray['macrotime'], dtype = np.float32)
     #nanotimes = np.array(recordarray['nanotime'], dtype = np.float32)
     #markers = np.array(recordarray['marker'], dtype = np.uint8)
 
 
-    
+
     return(recordarray, header_contents)
 
 
-@jit(nopython = False, cache = True) 
+@jit(nopython = False, cache = True)
 def sinCorr(correction_factor, number_of_pixels, pixel_mult_factor = 10):
     corrected_bins = np.linspace(-(correction_factor), (correction_factor), (pixel_mult_factor * number_of_pixels))
     np.sin(corrected_bins, corrected_bins)
@@ -342,7 +346,7 @@ def buildFLIMArray(
     flimarray = np.zeros((nPixelX, nPixelY, decayBins), dtype=np.uint16)
     # 2D array for intensity image
     intensityImage = np.zeros((nPixelX, nPixelY), dtype=np.uint16)
-    
+
     # Generating array for sinosidial image correction using sinCorr() function
     # sinCorr() needs number of pixels and the correction factor, which specifies
     # what percentage of the sin curve is used for mapping of pixels and thus
@@ -357,7 +361,7 @@ def buildFLIMArray(
     	nPixelY,
     	pixel_mult_factor = 20
     )
-    
+
 
     while(lastLine == False):
         tmpMarker = recordarray['marker'][eventCounter]

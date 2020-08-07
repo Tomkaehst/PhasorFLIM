@@ -90,11 +90,11 @@ class fitter:
         parameter_bounds: bounds for each paramters
         in decay_parameters
         parameter_names: parameter names for display
-        irf_parameters: 
+        irf_parameters:
             [0]: IRF shift in ps
             [1]: IRF sigma, only used with guessed IRF
 
-        In order to pass parameters to the optimizer 
+        In order to pass parameters to the optimizer
         (self.fit_decay), decay_parameters and irf_parameters
         have to be combined (using '+') (we need length
         of individual sets to properly work with them
@@ -203,15 +203,18 @@ class fitter:
 
     @staticmethod
     @njit
-    def IRF_delta_sifting(time_axis, irf, shift_parameters=None):
+    def IRF_delta_sifting(time_axis, irf, irf_shift):
         '''
-        Shift measured IRF on time axis using delta pulse sifting property
+        Shift measured IRF on time axis using delta pulse sifting property.
         -----
         Arguments:
-            - time_axis
+            - time_axis: time axis of the decay
+            - irf: simulated or measured IRF
+            - irf_shift: time shift of IRF in units time
+        Returns:
+            - output: IRF trace shifted by irf_shift time_units
         '''
         bin_width = time_axis[1] - time_axis[0]
-        irf_shift = shift_parameters[0]
         bin_shift_int = (irf_shift / bin_width)
         bin_shift_fraction = (irf_shift % bin_width) / bin_width
 
@@ -357,7 +360,7 @@ class fitter:
         return(fitted_curve, residuals)
 
     def fit_image(self, photon_threshold=100):
-        ''' 
+        '''
 
         '''
         if(len(self.data.shape) < 3):

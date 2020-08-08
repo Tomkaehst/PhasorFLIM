@@ -4,7 +4,7 @@ PicoQuant TTTR / PTU File Decoding Functions
 --------------------------------------------
 Set of functions that are used to decode PicoQuant TTTR files and loading them into RAM.
 For use with Jupyter Notebooks. Numba JIT accelerated.
-For importing raw TTTR data into memory, use readPTUData(path = 'path/to/file.ptu') and provide the
+For importing raw TTTR data into memory, use read_ptu_data(path = 'path/to/file.ptu') and provide the
 path to the PTU file to be processed.
 To turn
 '''
@@ -37,10 +37,35 @@ tyBinaryBlob  = struct.unpack(">i", bytes.fromhex("FFFFFFFF"))[0]
 rtHydraHarp2T3 = struct.unpack(">i", bytes.fromhex('01010304'))[0]
 
 
-@jit(nopython=True, cache=True)
-def treatOverflows(recordarray, macrotimefactor):
+# @jit(nopython=True, cache=True)
+# def treat_overflows(recordarray, macrotimefactor):
+#     '''
+#     Function treat_overflows(
+#     recordarray: 4 x numRec NumPy array holding raw 32 bit photon records in ['record']
+#     macrotimefactor: multiplication factor for mactotime clock to recover real experiment macrotime
+#     )
+#     Output is recordarray, but with populated ['macrotime'] row
+
+#     Takes whole record array and recovers real macrotime from raw photon TTTR data by adding
+#     number of macrotime clock overflows. See PicoQuant PTU documentary for further details and explanation.
+#     '''
+
+#     OVERFLOW_PERIOD = 1024
+#     overflow_cor = 0
+
+#     for record in recordarray:
+#         if(record['marker'] == 127):
+#             overflow_cor += OVERFLOW_PERIOD * \
+#                 (record['record'] & (2**10 - 1))
+
+#         record['macrotime'] = (overflow_cor + np.bitwise_and(record['record'], 2**10-1)) * macrotimefactor
+
+#     return(recordarray)
+
+
+def treat_overflows(recordarray: np.array, macrotime_factor: float, overflow_period: int):
     '''
-    Function treatOverflows(
+    Function treat_overflows(
     recordarray: 4 x numRec NumPy array holding raw 32 bit photon records in ['record']
     macrotimefactor: multiplication factor for mactotime clock to recover real experiment macrotime
     )
@@ -50,22 +75,26 @@ def treatOverflows(recordarray, macrotimefactor):
     number of macrotime clock overflows. See PicoQuant PTU documentary for further details and explanation.
     '''
 
-    OVERFLOW_PERIOD = 1024
-    overflow_cor = 0
+    overflow_correction = 0
 
     for record in recordarray:
-        if(record['marker'] == 127):
-            overflow_cor += OVERFLOW_PERIOD * \
-                (record['record'] & (2**10 - 1))
+        # Overflow indicated by all marker bits set
+        if record['marker'] == 127:
+            # Getting number of overflows since experiment start
+            # is written in macrotime field in case of overflow
+            overflow_correction += overflow_period * np.bitwise_and(record['record'], (2**10 - 1))
 
-        record['macrotime'] = (overflow_cor + np.bitwise_and(record['record'], 2**10-1)) * macrotimefactor
+        # Get macrotime from macrotime field and correcting overflow
+        record['macrotime'] = (
+            overflow_correction + np.bitwise_and(record['record'], (2**10 - 1))
+        )
 
-    return(recordarray)
+    return(recordarray['macrotime'])
 
 
-def countLines(recordarray):
-    numLineStart = np.sum(recordarray['marker'] == 65)
-    numLineStop = np.sum(recordarray['marker'] == 66)
+def count_lines(recordarray, line_start: int = 65, line_stop: int = 66):
+    numLineStart = np.sum(recordarray['marker'] == line_start)
+    numLineStop = np.sum(recordarray['marker'] == line_stop)
 
     if(numLineStart != numLineStop):
         print('Line start and line stop markers are not equal. Corrupted file?')
@@ -74,8 +103,8 @@ def countLines(recordarray):
 
 
 #@jit(nopython = True, cache = True)
-def readPTUData(path: str, makeFLIMInfo: bool = True):
-    """readPTUData()
+def read_ptu_data(path: str, makeFLIMInfo: bool = True):
+    """read_ptu_data()
 
     Arguments:
         path {str} -- Path to PicoQuant TTTR / PTU file to be processed
@@ -251,11 +280,11 @@ def readPTUData(path: str, makeFLIMInfo: bool = True):
     recordarray[:]['marker'] = (np.right_shift(recordarray[:]['record'], 25) & 127)
     recordarray[:]['nanotime'] = ((np.right_shift(recordarray[:]['record'], 10) & 32767) * nanoMultFactor).astype(np.float64)
 
-    # Recover macro times using treatOverflows()
-    recordarray = treatOverflows(recordarray, macroMultFactor)
+    # Recover macro times using treat_overflows()
+    recordarray = treat_overflows(recordarray, macroMultFactor)
 
     header_contents = FLIMInfo
-    header_contents['NumberOfLines'] = countLines(recordarray)
+    header_contents['NumberOfLines'] = count_lines(recordarray)
     header_contents['NumberOfFrames'] = int(header_contents['NumberOfLines'] / header_contents['PixelsX'])
 
     #macrotimes = np.array(recordarray['macrotime'], dtype = np.float32)
@@ -268,7 +297,16 @@ def readPTUData(path: str, makeFLIMInfo: bool = True):
 
 
 @jit(nopython = False, cache = True)
-def sinCorr(correction_factor, number_of_pixels, pixel_mult_factor = 10):
+def sinus_correction(correction_factor:float, number_of_pixels: int, pixel_mult_factor: int = 10):
+    """ Calculates look-up table for lines from sinusodial scanning.
+        The linear pixel time is then converted to the corresponding 
+        pixel in an image where sinusodial scanning has been corrected.
+
+    Args:
+        correction_factor (float): [description]
+        number_of_pixels (int): [description]
+        pixel_mult_factor (int): Excess of of pixels in look-up table. Defaults to 10.
+    """    
     corrected_bins = np.linspace(-(correction_factor), (correction_factor), (pixel_mult_factor * number_of_pixels))
     np.sin(corrected_bins, corrected_bins)
     np.add(corrected_bins, np.max(corrected_bins), corrected_bins)
@@ -280,288 +318,357 @@ def sinCorr(correction_factor, number_of_pixels, pixel_mult_factor = 10):
 
 
 @jit(nopython=True, cache=True)
-def buildFLIMArray(
-	recordarray,
-	channel,
-	linesinfile,
-	pixelsx,
-	pixelsy,
-	globRes,
-	timeRes,
-	spatialBinning,
-	temporalBinning,
-	sinusodialCorr = 0.0):
-    '''
-    buildFLIMArray(
-    - recordarray: 4 x numRec NumPy array, holds raw photon data and system events
-    - channel: int; which channel to reconstruct the flimarray from
-    - pixelsx: original image dimension in X, stored in FLIMInfo
-    - pixelsy: original image dimension in Y, stored in FLIMInfo
-    - globRes: global measurment of nanotime, stored in FLIMInfo, in ns, 51 ns for 20 MHz laser pulse frequency
-    - timeRes: nanotime resolution of TCSPC device, in ps
-    - spatialBinning: user-defined binning factor of image, calculated as 2**factor
-    - temporalBinning: user-defined binning factor for fluorescence decay histogram
-    )
-    '''
+def build_flim_array(
+    recordarray: np.ndarray,
+    channel: int,
+    lines_in_file: int,
+    pixels_x: int, pixels_y: int,
+    global_resolution: float, time_resolution: float, 
+    spatial_binning: float, decay_binning: float,
+    sinusodial_correction: float = 0.0001):
+    """Reconstructs FLIM array (x-y-decay) from PicoQuant TTTR data
+        generated by read_ptu_data().
 
-    eventCounter = 0  # Keeps track of photon / marker events while looping through data
-    lineCounter = 0  # Stores current scan line numbers
-    frameCounter = 0  # Stores current frame number
-    # How many frames are in the image; assume square format
-    framesInFile = math.floor(linesinfile / pixelsx)
+    Args:
+        recordarray (np.ndarray [records, macrotime, nanotime, markers]): [description]
+        channel (int): Indicates photon channel that is used for image reconstruction.
+        lines_in_file (int): Y pixels (lines) in the TTTR data.
+        pixels_x (int): pixels of the image in x
+        pixels_y (int): Pixels of the image in y
+        global_resolution (float): Time between laser pulses (a.k.a. laser repetition rate)
+        time_resolution (float): Base TCSPC resolution of nanotime (typically 16 ps)
+        spatial_binning (float): Use > 1 to reduce the number of x-y-pixels in the resulting image
+        decay_binning (float): Use > 1 to reduce number of bins of fluorescence decay
+        sinusodial_correction (float, optional): Amount of sinusodial correction for image reconstruction. Defaults to 0.0001.
 
-    # Number of TCSPC bins based on time between pulses and TCSPC time resolution
-    decayBins = math.ceil((globRes / timeRes)/(2**temporalBinning))
-    globalResolution = globRes * 10E8  # time between pulses in ns
-    timeResolution = timeRes * 10E9  # TCSPC time resolution in nss
+    
+    """    
+    # Setting up counters
+    event_counter = 0           # Used to loop through records in recordarray
+    line_counter = 0            # keeps track of current line in image (y)
+    frame_counter = 0           # keeps track of current line (x)
 
-    binningFactor = 2**spatialBinning
+    # Setting up reconstruction constants
+    frames_in_file = math.floor(lines_in_file)
+    global_resolution *= 10E8   # Time between pulses in ns
+    time_resolution *= 10E9     # TCSPC time resolution in ns
+    binning_factor = 2**spatial_binning
+    decay_bins = math.ceil((global_resolution / time_resolution) / (2**decay_binning))
+    marker_line_start = 65
+    marker_line_stop = 66
 
-    lineStart = 0
-    lineStop = 0
-    pixelTime = 0  # Tmp variable for storing time/pixel when line start and stop macro times are determined; needed to assign photons to y pixels in a line
+    # Setting up temporary variables for reconstruction
+    line_start = None           # macrotime of current line start marker
+    line_stop = None            # macrotime of the current line stop marker
+    pixel_time = None           # macrotime per pixel in the current line
+    average_line_time = None    # average macrotime per line, used for exceptions
+    line_active = False         # Set to true after line start marker is found
+    last_line = False           # Set true when last line in frame is reached
+    photon_list_macro = [np.float64(x) for x in range(0)]
+    photon_list_nano =  [np.float64(x) for x in range(0)]
+    tmp_marker = None
+    tmp_macro = None
+    tmp_nano = None
+    time_difference = None
+    number_of_pixels_x = int(pixels_x / binning_factor)
+    number_of_pixels_y = int(pixels_y / binning_factor)
+    pixel_id_x = None           # Current pixel in x (frame)
+    pixel_id_y = None           # Current pixel in y (line)
 
-    # Set to True when last scan line was evaluated and frameCounter >= framesInFile
-    lastLine = False
-    # Set to True when line start marker is found (= 65), starts photon assignments to y-pixels in a line (x); set to False when line stop marker is found (=66)
-    lineActive = False
 
-    # List storing photon macrotimes when line is active to determine y-pixel position of photon
-    tmpEvents = [np.float64(x) for x in range(0)]
-    # List storing photon nanotimes to assign to 3D-FLIM array in x-y position
-    tmpNano = [np.float64(x) for x in range(0)]
-    tmpMarker = 0  # Holds marker value for one loop iteration
-    tmpMacro = 0  # Holds macrotime value for one loop iteration
-    tmpNanotime = 0  # Holds nanotime value for one loop iteration
-    diff = 0  # Stores difference between photon macro time and line start to determine photon y-position
-    # Count out-of-range photons (photons with macrotime below or above line time difference)
-    oorPhotons = 0
-
-    nPixelX = int(pixelsx / binningFactor)
-    nPixelY = int(pixelsy / binningFactor)
-
-    pixelIDX = 0  # Current x position in image
-    pixelIDY = 0  # Current y position in image
-
-    flimarray = np.zeros((nPixelX, nPixelY, decayBins), dtype=np.uint16)
-    # 2D array for intensity image
-    intensityImage = np.zeros((nPixelX, nPixelY), dtype=np.uint16)
-
-    # Generating array for sinosidial image correction using sinCorr() function
-    # sinCorr() needs number of pixels and the correction factor, which specifies
-    # what percentage of the sin curve is used for mapping of pixels and thus
-    # correction of the distorted image
-    # An excess of correction bins is produced and handeled as float (!), because due
-    # to the distortion, some pixels will be rounded to other values and thus do not
-    # map to an actual pixel in a particular line. Because of that,
-    # sinCorr also returns the number of exceeding bins. This is the multiplier needed
-    # to assign the pixel to the corrected bin
-    corrected_bins, correction_mult_factor = sinCorr(
-    	sinusodialCorr,
-    	nPixelY,
-    	pixel_mult_factor = 20
+    # Pre-initializing FLIM array for data to be sorted into
+    flim_array = np.zeros(
+        (number_of_pixels_x, number_of_pixels_y, decay_bins),
+        dtype = np.uint16)
+    image_array = np.zeros(
+        (number_of_pixels_x, number_of_pixels_y),
+        dtype = np.uint16
     )
 
+    '''
+    Calculating sinusodial scan correction lookup table 
+    using sinus_correction() function:
+    sinus_correction() takes number of pixels and desired
+    correction factor which specifies what percentage of
+    the sinus curve is used for mapping of pixels and thus
+    correction of the distorted image.
+    An excess of corrected bins is produced and handeled
+    as float(!) because some pixels will be rounded to
+    other values and to not map to an actual pixel on a 
+    particular line. 
+    '''
+    corrected_bins, correction_mult_factor = sinus_correction(
+        sinusodial_correction,
+        number_of_pixels_y,
+        pixel_mult_factor = 10
+    )
 
-    while(lastLine == False):
-        tmpMarker = recordarray['marker'][eventCounter]
 
-        if(tmpMarker == 65):  # Event is line start marker
-            lineActive = True  # Starting line evaluation (next while loop)
-            # Store line start time
-            lineStart = recordarray['macrotime'][eventCounter]
-            eventCounter += 1
-            continue  # Skip this loop iteration
+    '''
+    Main loop for image reconstruction
+    ---
+    Photon records in recordarray are now looped through
+    and each marker in the recordarray is checked for
+    marker events (line start and stop).
+    When a line start is encountered, all events and
+    nanotimes from start to line end are collected in 
+    tmp_events and tmp_nano in the order that they appeared
+    in the array.
+    The time difference between line start and stop
+    macrotimes is used to sort the events into the
+    corresponding pixel in the image and the TCSPC bin.
+    After each line, pixel counters are iterated and it
+    is checked if they exceed the constants set in the 
+    beginning. If the line counter exceeds the number of
+    pixels in the x direction, a new frame is started and
+    thus all pixel counters are reset.
+    Each 
+    '''
 
-        if(tmpMarker == 0 or tmpMarker == 1 or tmpMarker == 2 or tmpMarker == 3):
-            oorPhotons += 1
+    while not last_line:
+        tmp_marker = recordarray['marker'][event_counter]
 
-        while(lineActive == True):
-            tmpMarker = recordarray['marker'][eventCounter]
-            tmpMacro = recordarray['macrotime'][eventCounter]
-            tmpNanotime = recordarray['nanotime'][eventCounter]
+        # Check if marker is a line start event
+        if tmp_marker == marker_line_start:
+            line_active = True
+            line_start = recordarray['macrotime'][event_counter]
+            event_counter += 1
+            continue
 
-            if(tmpMarker == channel):
-                tmpEvents.append(tmpMacro)
-                tmpNano.append(tmpNanotime)
-            elif(tmpMarker == 66):
-                lineActive = False
-                lineStop = tmpMacro
-                pixelTime = (lineStop - lineStart) / (nPixelY)
+        while line_active:
+            tmp_marker = recordarray['marker'][event_counter]
+            tmp_macro = recordarray['macrotime'][event_counter]
+            tmp_nano = recordarray['nanotime'][event_counter]
 
-                # Build intensity image and FLIM array from photon macro times
-                for i in range(0, len(tmpEvents)):
-                    diff = round(correction_mult_factor * ((tmpEvents[i] - lineStart)/pixelTime))
-                    binID = math.floor((tmpNano[i]/globalResolution)*decayBins) - 1
-                    pixelIDY = int(round(corrected_bins[int(diff)]))
+            if tmp_marker == channel:
+                # Add current photon to tmp_event and tmp_nano
+                # of it comes from user-chosen photodetector channel
+                photon_list_macro.append(tmp_macro)
+                photon_list_nano.append(tmp_nano)
+            elif tmp_marker == marker_line_stop:
+                # Check for line stop marker
+                line_active = False
+                line_stop = tmp_macro
+                
+                # Get time per pixel from line stop and line start macrotimes
+                pixel_time = (line_stop - line_start) / number_of_pixels_y
 
-                    if(pixelIDY < 0 or pixelIDY > (nPixelY - 1)):
-                        #oorPhotons = oorPhotons + 1
-                        if(pixelIDY < 0):
-                            pixelIDY = 0
-                        elif(pixelIDY > (nPixelY - 1)):
-                            pixelIDY = nPixelY - 1
+                # Sort photons from photon lists into flim_array and image_array
+                for i in range(0, len(photon_list_macro)):
+                    time_difference = round(
+                        correction_mult_factor * (photon_list_macro[i] - line_start) / pixel_time
+                    )
+                    bin_id = math.floor( # Decay bin
+                        (photon_list_nano[i] / global_resolution) * decay_bins - 1
+                    )
+                    pixel_id_y = int(round(corrected_bins[int(time_difference)]))
 
-                    intensityImage[math.floor(pixelIDX)][pixelIDY] += 1
-                    flimarray[math.floor(pixelIDX)][pixelIDY][binID] += 1
+                    # Check if photon is out-of-bounds of image
+                    if pixel_id_y < 0:
+                        pixel_id_y = 0
+                    elif pixel_id_y > (number_of_pixels_y - 1):
+                        pixel_id_y = (number_of_pixels_y - 1)
 
-                pixelIDX = pixelIDX + (1/binningFactor)
-                lineCounter = lineCounter + 1
-                tmpEvents = [np.float64(x) for x in range(0)]
-                tmpNano = [np.float64(x) for x in range(0)]
+                    # Add photon to corresponding position in flim and image array
+                    flim_array[math.floor(pixel_id_x)][pixel_id_y][bin_id] += 1
+                    image_array = [math.floor(pixel_id_x)][pixel_id_y] += 1
 
-            eventCounter += 1
+                    # Incrementing image counter variables
+                    ## Incrementing pixel_id_x with fraction of binning factor
+                    ## in assignment to the image pixel this value is floored
+                    ## Otherwise artifical, user-chosen binning would clash 
+                    ## with the actual number of line marker in the TTTR.
+                    pixel_id_x += (1 / binning_factor)
+                    line_counter += 1
 
-        if (lineCounter > (pixelsx - 1)):
-            frameCounter = frameCounter + 1
-            pixelIDX = 0
-            lineCounter = 0
+                    # Clearing tmp photon lists
+                    photon_list_macro = [np.float64(x) for x in range(0)]
+                    photon_list_nano = [np.float64(x) for x in range(0)]
 
-        if(frameCounter >= framesInFile or eventCounter >= len(recordarray['marker'])):
-            lastLine = True
+                event_counter += 1
 
-        eventCounter += 1
+            # Check if line exceeds image x dimension
+            if line_counter > (number_of_pixels_x - 1):
+                frame_counter += 1
+                pixel_id_x = 0
 
-    #print("Assigned photons to pixels.\n",
-    #      (oorPhotons / np.sum(intensityImage))*100,
-    #      "% of photons were out of range... Total:", oorPhotons, "of", np.sum(intensityImage), "photons.")
+            # Check of global exit: last frame or no more events
+            if frame_counter >= frames_in_file or event_counter >= len(recordarray['marker']):
+                last_line = True
 
-    return(flimarray, intensityImage)
+            event_counter += 1
 
+
+        return(flim_array, image_array)
 
 
 @jit(nopython=True, cache=True)
-def buildFrameArray(recordarray,
-                    channel,
-                    linesinfile,
-                    pixelsx,
-                    pixelsy,
-                    globRes,
-                    timeRes,
-                    spatialBinning,
-                    temporalBinning,
-                    sinusodialCorr = 0.001):
-    '''
-    buildFrameArray
-    Same as buildFLIMArray but instead of the 3D FLIM array (x-y-decay)
-    it returns the individual frames from the TTTR data.
-    (
-    - recordarray: 4 x numRec NumPy array, holds raw photon data and system events
-    - channel: int; which channel to reconstruct the flimarray from
-    - pixelsx: original image dimension in X, stored in FLIMInfo
-    - pixelsy: original image dimension in Y, stored in FLIMInfo
-    - globRes: global measurment of nanotime, stored in FLIMInfo, in ns, 51 ns for 20 MHz laser pulse frequency
-    - timeRes: nanotime resolution of TCSPC device, in ps
-    - spatialBinning: user-defined binning factor of image, calculated as 2**factor
-    - temporalBinning: user-defined binning factor for fluorescence decay histogram
-    )
-    '''
+def build_frame_array(
+    recordarray: np.ndarray,
+    channel: int,
+    lines_in_file: int,
+    pixels_x: int, pixels_y: int,
+    spatial_binning: float,
+    sinusodial_correction: float = 0.0001):
+    """Same as build_flim_array but puts each found frame
+        in image array, i.e. each scanned frame comes after the other
+        without the decay being added.
 
-    eventCounter = 0  # Keeps track of photon / marker events while looping through data
-    lineCounter = 0  # Stores current scan line numbers
-    frameCounter = 0  # Stores current frame number
-    # How many frames are in the image; assume square format
-    framesInFile = math.floor(linesinfile / pixelsx)
+    Args:
+        recordarray (np.ndarray [records, macrotime, nanotime, markers]): [description]
+        channel (int): Indicates photon channel that is used for image reconstruction.
+        lines_in_file (int): Y pixels (lines) in the TTTR data.
+        pixels_x (int): pixels of the image in x
+        pixels_y (int): Pixels of the image in y
+        spatial_binning (float): Use > 1 to reduce the number of x-y-pixels in the resulting image
+        sinusodial_correction (float, optional): Amount of sinusodial correction for image reconstruction. Defaults to 0.0001.
 
-    # Number of TCSPC bins based on time between pulses and TCSPC time resolution
-    globalResolution = globRes * 10E8  # time between pulses in ns
+    
+    """    
+    # Setting up counters
+    event_counter = 0           # Used to loop through records in recordarray
+    line_counter = 0            # keeps track of current line in image (y)
+    frame_counter = 0           # keeps track of current line (x)
 
-    binningFactor = 2**spatialBinning
+    # Setting up reconstruction constants
+    frames_in_file = math.floor(lines_in_file)
+    binning_factor = 2**spatial_binning
+    marker_line_start = 65
+    marker_line_stop = 66
 
-    lineStart = 0
-    lineStop = 0
-    pixelTime = 0  # Tmp variable for storing time/pixel when line start and stop macro times are determined; needed to assign photons to y pixels in a line
+    # Setting up temporary variables for reconstruction
+    line_start = None           # macrotime of current line start marker
+    line_stop = None            # macrotime of the current line stop marker
+    pixel_time = None           # macrotime per pixel in the current line
+    average_line_time = None    # average macrotime per line, used for exceptions
+    line_active = False         # Set to true after line start marker is found
+    last_line = False           # Set true when last line in frame is reached
+    photon_list_macro = [np.float64(x) for x in range(0)]
+    tmp_marker = None
+    tmp_macro = None
+    time_difference = None
+    number_of_pixels_x = int(pixels_x / binning_factor)
+    number_of_pixels_y = int(pixels_y / binning_factor)
+    pixel_id_x = None           # Current pixel in x (frame)
+    pixel_id_y = None           # Current pixel in y (line)
 
-    # Set to True when last scan line was evaluated and frameCounter >= framesInFile
-    lastLine = False
-    # Set to True when line start marker is found (= 65), starts photon assignments to y-pixels in a line (x); set to False when line stop marker is found (=66)
-    lineActive = False
 
-    # List storing photon macrotimes when line is active to determine y-pixel position of photon
-    tmpEvents = [np.float64(x) for x in range(0)]
-    tmpMarker = 0  # Holds marker value for one loop iteration
-    tmpMacro = 0  # Holds macrotime value for one loop iteration
-    diff = 0  # Stores difference between photon macro time and line start to determine photon y-position
-    # Count out-of-range photons (photons with macrotime below or above line time difference)
-    oorPhotons = 0
-
-    nPixelX = int(pixelsx / binningFactor)
-    nPixelY = int(pixelsy / binningFactor)
-
-    pixelIDX = 0  # Current x position in image
-    pixelIDY = 0  # Current y position in image
-
-    # Pre-allocating numpy array that hold individual frame scans
-    # Instead of the third axis holding the decay axis, it now
-    # holds the individual frame scan intensity images.
-    intensity_image_array = np.zeros((nPixelX, nPixelY, framesInFile), dtype=np.uint16)
-
-    corrected_bins, correction_mult_factor = sinCorr(
-        sinusodialCorr,
-        nPixelY,
-        pixel_mult_factor = 20
+    # Pre-initializing image array for data to be sorted into
+    image_array = np.zeros(
+        (number_of_pixels_x, number_of_pixels_y, frames_in_file),
+        dtype = np.uint16
     )
 
-    while(lastLine == False):
-        tmpMarker = recordarray['marker'][eventCounter]
+    '''
+    Calculating sinusodial scan correction lookup table 
+    using sinus_correction() function:
+    sinus_correction() takes number of pixels and desired
+    correction factor which specifies what percentage of
+    the sinus curve is used for mapping of pixels and thus
+    correction of the distorted image.
+    An excess of corrected bins is produced and handeled
+    as float(!) because some pixels will be rounded to
+    other values and to not map to an actual pixel on a 
+    particular line. 
+    '''
+    corrected_bins, correction_mult_factor = sinus_correction(
+        sinusodial_correction,
+        number_of_pixels_y,
+        pixel_mult_factor = 10
+    )
 
-        if(tmpMarker == 65):  # Event is line start marker
-            lineActive = True  # Starting line evaluation (next while loop)
-            # Store line start time
-            lineStart = recordarray['macrotime'][eventCounter]
-            eventCounter += 1
-            continue  # Skip this loop iteration
 
-        if(tmpMarker == 0 or tmpMarker == 1 or tmpMarker == 2 or tmpMarker == 3):
-            oorPhotons += 1
+    '''
+    Main loop for image reconstruction
+    ---
+    Photon records in recordarray are now looped through
+    and each marker in the recordarray is checked for
+    marker events (line start and stop).
+    When a line start is encountered, all events and
+    nanotimes from start to line end are collected in 
+    tmp_events and tmp_nano in the order that they appeared
+    in the array.
+    The time difference between line start and stop
+    macrotimes is used to sort the events into the
+    corresponding pixel in the image and the TCSPC bin.
+    After each line, pixel counters are iterated and it
+    is checked if they exceed the constants set in the 
+    beginning. If the line counter exceeds the number of
+    pixels in the x direction, a new frame is started and
+    thus all pixel counters are reset.
+    Each 
+    '''
 
-        while(lineActive == True):
-            tmpMarker = recordarray['marker'][eventCounter]
-            tmpMacro = recordarray['macrotime'][eventCounter]
+    while not last_line:
+        tmp_marker = recordarray['marker'][event_counter]
 
-            if(tmpMarker == channel):
-                tmpEvents.append(tmpMacro)
-            elif(tmpMarker == 66):
-                lineActive = False
-                lineStop = tmpMacro
-                pixelTime = (lineStop - lineStart) / (nPixelY)
+        # Check if marker is a line start event
+        if tmp_marker == marker_line_start:
+            line_active = True
+            line_start = recordarray['macrotime'][event_counter]
+            event_counter += 1
+            continue
 
-                # Build intensity image and FLIM array from photon macro times
-                for i in range(0, len(tmpEvents)):
-                    diff = round(correction_mult_factor * ((tmpEvents[i] - lineStart)/pixelTime))
-                    #binID = math.floor((tmpNano[i]/globalResolution) * decayBins) - 1
-                    pixelIDY = int(round(corrected_bins[int(diff)]))
+        while line_active:
+            tmp_marker = recordarray['marker'][event_counter]
+            tmp_macro = recordarray['macrotime'][event_counter]
 
-                    if(pixelIDY < 0 or pixelIDY > (nPixelY - 1)):
-                        #oorPhotons = oorPhotons + 1
-                        if(pixelIDY < 0):
-                            pixelIDY = 0
-                        elif(pixelIDY > (nPixelY - 1)):
-                            pixelIDY = nPixelY - 1
+            if tmp_marker == channel:
+                # Add current photon to tmp_event and tmp_nano
+                # of it comes from user-chosen photodetector channel
+                photon_list_macro.append(tmp_macro)
+            elif tmp_marker == marker_line_stop:
+                # Check for line stop marker
+                line_active = False
+                line_stop = tmp_macro
+                
+                # Get time per pixel from line stop and line start macrotimes
+                pixel_time = (line_stop - line_start) / number_of_pixels_y
 
-                    intensity_image_array[math.floor(pixelIDX)][pixelIDY][frameCounter] += 1
+                # Sort photons from photon lists into flim_array and image_array
+                for i in range(0, len(photon_list_macro)):
+                    time_difference = round(
+                        correction_mult_factor * (photon_list_macro[i] - line_start) / pixel_time
+                    )
 
-                pixelIDX = pixelIDX + (1/binningFactor)
-                lineCounter = lineCounter + 1
-                tmpEvents = [np.float64(x) for x in range(0)]
+                    pixel_id_y = int(round(corrected_bins[int(time_difference)]))
 
-            eventCounter += 1
+                    # Check if photon is out-of-bounds of image
+                    if pixel_id_y < 0:
+                        pixel_id_y = 0
+                    elif pixel_id_y > (number_of_pixels_y - 1):
+                        pixel_id_y = (number_of_pixels_y - 1)
 
-        if (lineCounter > (pixelsx - 1)):
-            frameCounter = frameCounter + 1
-            pixelIDX = 0
-            lineCounter = 0
+                    # Add photon to corresponding position in flim and image array
+                    image_array = [math.floor(pixel_id_x)][pixel_id_y][frame_counter] += 1
 
-        if(frameCounter >= framesInFile or eventCounter >= len(recordarray['marker'])):
-            lastLine = True
+                    # Incrementing image counter variables
+                    ## Incrementing pixel_id_x with fraction of binning factor
+                    ## in assignment to the image pixel this value is floored
+                    ## Otherwise artifical, user-chosen binning would clash 
+                    ## with the actual number of line marker in the TTTR.
+                    pixel_id_x += (1 / binning_factor)
+                    line_counter += 1
 
-        eventCounter += 1
+                    # Clearing tmp photon lists
+                    photon_list_macro = [np.float64(x) for x in range(0)]
 
-    #print("Assigned photons to pixels.\n",
-    #      (oorPhotons / np.sum(intensityImage))*100,
-    #      "% of photons were out of range... Total:", oorPhotons, "of", np.sum(intensityImage), "photons.")
+                event_counter += 1
 
-    return(intensity_image_array)
+            # Check if line exceeds image x dimension
+            if line_counter > (number_of_pixels_x - 1):
+                frame_counter += 1
+                pixel_id_x = 0
+
+            # Check of global exit: last frame or no more events
+            if frame_counter >= frames_in_file or event_counter >= len(recordarray['marker']):
+                last_line = True
+
+            event_counter += 1
+
+        return(image_array)
+
+
 
 
 
@@ -585,13 +692,13 @@ def load_flim_data(
 	sinusodial_correction = 0.001,
 	makeFLIMInfo = True):
     '''
-    Function wrapper for readPTUData and buildFLIMarray.
+    Function wrapper for read_ptu_data and build_flim_array.
     Returns the 3D FLIM array and the intensity image of the ptu file provided with path (str).
     '''
-    recordarray, header_info = readPTUData(path, makeFLIMInfo = makeFLIMInfo)
-    header_info['LinesInFile'] = countLines(recordarray)
+    recordarray, header_info = read_ptu_data(path, makeFLIMInfo = makeFLIMInfo)
+    header_info['LinesInFile'] = count_lines(recordarray)
 
-    flim_array, intensity_image = buildFLIMArray(
+    flim_array, intensity_image = build_flim_array(
         recordarray = recordarray,
         channel = channel,
         linesinfile = header_info['LinesInFile'],

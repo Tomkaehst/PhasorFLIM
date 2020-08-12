@@ -1,6 +1,6 @@
 
 def read_ptu_file(path:str):
-    
+
     # Opening ptu file in binary reading mode
     ptu_file = open(path, 'rb')
 
@@ -13,12 +13,18 @@ def read_ptu_file(path:str):
         raise IOError('Provided file is not a .ptu!')
 
     header_offset, header_contents, FLIM_Info = read_ptu_header(ptu_file)
+    assert FLIM_Info['RecordType'] != rtHydraHarp2T3, 'Not a HydraHarpT3 V2 record type!'
 
-    assert FLIM_Info['RecordType'] == rtHydraHarp2T3, 'Not a HydraHarpT3 V2 record type!'
+    recordarray = read_ptu_photons(
+        file = ptu_file,
+        number_of_records = FLIM_Info['NumberOfRecords'],
+        global_resolution = FLIM_Info['GlobalResolution']
+        base_resolution = FLIM_Info['BaseResolution']
+    )
 
 
 def read_ptu_header(file: object):
-    
+
     # Tag that indicates end of header section in file
     header_end_tag = 'Header_End'
     reached_header_end = False
@@ -26,13 +32,18 @@ def read_ptu_header(file: object):
     # tuple that stores decoded information from header section
     header_contents = {}
 
-    while not reached_header_end:
+    while reached_header_end is not True:
         header_piece = file.read(48)
         tag_id = header_piece[0:32].decode('latin1').strip('\0') # Necessary for non-US computer systems (If I remember correcly..., otherwise utf-8 encoding)
         tag_index = struct.unpack('<i', header_piece[32:36])[0]
         tag_type = struct.unpack('<i', header_piece[36:40])[0]
         tag_value = header_piece[40:48]
 
+        # Looking for header end tag
+        if(tag_id == header_end_tag):
+            reached_header_end = True
+            file.read(4) # Offset required so that photon records (see second part) are 'in frame'!
+            break
 
         if(tag_type == tyEmpty8):
             header_contents['Empty'] =  'Empty'
@@ -86,26 +97,28 @@ def read_ptu_header(file: object):
             continue
             #print('Unknown header tag type. Ignored.')
 
-        # Getting offset of header_end tag
-        header_end_offset = file.tell()
+    # Getting offset of header_end tag
+    header_end_offset = file.tell()
 
-        # Sorting important infos in tuple for quicker access
-        FLIM_Info = {
-            'RecordType' : header_contents['TTResultFormat_TTTRRecType'],
-            'BitsPerRecord' : header_contents['TTResultFormat_BitsPerRecord'],
-            'PixelsX' : header_contents['ImgHdr_PixX'],
-            'PixelsY' : header_contents['ImgHdr_PixY'],
-            'GlobalResolution' : header_contents['MeasDesc_GlobalResolution'],
-            'BaseResolution' : header_contents['HW_BaseResolution'],
-            'Resolution' : header_contents['MeasDesc_Resolution'],
-            'BinningFactor' : header_contents['MeasDesc_BinningFactor'],
-            'SyncRate' : header_contents['TTResult_SyncRate'],
-            'NumberOfRecords': header_contents['TTResult_NumberOfRecords'],
-            'LineStart': header_contents['ImgHdr_LineStart'],
-            'LineStop': header_contents['ImgHdr_LineStop']
-        }
+    print(header_contents)
 
-        return(header_end_offset, header_contents, FLIM_Info)
+    # Sorting important infos in tuple for quicker access
+    FLIM_Info = {
+        'RecordType' : header_contents['TTResultFormat_TTTRRecType'],
+        'BitsPerRecord' : header_contents['TTResultFormat_BitsPerRecord'],
+        'PixelsX' : header_contents['ImgHdr_PixX'],
+        'PixelsY' : header_contents['ImgHdr_PixY'],
+        'GlobalResolution' : header_contents['MeasDesc_GlobalResolution'],
+        'BaseResolution' : header_contents['HW_BaseResolution'],
+        'Resolution' : header_contents['MeasDesc_Resolution'],
+        'BinningFactor' : header_contents['MeasDesc_BinningFactor'],
+        'SyncRate' : header_contents['TTResult_SyncRate'],
+        'NumberOfRecords': header_contents['TTResult_NumberOfRecords'],
+        'LineStart': header_contents['ImgHdr_LineStart'],
+        'LineStop': header_contents['ImgHdr_LineStop']
+    }
+
+    return(header_end_offset, header_contents, FLIM_Info)
 
 
 def read_ptu_photons(
@@ -115,10 +128,6 @@ def read_ptu_photons(
     global_resolution: float,
     base_resolution: float
     ):
-    
-    # Checking current position in file, should be after header section
-    assert file.tell() == bit_offset
-
     # Reading photon records from ptu file, reopening read stream at headerend_bitoffset
     ## Initializing record array with pre-defined data types and length (read from header -> NumberOfRecords)
     record_bit_type = np.dtype([('record', np.uint32), ('marker', np.uint8),
@@ -128,9 +137,13 @@ def read_ptu_photons(
         dtype = record_bit_type
     )
 
-    # Getting 32 bit photon records from ptu file 
-    recordarray[:]['record'] = np.fromfile(file, dtype = np.uint32)
-    file.close()
+    # Getting 32 bit photon records from ptu file
+    try:
+        recordarray[:]['record'] = np.fromfile(file, dtype = np.uint32)
+    except:
+        raise IOError('Could not read photon records from .ptu file.')
+    finally:
+        file.close()
 
     # Getting markers, macrotime andnanotimes by bitwise operations
     ## markers are the first 7 bits in 32 bit intergers: 1 - special bit, 2 to 7 - channel

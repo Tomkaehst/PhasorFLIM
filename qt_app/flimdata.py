@@ -425,6 +425,7 @@ class flimdata:
 
         frames_in_file = int(lines_in_file[0] / pixels_x)
         # Number of TCSPC bins based on time between pulses and TCSPC time resolution
+        print(global_resolution, time_resolution, temporal_binning)
         decay_bins = math.ceil(
             (global_resolution / time_resolution)/(2**temporal_binning))
         global_resolution = global_resolution * 10E8  # time between pulses in ns
@@ -491,11 +492,11 @@ class flimdata:
                         pixel_id_y = int(math.floor(diff / pixel_time))
                         bin_id = math.floor(
                             (tmp_nano[i]/global_resolution)*decay_bins) - 1
-
+                        
                         if(pixel_id_y < 0):
                             pixel_id_y = 0
                         elif(pixel_id_y > (nPixelY - 1)):
-                            pixel_id_y = nPixelY - 1
+                             pixel_id_y = nPixelY - 1
 
                         intensity_image[math.floor(
                             pixel_id_x)][pixel_id_y] += 1

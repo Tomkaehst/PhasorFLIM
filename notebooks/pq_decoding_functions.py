@@ -316,7 +316,7 @@ def read_ptu_file(path:str):
         file = ptu_file,
         number_of_records = FLIM_Info['NumberOfRecords'],
         global_resolution = FLIM_Info['GlobalResolution'],
-        base_resolution = FLIM_Info['BaseResolution']
+        tcspc_resolution = FLIM_Info['Resolution']
     )
 
     return(recordarray, header_contents, FLIM_Info)
@@ -421,12 +421,12 @@ def read_ptu_photons(
     file: object,
     number_of_records: int,
     global_resolution: float,
-    base_resolution: float
+    tcspc_resolution: float
     ):
     # Reading photon records from ptu file, reopening read stream at headerend_bitoffset
     ## Initializing record array with pre-defined data types and length (read from header -> NumberOfRecords)
     record_bit_type = np.dtype([('record', np.uint32), ('marker', np.uint8),
-                                  ('nanotime', np.float64), ('macrotime', np.float64)])
+                                  ('nanotime', np.float32), ('macrotime', np.float64)])
     recordarray = np.zeros(
         shape = number_of_records - 1,
         dtype = record_bit_type
@@ -447,9 +447,15 @@ def read_ptu_photons(
     )
 
     ## nanotimes are in the following 15 bits
+    ## CAVE: I converted the nanotime array to the 'real' values (in ns)
+    ## right away for convinience. However, if the multiplication with
+    ## the nanotime_factor is left out, the array can be simply stored
+    ## as a int16 (the number of 'bins' encoded by the HydraHarp will
+    ## never exceed a int16). In that case, also change the recordarray
+    ## dtype definition above from float32 to int16.
     recordarray[:]['nanotime'] = (
         np.right_shift(recordarray[:]['record'], 10) & (2**15 - 1)
-    )
+    ) * (tcspc_resolution * 1E9)
 
     ## macrotimes need to be corrected for macrotime clock overflows
     ## accelerated using numba
@@ -599,7 +605,7 @@ def build_flim_array(
     other values and to not map to an actual pixel on a
     particular line.
     '''
-    corrected_bins, correction_mult_factor = sinus_correction(
+    sin_corrected_bins, sin_correction_mult_factor = sinus_correction(
         sinusodial_correction,
         number_of_pixels_y,
         pixel_mult_factor = 10
@@ -641,32 +647,43 @@ def build_flim_array(
             tmp_macro = recordarray['macrotime'][event_counter]
             tmp_nano = recordarray['nanotime'][event_counter]
 
+            # Add photons to temporary list for the scan line
             if tmp_marker == channel:
                 # Add current photon to tmp_event and tmp_nano
                 # of it comes from user-chosen photodetector channel
                 photon_list_macro.append(tmp_macro)
                 photon_list_nano.append(tmp_nano)
 
+            # Check for line stop marker and sort photons to pixels
             elif tmp_marker == marker_line_stop:
-                # Check for line stop marker
                 line_active = False
                 line_stop = tmp_macro
 
                 # Get time per pixel from line stop and line start macrotimes
                 pixel_time = (line_stop - line_start) / number_of_pixels_y
+
+
                 # Sort photons from photon lists into flim_array and image_array
                 for i in range(0, len(photon_list_macro)):
-                    time_difference = photon_list_macro[i] - line_start
+                    #
+                    photon_macrotime_difference = math.floor(
+                        sin_correction_mult_factor * ((photon_list_macro[i] - line_start)/pixel_time)
+                    )
+                    #
                     bin_id = int(math.floor( # Decay bin
-                        (photon_list_nano[i] / global_resolution) * decay_bins - 1
+                        ((photon_list_nano[i] / global_resolution) * decay_bins) - 1
                     ))
-                    print(bin_id)
-                    pixel_id_y = int(round(corrected_bins[int(time_difference)]))
+
                     # Check if photon is out-of-bounds of image
                     if pixel_id_y < 0:
                         pixel_id_y = 0
-                    elif pixel_id_y > (number_of_pixels_y - 1):
-                        pixel_id_y = (number_of_pixels_y - 1)
+                        print('pixel corrected')
+                    elif pixel_id_y > ((number_of_pixels_y * sin_correction_mult_factor)):
+                        pixel_id_y = ((number_of_pixels_y - 1) * sin_correction_mult_factor)
+
+                    # Get pixel number on line with sinusodial scan correction
+                    pixel_id_y = int(sin_corrected_bins[int(photon_macrotime_difference - 1)])
+
                     # Add photon to corresponding position in flim and image array
                     flim_array[int(math.floor(pixel_id_x))][pixel_id_y][bin_id] += 1
                     image_array[int(math.floor(pixel_id_x))][pixel_id_y] += 1
@@ -691,11 +708,14 @@ def build_flim_array(
         if line_counter > (number_of_pixels_x - 1):
             frame_counter += 1
             pixel_id_x = 0
+            line_counter = 0
+            print('Continue to Frame ', frame_counter)
             continue
 
         # Check of global exit: last frame or no more events
         if frame_counter >= frames_in_file or event_counter >= len(recordarray['marker']):
             last_line = True
+            print('Finished processing', frame_counter, 'frames.')
             continue
 
     return(flim_array, image_array)

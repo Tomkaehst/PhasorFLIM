@@ -43,6 +43,9 @@ app/node_modules/
 node_modules/
 
 
+# Cached functions from Numba
+*.nbc
+
 # Ignore FLIM test data
 app/testData
 qt_app/testData

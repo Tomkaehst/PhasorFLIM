@@ -357,15 +357,16 @@ def build_flim_array(
     line_stop = 0.0            # macrotime of the current line stop marker
     pixel_time = 0.0           # macrotime per pixel in the current line
     average_line_time = 0.0    # average macrotime per line, used for exceptions
+    average_line_time_sum = 0  # Used for incrementing average_line_time
     line_active = False        # Set to true after line start marker is found
     last_line = False          # Set true when last line in frame is reached
     photon_list_macro = [np.float64(x) for x in range(0)] # tmp list for photons from a line
-    photon_list_nano =  [np.float64(x) for x in range(0)] 
+    photon_list_nano =  [np.float64(x) for x in range(0)]
     tmp_marker = None           # Temporary storage for marker during an event iteration
     tmp_macro = None            # Tmp storage for macrotime
     tmp_nano = None             # Tmp storage for nanotime
-    photon_macrotime_difference = None  # Holds time diff. between photon and line start    
-    number_of_pixels_x = int(pixels_x / binning_factor) 
+    photon_macrotime_difference = None  # Holds time diff. between photon and line start
+    number_of_pixels_x = int(pixels_x / binning_factor)
     number_of_pixels_y = int(pixels_y / binning_factor)
     pixel_id_x = 0           # Current pixel in x (frame)
     pixel_id_y = 0           # Current pixel in y (line)
@@ -444,7 +445,7 @@ def build_flim_array(
             elif tmp_marker == marker_line_stop:
                 line_active = False
                 line_stop = tmp_macro
-                # average_line_time = 
+                # average_line_time =
 
                 # Get time per pixel from line stop and line start macrotimes
                 pixel_time = (line_stop - line_start) / number_of_pixels_y
@@ -472,6 +473,11 @@ def build_flim_array(
                     flim_array[int(math.floor(pixel_id_x))][pixel_id_y][bin_id] += 1
                     image_array[int(math.floor(pixel_id_x))][pixel_id_y] += 1
 
+                    # Check if a photon is potentially out of the expected average line time
+                    if (photon_list_macro[i] - line_start) > (average_line_time + average_line_time * 0.2):
+                        print('Interrupted line', line_counter, 'at frame', frame_counter)
+                        break
+
                 # Incrementing image counter variables
                 ## Incrementing pixel_id_x with fraction of binning factor
                 ## in assignment to the image pixel this value is floored
@@ -479,6 +485,11 @@ def build_flim_array(
                 ## with the actual number of line marker in the TTTR.
                 pixel_id_x += (1 / binning_factor)
                 line_counter += 1
+
+                # Updating average line time
+                average_line_time_sum += (line_stop - line_start)
+                average_line_time = average_line_time_sum / (line_counter + 1)
+
 
                 # Clearing tmp photon lists
                 photon_list_macro = [np.float64(x) for x in range(0)]
@@ -493,7 +504,8 @@ def build_flim_array(
             frame_counter += 1
             pixel_id_x = 0
             line_counter = 0
-            average_line_time = 0
+            average_line_time_sum = 0.0
+            average_line_time = 0.0
             print('Continue to Frame ', frame_counter)
             continue
 

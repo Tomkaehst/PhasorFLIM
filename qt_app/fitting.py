@@ -427,11 +427,20 @@ class fitter:
         intensity_image = intensity_image / np.max(intensity_image)
 
         # Getting HSV to RGBA coded array from tau image array
-        tau_norm = colors.Normalize(tau_image, vmin = 2000, vmax = 6000)
-        tau_hsv_map = cm(tau_norm)
-        tau_hsv_map[:, :, 3] = intensity_image
+        tau_norm = cm.ScalarMappable()
+        tau_norm.set_array(tau_image)
+        tau_norm.set_clim(2000, 6000)
+        tau_norm.set_cmap('hsv')
 
-        plt.imshow(tau_hsv_map)
+        flim_image = np.zeros((tau_image.shape[0], tau_image.shape[1], 4))
+
+        for x in range(0, flim_image.shape[0]):
+            for y in range(0, flim_image.shape[1]):
+                flim_image[x, y, :] = tau_norm.to_rgba(x = flim_image.shape[0]*x + y)
+                flim_image[x, y, 3] = intensity_image[x, y]
+
+
+        plt.imshow(flim_image)
         plt.show()
 
 

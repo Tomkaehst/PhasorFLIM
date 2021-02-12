@@ -103,6 +103,7 @@ class flimdata:
 
         rtHydraHarp2T3 = struct.unpack(">i", bytes.fromhex('01010304'))[
             0]  # Only coding for HydraHarp V2 TTTR data
+        rtMultiHarpNT3   = struct.unpack(">i", bytes.fromhex('00010307'))[0]
 
         # Setting up file reading
         filereadstream = open(self.file_path, 'rb')
@@ -205,11 +206,11 @@ class flimdata:
         # - TTResult_SyncRate: Laser pulse / Sync rate of measurement
         # - TTResult_NumberOfRecords: How many 32 bit records in file?
         FLIMInfo = {
-            'Filename': header_contents['$Filename'],
-            'Comment': header_contents['$Comment'],
+            #'Filename': header_contents['$Filename'],
+            #'Comment': header_contents['$Comment'],
             'RecordType': header_contents['TTResultFormat_TTTRRecType'],
             'BitsPerRecord': header_contents['TTResultFormat_BitsPerRecord'],
-            'PixelResolution': header_contents['$ReqHdr_SpatialResolution'],
+            #'PixelResolution': header_contents['$ReqHdr_SpatialResolution'],
             'PixelsX': header_contents['ImgHdr_PixX'],
             'PixelsY': header_contents['ImgHdr_PixY'],
             'GlobalResolution': header_contents['MeasDesc_GlobalResolution'],
@@ -221,9 +222,9 @@ class flimdata:
         }
 
         # Check if photon records from loaded ptu can be read and processed
-        if (FLIMInfo['RecordType'] != rtHydraHarp2T3):
-            raise Exception(
-                "Loaded PTU file is not from HydraHarp V2 TTTR. Other photon record types are not implemented yet!")
+        # if (FLIMInfo['RecordType'] != rtHydraHarp2T3 or FLIMInfo['RecordType'] != rtMultiHarpNT3):
+        #     raise Exception(
+        #         "Loaded PTU file is not from HydraHarp V2 TTTR. Other photon record types are not implemented yet!")
 
         self.FLIMInfo = FLIMInfo
         self.header_contents = header_contents

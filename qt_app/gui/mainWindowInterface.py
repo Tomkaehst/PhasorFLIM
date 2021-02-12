@@ -184,7 +184,7 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
 
             # Calculate reduced chi-square
             item = QListWidgetItem('%s: %f' % (
-                'Red. ChiSq.', self.fit_object.calculate_reduced_chi_square()))
+                'Red. ChiSq.', self.fit_object.red_chi_sq))
             self.listWidget_fittedParameters.addItem(item)
 
             self.listWidget_fittedParameters.show()
@@ -336,7 +336,7 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
 
         self.irf_object = IRF(
             self.irfpath,
-            channel=0
+            channel=1
         )
         self.show_irf()
 
@@ -443,26 +443,38 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
 
         #self.show_error('Starting fitting procedure...', 'Starting the fitting procedure. This might take a while. Application is unresponsive during fitting...')
 
-        self.fit_object = fitter(
-            time_axis=self.flim_object.time_axis,
-            data=self.flim_object.selected_decay,
-            number_of_exponentials=self.spinBox_noExp.value(),
-            objective_function=self.comboBox_objectiveFunction.currentText(),
-            lower_time_cutoff=self.DoubleSpinBox_lowerCutoff.value(),
-            upper_time_cutoff=self.DoubleSpinBox_higherCutoff.value()
-        )
-
-        if (self.irf_object and self.checkBox_measuredIRFFit.isChecked()):
-            try:
-                self.fitted_curve, self.residuals = self.fit_object.fit_decay(
-                    decay=self.fit_object.data,
-                    measured_irf=self.irf_object.irf
-                )
-
-            except:
-                self.show_error('Attention', 'IRF fit has not been done yet!')
+        if (self.checkBox_measuredIRFFit.isChecked()):
+            # Checking if measured IRF data is present
+            if (self.irf_object is None):
+                self.show_error('No IRF loaded.', 'Please load an IRF measurement first.')
                 return(0)
+
+            self.update_log('Fitting with measured IRF...')
+            self.fit_object = fitter(
+                time_axis=self.flim_object.time_axis,
+                data=self.flim_object.selected_decay,
+                number_of_exponentials=self.spinBox_noExp.value(),
+                objective_function=self.comboBox_objectiveFunction.currentText(),
+                lower_time_cutoff=self.DoubleSpinBox_lowerCutoff.value(),
+                upper_time_cutoff=self.DoubleSpinBox_higherCutoff.value(),
+                irf = self.irf_object.irf
+            )
+
+            self.fitted_curve, self.residuals = self.fit_object.fit_decay(
+                decay=self.fit_object.data
+            )
+
         else:
+            self.update_log('Fitting with estimated IRF...')
+            self.fit_object = fitter(
+                time_axis=self.flim_object.time_axis,
+                data=self.flim_object.selected_decay,
+                number_of_exponentials=self.spinBox_noExp.value(),
+                objective_function=self.comboBox_objectiveFunction.currentText(),
+                lower_time_cutoff=self.DoubleSpinBox_lowerCutoff.value(),
+                upper_time_cutoff=self.DoubleSpinBox_higherCutoff.value(),
+                irf = None
+            )
             self.fitted_curve, self.residuals = self.fit_object.fit_decay(
                 decay=self.fit_object.data
             )
@@ -495,14 +507,26 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
             self.show_optimized_parameters()
 
     def fit_image(self):
+        '''
+
+        '''
+
+
+        self.update_log('Fitting FLIM image with estimated IRF...')
         self.fit_object = fitter(
-            self.flim_object.time_axis,
-            self.flim_object.flimarray
+            time_axis=self.flim_object.time_axis,
+            data=self.flim_object.flimarray,
+            number_of_exponentials=1,
+            objective_function=self.comboBox_objectiveFunction.currentText(),
+            lower_time_cutoff=self.DoubleSpinBox_lowerCutoff.value(),
+            upper_time_cutoff=self.DoubleSpinBox_higherCutoff.value(),
+            irf = None
         )
 
         self.fit_object.fit_image(
-            photon_threshold=self.spinBox_photonThreshold.value())
-        # self.show_lifetime_image()
+            photon_threshold=self.spinBox_photonThreshold.value()
+        )
+        
 
     def show_lifetime_image(self):
 
@@ -540,7 +564,6 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
     def new_batch_workbook(self):
         self.batch_directory = QFileDialog.getExistingDirectory()
 
-        print(self.batch_directory)
 
         # Creating new Batch object
         self.batch = BatchProcessing(directory=self.batch_directory)
@@ -709,7 +732,7 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
 
                 writer.writerow([
                     "Red. Chi-Sq.",
-                    self.fit_object.calculate_reduced_chi_square()
+                    self.fit_object.red_chi_sq
                 ])
 
                 writer.writerow(['---'])

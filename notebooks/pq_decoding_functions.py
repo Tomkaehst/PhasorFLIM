@@ -35,6 +35,7 @@ tyWideString  = struct.unpack(">i", bytes.fromhex("4002FFFF"))[0]
 tyBinaryBlob  = struct.unpack(">i", bytes.fromhex("FFFFFFFF"))[0]
 
 rtHydraHarp2T3 = struct.unpack(">i", bytes.fromhex('01010304'))[0]
+rtMultiHarpNT3 = struct.unpack(">i", bytes.fromhex('00010307'))[0]
 
 
 def treat_overflows(recordarray: np.array, macrotime_factor: float, overflow_period: int = 1024):
@@ -90,7 +91,7 @@ def read_ptu_file(path:str):
         raise IOError('Provided file is not a .ptu!')
 
     header_offset, header_contents, FLIM_Info = read_ptu_header(ptu_file)
-    assert FLIM_Info['RecordType'] == rtHydraHarp2T3, 'Not a HydraHarpT3 V2 record type!'
+    assert FLIM_Info['RecordType'] == rtHydraHarp2T3 or FLIM_Info['RecordType'] == rtMultiHarpNT3, 'TTTR record type not implemented yet!'
 
     recordarray = read_ptu_photons(
         file = ptu_file,

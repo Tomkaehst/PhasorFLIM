@@ -14,6 +14,8 @@ import numpy as np
 import scipy.optimize as optimize
 from numba import njit
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+import matplotlib.colors as colors
 import multiprocessing as mp
 
 
@@ -25,7 +27,8 @@ class fitter:
                  objective_function=None,
                  fit_settings=None,
                  lower_time_cutoff=None,
-                 upper_time_cutoff=None
+                 upper_time_cutoff=None,
+                 irf = None # Indicated whether measured IRF is present (then contains data), if empty use estimated IRF (gauss_laser function)
                  ):
 
         self.time_axis = time_axis
@@ -34,16 +37,27 @@ class fitter:
         self.upper_time_cutoff = int(upper_time_cutoff/self.time_axis_stepsize)
         self.cutoff_time_axis()
 
-        self.data = data
+        self.data = data.astype(np.float64)
         self.cutoff_data()
 
         self.number_of_exponentials = number_of_exponentials
         self.objective_function = objective_function
-        self.irf_data = None
-        self.irf_function = self.gauss_laser
+        self.irf_data = irf
+        self.irf_function = None
         self.optimized_parameters = None
+        self.red_chi_sq = None
         self.lifetime_image = None
 
+        # Adjust IRF fit function, check if measured IRF has been defined
+        if (self.irf_data is None):
+            # Pass standard Gauss function as IRF approximation
+            self.irf_function = self.gauss_laser
+        else:
+            #self.irf_function = self.IRF_gauss_convolution # Toms version
+            self.irf_function = self.IRF_delta_sifting  # Christophs version
+
+
+        # Build fit parameter tuples
         if (fit_settings is None):
             self.decay_parameters,\
                 self.irf_parameters,\
@@ -68,9 +82,15 @@ class fitter:
         '''
         Cutting data according to user set values from lower and upper cutoff.
         '''
-        if(self.upper_time_cutoff is not None and self.upper_time_cutoff is not None):
-            self.data = self.data[int(self.lower_time_cutoff):int(
-                self.upper_time_cutoff)]
+        if(len(self.data.shape) == 1):
+            if(self.upper_time_cutoff is not None and self.upper_time_cutoff is not None):
+                self.data = self.data[int(self.lower_time_cutoff):int(
+                    self.upper_time_cutoff)]
+        
+        if(len(self.data.shape) >= 3):
+            if(self.upper_time_cutoff is not None and self.upper_time_cutoff is not None):
+                self.data = self.data[:, :, int(self.lower_time_cutoff):int(
+                    self.upper_time_cutoff)]
 
     def build_parameter_tuple(self):
         '''
@@ -93,6 +113,8 @@ class fitter:
         irf_parameters:
             [0]: IRF shift in ps
             [1]: IRF sigma, only used with guessed IRF
+        If measured IRF data is provided, the IRF
+        sigma parameter is excluded.
 
         In order to pass parameters to the optimizer
         (self.fit_decay), decay_parameters and irf_parameters
@@ -102,7 +124,7 @@ class fitter:
         '''
 
         decay_parameters = [
-            2  # Offset
+            1  # Offset
         ]
 
         parameter_names = [
@@ -116,9 +138,9 @@ class fitter:
         for n in range(self.number_of_exponentials):
             # Add model parameters for n-th decay component
             # Randomizing initial amplitude of component
-            decay_parameters.append(random.randint(0, np.amax(self.data)))
+            decay_parameters.append(random.randint(0, 1000))
             # Randomizing initial tau value
-            decay_parameters.append(random.randint(1000, 4000))
+            decay_parameters.append(random.randint(1000, 6000))
 
             # Add parameter name for n-th decay component
             parameter_names.append('amp' + str(n + 1))
@@ -126,21 +148,24 @@ class fitter:
 
             # Add bounds for n-th decay component
             parameter_bounds.append(
-                (0.1, np.amax(self.data) * np.amax(self.data)*0.5))
-            parameter_bounds.append((10, 10000))
+                (0.0001, np.infty))
+            parameter_bounds.append((1, 10000))
 
         # Parameters for Gauss curve approximated IRF
-        irf_parameters = [
-            2000,  # IRF shift
-            50  # IRF sigma
-        ]
+        irf_parameters = [5000] # IRF shift
+
+        # Adding IRF sigma parameter if no measured IRF data is provided
+        if self.irf_data is None:
+            irf_parameters.append(150)
 
         # Bounds and paramter names for approximated IRF paramters
         parameter_bounds.append(
-            (-self.time_axis.shape[0]/2, self.time_axis.shape[0]))
-        parameter_bounds.append((10, 250))
+            (-1000, self.time_axis[self.time_axis.shape[0] - 1] + 1000))
+        if self.irf_data is None:
+            parameter_bounds.append((1, 1000))
         parameter_names.append('IRF_shift')
-        parameter_names.append('IRF_sigma')
+        if self.irf_data is None:
+            parameter_names.append('IRF_sigma')
 
         return(decay_parameters, irf_parameters, parameter_names, parameter_bounds)
 
@@ -151,7 +176,7 @@ class fitter:
         lead to NaN.
         '''
         sample_index_right_cutoff = math.floor(len(data) * 0.99)
-        sample_index_left_cutoff = math.floor(len(data) * 0.96)
+        sample_index_left_cutoff = math.floor(len(data) * 0.90)
 
         background = np.median(
             data[sample_index_left_cutoff: sample_index_right_cutoff])
@@ -201,9 +226,7 @@ class fitter:
 
         return (gauss)
 
-    @staticmethod
-    @njit
-    def IRF_delta_sifting(time_axis, irf, irf_shift):
+    def IRF_delta_sifting(self, time_axis, irf, irf_shift, *args):
         '''
         Shift measured IRF on time axis using delta pulse sifting property.
         -----
@@ -232,7 +255,13 @@ class fitter:
         """
 
         """
-
+        # Quick fix to calculate with measured IRF: Try - Except
+        # Issue: I coded the fitting object in such a way that it doesn't take a measured
+        # IRF upon initialization but is passed to the fit_decay() function. So, every other
+        # method doesn't know about it and assumes that in that case we use the full parameter
+        # tuple as well (so IRF shift and sigma, the last isn't needed).
+        # I need to rewrite so that upon init, the object checks if it has a measured iRF
+        # present.
         decay_parameters = parameters[0:(
             len(parameters) - len(self.irf_parameters))]
         irf_parameters = parameters[(
@@ -244,19 +273,20 @@ class fitter:
         convoluted_signal = np.convolve(IRF, decay)[0:len(time_axis)]
         convoluted_signal += parameters[0]
 
+
         return(convoluted_signal)
 
-    def calculate_residuals(self):
+    def calculate_residuals(self, decay):
         """
 
         """
 
         residuals = ((self.convoluted_decay(
-            self.time_axis, self.optimized_parameters['x']) - self.data)) / np.sqrt(self.data)
+            self.time_axis, self.optimized_parameters['x']) - decay)) / np.sqrt(decay)
 
         return(residuals)
 
-    def calculate_reduced_chi_square(self):
+    def calculate_reduced_chi_square(self, decay):
         '''
         Calculate reduced chi-square based on decay data and fitted model.
         '''
@@ -264,7 +294,7 @@ class fitter:
             fitted_curve = self.convoluted_decay(
                 self.time_axis, self.optimized_parameters['x'])
             reduced_chi_square = np.sum(
-                ((self.data - fitted_curve)**2 / fitted_curve) / (len(self.data) - len(self.fit_settings) - 1))
+                ((decay - fitted_curve)**2 / fitted_curve) / (len(decay) - len(self.fit_settings) - 1))
 
         except ValueError:
             print('Error occured while calculating reduced chi-square')
@@ -306,8 +336,6 @@ class fitter:
     def fit_decay(
             self,
             decay=None,
-            # Cary over fitted IRF parameters from irf.fitted_irf to re-generate IRF numerically
-            measured_irf=None,
             minimization_method='SLSQP',
             cutoff=1):
         """
@@ -319,15 +347,6 @@ class fitter:
             objective_function = self.minimization_least_squares
         else:
             objective_function = self.minimize_poisson_deviance
-
-        # Check if measured IRF has been defined
-        if (measured_irf is None):
-            # Pass standard Gauss function as IRF approximation
-            self.irf_function = self.gauss_laser
-        elif(measured_irf is not None):
-            # self.irf_function = self.IRF_gauss_convolution # Toms version
-            self.irf_function = self.IRF_delta_sifting  # Christophs version
-            self.irf_data = measured_irf
 
         # Trim data according to user-set cutoffs
         decay_trimmed = decay[0:(len(decay) - cutoff)],
@@ -353,7 +372,8 @@ class fitter:
         # Calculate fit with optimized parameters and weigted residuals
         fitted_curve = self.convoluted_decay(
             self.time_axis, self.optimized_parameters['x'])
-        residuals = self.calculate_residuals()
+        residuals = self.calculate_residuals(decay)
+        self.red_chi_sq = self.calculate_reduced_chi_square(decay)
 
         # print(self.optimized_parameters.hess_inv(1.0))
 
@@ -361,22 +381,61 @@ class fitter:
 
     def fit_image(self, photon_threshold=100):
         '''
-
+        Only takes monoexponential model at the moment!
         '''
         if(len(self.data.shape) < 3):
             raise ValueError(
                 'fit object was not initialized with a FLIM array!')
 
         # Initialzing flat array for optimized values
-        lifetime_image = np.zeros((self.data.shape[0] + self.data.shape[1]))
+        offset_image = np.zeros((self.data.shape[0], self.data.shape[1]), dtype = np.uint16)
+        amp_image = np.zeros((self.data.shape[0], self.data.shape[1]), dtype = np.uint16)
+        tau_image = np.zeros((self.data.shape[0], self.data.shape[1]), dtype = np.uint16)
+
 
         # Flatten data array to map cores to pixels
-        self.data = self.data.flatten()
-        self.data = mp.Array('f', self.data)
+        for x in range(0, self.data.shape[0]):
+            for y in range(0, self.data.shape[1]):
+                if np.sum(self.data[x, y, :]) >= 100:
+                    try:
+                        print('Fitting Pixel: ', x, y)
+                        self.fit_decay(decay = self.data[x, y, :])
+                    except ValueError:
+                        print('Constraints not met at pixel', x, y) # Work on this! Clearly a bug!
+                        continue
+                    offset_image[x, y] = self.optimized_parameters['x'][0]
+                    amp_image[x, y] = self.optimized_parameters['x'][1]
+                    tau_image[x, y] = self.optimized_parameters['x'][2]
+                else:
+                    offset_image[x, y] = 0
+                    amp_image[x, y] = 0
+                    tau_image[x, y] = 0
 
-        #print('Fitting line', x)
+        print('Showing lifetime image...')
+        plt.imshow(offset_image)
+        plt.show()
+        plt.imshow(amp_image)
+        plt.show()
+        plt.imshow(tau_image, vmin = 2000, vmax = 6000, cmap = 'hsv')
+        plt.colorbar()
+        plt.show()
+        plt.hist(tau_image.flatten(), bins = 100, range = (1500, 6000))
+        plt.show()
 
-        #self.lifetime_image = lifetime_image
+        # Making RGBA image using pixel photon counts
+        intensity_image = np.sum(self.data, axis = 2)
+        intensity_image = intensity_image / np.max(intensity_image)
+
+        # Getting HSV to RGBA coded array from tau image array
+        tau_norm = colors.Normalize(tau_image, vmin = 2000, vmax = 6000)
+        tau_hsv_map = cm(tau_norm)
+        tau_hsv_map[:, :, 3] = intensity_image
+
+        plt.imshow(tau_hsv_map)
+        plt.show()
+
+
+
 
     def apply_function_multiprocessing(self, args):
         pass

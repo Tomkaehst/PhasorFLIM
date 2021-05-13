@@ -516,7 +516,7 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
         self.fit_object = fitter(
             time_axis=self.flim_object.time_axis,
             data=self.flim_object.flimarray,
-            number_of_exponentials=1,
+            number_of_exponentials=1, 
             objective_function=self.comboBox_objectiveFunction.currentText(),
             lower_time_cutoff=self.DoubleSpinBox_lowerCutoff.value(),
             upper_time_cutoff=self.DoubleSpinBox_higherCutoff.value(),
@@ -532,7 +532,7 @@ class Ui_mainWindowInterface(QMainWindow, Ui_mainWindow):
 
         colored_image = pg.ImageItem()
         colored_image.setImage(
-            self.fit_object.lifetime_image
+            self.fit_object.tau_image
         )
 
         color_positions = np.array([0.0, 0.33, 0.66, 1.0])

@@ -337,7 +337,7 @@ class fitter:
             self,
             decay=None,
             minimization_method='SLSQP',
-            cutoff=1):
+            cutoff=0):
         """
 
         """
@@ -361,9 +361,10 @@ class fitter:
                 method=minimization_method,
                 bounds=self.parameter_bounds,
                 options={
-                    'maxiter': 40000,
+                    'maxiter': 500,
                     'disp': False,
-                    'eps': 1E-4
+                    'ftol': 0.5,
+                    'xtol': 0.5
                 }
             )
         except RuntimeWarning:
@@ -377,6 +378,9 @@ class fitter:
 
         # print(self.optimized_parameters.hess_inv(1.0))
 
+        # Setting fit starting parameters to optimized parameters
+        #self.fit_settings = self.optimized_parameters['x']
+
         return(fitted_curve, residuals)
 
     def fit_image(self, photon_threshold=100):
@@ -388,9 +392,9 @@ class fitter:
                 'fit object was not initialized with a FLIM array!')
 
         # Initialzing flat array for optimized values
-        offset_image = np.zeros((self.data.shape[0], self.data.shape[1]), dtype = np.uint16)
-        amp_image = np.zeros((self.data.shape[0], self.data.shape[1]), dtype = np.uint16)
-        tau_image = np.zeros((self.data.shape[0], self.data.shape[1]), dtype = np.uint16)
+        self.offset_image = np.zeros((self.data.shape[0], self.data.shape[1]), dtype = np.uint16)
+        self.amp_image = np.zeros((self.data.shape[0], self.data.shape[1]), dtype = np.uint16)
+        self.tau_image = np.zeros((self.data.shape[0], self.data.shape[1]), dtype = np.uint16)
 
 
         # Flatten data array to map cores to pixels
@@ -403,23 +407,27 @@ class fitter:
                     except ValueError:
                         print('Constraints not met at pixel', x, y) # Work on this! Clearly a bug!
                         continue
-                    offset_image[x, y] = self.optimized_parameters['x'][0]
-                    amp_image[x, y] = self.optimized_parameters['x'][1]
-                    tau_image[x, y] = self.optimized_parameters['x'][2]
+                    self.offset_image[x, y] = self.optimized_parameters['x'][0]
+                    self.amp_image[x, y] = self.optimized_parameters['x'][1]
+                    self.tau_image[x, y] = self.optimized_parameters['x'][2]
                 else:
-                    offset_image[x, y] = 0
-                    amp_image[x, y] = 0
-                    tau_image[x, y] = 0
+                    self.offset_image[x, y] = 0
+                    self.amp_image[x, y] = 0
+                    self.tau_image[x, y] = 0
 
-        print('Showing lifetime image...')
-        plt.imshow(offset_image)
+        print('Showing offset image...')
+        plt.imshow(self.offset_image)
         plt.show()
-        plt.imshow(amp_image)
+        print('Showing amplitude image...')
+        plt.imshow(self.amp_image)
         plt.show()
-        plt.imshow(tau_image, vmin = 2000, vmax = 6000, cmap = 'hsv')
+        print('Showing lifetime image image...')
+        plt.imshow(self.tau_image, vmin = 1500, vmax = 5000, cmap = 'nipy_spectral')
         plt.colorbar()
         plt.show()
-        plt.hist(tau_image.flatten(), bins = 100, range = (1500, 6000))
+        print('Av. liftime per pixel: ', np.mean(self.tau_image))
+        print('Showing lifetime histogram...')
+        plt.hist(self.tau_image.flatten(), bins = 100, range = (500, 5500))
         plt.show()
 
         # Making RGBA image using pixel photon counts
@@ -427,21 +435,17 @@ class fitter:
         intensity_image = intensity_image / np.max(intensity_image)
 
         # Getting HSV to RGBA coded array from tau image array
-        tau_norm = cm.ScalarMappable()
-        tau_norm.set_array(tau_image)
-        tau_norm.set_clim(2000, 6000)
-        tau_norm.set_cmap('hsv')
+        norm = plt.Normalize(vmin = 1500, vmax = 5000)
+        colors = plt.cm.jet(norm(self.tau_image))
 
-        flim_image = np.zeros((tau_image.shape[0], tau_image.shape[1], 4))
-
-        for x in range(0, flim_image.shape[0]):
-            for y in range(0, flim_image.shape[1]):
-                flim_image[x, y, :] = tau_norm.to_rgba(x = flim_image.shape[0]*x + y)
-                flim_image[x, y, 3] = intensity_image[x, y]
-
-
-        plt.imshow(flim_image)
+        colors[:, :, 3] = intensity_image
+        
+        plt.rcParams['axes.facecolor'] = 'black'
+        plt.imshow(colors)
         plt.show()
+        plt.rcParams['axes.facecolor'] = 'white'
+
+        self.tau_image = colors
 
 
 

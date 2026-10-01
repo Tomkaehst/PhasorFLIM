@@ -5,9 +5,9 @@ Simple implementation of phasor analysis for fluorescence lifetime imaging micro
 The user may select a subpopulation of pixels on the phasor plot and segment the FLIM image based on the phasor mapping. The image can be coloured according to the distribution of phasors by projection of the phasor distribution on the phasor lifetimes. The results can be exported as image and csv files.
 
 
-![Screenshot of the graphical user interface of the PhasorFLIM software](Screenshot 2026-10-01 at 10.31.22.png)
+![Screenshot of the graphical user interface of the PhasorFLIM software]([Screenshot 2026-10-01 at 10.31.22.png](https://github.com/Tomkaehst/PhasorFLIM/blob/master/Screenshot%202026-10-01%20at%2010.31.22.png))
 
-![Example results: FLIM images of U2OS cells expressing either EGFP only (donor), co-expressing EGFP and mCherry (Co) or a fusion construct mCherry-EGFP. The image colors were obtained by projection of the phasor distribution on a color map.](Screenshot 2026-10-01 at 10.33.10.png)
+![Example results: FLIM images of U2OS cells expressing either EGFP only (donor), co-expressing EGFP and mCherry (Co) or a fusion construct mCherry-EGFP. The image colors were obtained by projection of the phasor distribution on a color map.]([Screenshot 2026-10-01 at 10.33.10.png](https://github.com/Tomkaehst/PhasorFLIM/blob/master/Screenshot%202026-10-01%20at%2010.33.10.png))
 
 ## Installation
 

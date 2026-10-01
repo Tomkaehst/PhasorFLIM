@@ -1,8 +1,14 @@
 # PhasorFLIM
 
+Simple implementation of phasor analysis for fluorescence lifetime imaging microscopy (FLIM) analysis. The software enables loading of Picoquant PTU TTTR image files and performs pixel-wise phasor transformation of the contained fluorescence lifetime decay. The phasors are histogrammed on a phasor plot.
+
+The user may select a subpopulation of pixels on the phasor plot and segment the FLIM image based on the phasor mapping. The image can be coloured according to the distribution of phasors by projection of the phasor distribution on the phasor lifetimes. The results can be exported as image and csv files.
+
+
+
 ## Installation
 
-### For Usage
+### For Users
 
 To use PhasorFLIM on your machine, download the binaries for your operating system from the releases section of this repo  (https://github.com/Tomkaehst/PhasorFLIM/releases). Currently, Windows and macOS are supported.
 
